@@ -1,0 +1,157 @@
+site_name: fabot SDK 文档
+site_description: fabot 机器人软件平台 SDK 使用文档（Python）
+site_url: ""
+
+repo_url: ""
+docs_dir: docs
+
+theme:
+  name: material
+  language: zh
+  palette:
+    - scheme: default
+      primary: indigo
+      toggle:
+        icon: material/brightness-7
+        name: 切换到深色模式
+    - scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/brightness-4
+        name: 切换到浅色模式
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - content.code.copy
+    - search.highlight
+
+plugins:
+  - search
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: true
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: zh
+          name: 简体中文
+          default: true
+          build: true
+        - locale: en
+          name: English
+          build: true
+          theme:
+            language: en
+          nav_translations:
+            首页: Home
+            概览: Overview
+            安装与配置: Installation & Configuration
+            系统要求: Requirements
+            版本配套: Version Compatibility
+            常规操作: Usage
+            连接与 Robot 入口: Connection & Robot Entry
+            命令与长时操作: Commands & Operations
+            事件与数据通道: Events & Data Channels
+            状态、故障与生命周期: Status, Faults & Lifecycle
+            错误处理: Error Handling
+            Mock 测试: Mock Testing
+            配置管理: Configuration
+            平台服务管理: Platform Services
+            入门教程: Tutorials
+            Python 示例: Python Examples
+            Robot 与急停: Robot & E-Stop
+            底盘导航: Chassis Navigation
+            IO 事件流: IO Event Stream
+            配置冲突重试: Configuration Conflict Retry
+            Python API 参考: Python API Reference
+            能力接口概述: Capability Interfaces
+            Robot 入口: Robot Entry
+            面屏 Screen: Screen
+            底盘 Chassis: Chassis
+            运动 Motion: Motion
+            机械臂 Arm: Arm
+            双臂 Arms: Arms
+            躯干 Body: Body
+            夹爪 Gripper: Gripper
+            灵巧手 Hand: Hand
+            头部 Head: Head
+            灯效 Light: Light
+            电源 Power: Power
+            遥操作 Teleop: Teleop
+            语音 Voice: Voice
+            相机 Camera: Camera
+            故障排除: Troubleshooting
+
+extra:
+  alternate:
+    - name: 简体中文
+      link: /
+      lang: zh
+    - name: English
+      link: /en/
+      lang: en
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - 首页: index.md
+  - 概览: overview.md
+  - 安装与配置:
+      - 安装与配置: install/index.md
+      - 系统要求: install/requirements.md
+      - Python: install/python.md
+      - 版本配套: install/compatibility.md
+  - 常规操作:
+      - 常规操作: usage/index.md
+      - 连接与 Robot 入口: usage/connection.md
+      - 命令与长时操作: usage/commands-operations.md
+      - 事件与数据通道: usage/events-channels.md
+      - 状态、故障与生命周期: usage/status-faults.md
+      - 错误处理: usage/errors.md
+      - Mock 测试: usage/mock.md
+      - 配置管理: usage/configuration.md
+      - 平台服务管理: usage/services.md
+  - 入门教程: tutorials/python.md
+  - Python 示例:
+      - Python 示例: examples/python/index.md
+      - Robot 与急停: examples/python/robot.md
+      - 底盘导航: examples/python/chassis.md
+      - IO 事件流: examples/python/io.md
+      - Mock: examples/python/mock.md
+      - 配置冲突重试: examples/python/configuration.md
+  - Python API 参考:
+      - 能力接口概述: reference/python/index.md
+      - Robot 入口: reference/python/robot.md
+      - IO: reference/python/io.md
+      - 面屏 Screen: reference/python/screen.md
+      - 底盘 Chassis: reference/python/chassis.md
+      - 运动 Motion: reference/python/motion.md
+      - 机械臂 Arm: reference/python/arm.md
+      - 双臂 Arms: reference/python/arms.md
+      - 躯干 Body: reference/python/body.md
+      - 夹爪 Gripper: reference/python/gripper.md
+      - 灵巧手 Hand: reference/python/hand.md
+      - 头部 Head: reference/python/head.md
+      - 灯效 Light: reference/python/light.md
+      - 电源 Power: reference/python/power.md
+      - 遥操作 Teleop: reference/python/teleop.md
+      - 语音 Voice: reference/python/voice.md
+      - 相机 Camera: reference/python/camera.md
+  - 故障排除: troubleshooting.md
