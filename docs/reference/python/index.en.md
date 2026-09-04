@@ -13,22 +13,22 @@ The SDK ships typed proxies for 15 built-in capability modules. Capabilities are
 
 | Module | Capability id | Doc | Status |
 |--------|---------------|-----|--------|
-| Robot Entry | — | [robot.md](robot.md) | 📝 To be written |
-| IO | `io` | [io.md](io.md) | ✅ Published (example) |
-| Screen | `screen` | [screen.md](screen.md) | ✅ Published (example) |
-| Chassis | `chassis` | [chassis.md](chassis.md) | ✅ Published (example) |
-| Motion | `motion` | [motion.md](motion.md) | 📝 To be written |
-| Arm | `arm` | [arm.md](arm.md) | 📝 To be written |
-| Arms | `arms` | [arms.md](arms.md) | 📝 To be written |
-| Body | `body` | [body.md](body.md) | 📝 To be written |
-| Gripper | `gripper` | [gripper.md](gripper.md) | 📝 To be written |
-| Hand | `hand` | [hand.md](hand.md) | 📝 To be written |
-| Head | `head` | [head.md](head.md) | 📝 To be written |
-| Light | `light` | [light.md](light.md) | 📝 To be written |
-| Power | `power` | [power.md](power.md) | 📝 To be written |
-| Teleop | `teleop` | [teleop.md](teleop.md) | 📝 To be written |
-| Voice | `voice` | [voice.md](voice.md) | 📝 To be written |
-| Camera | `camera` | [camera.md](camera.md) | 📝 To be written |
+| Robot Entry | — | [robot.md](robot.md) | ✅ Complete (draft) |
+| IO | `io` | [io.md](io.md) | ✅ Complete (draft) |
+| Screen | `screen` | [screen.md](screen.md) | ✅ Complete (draft) |
+| Chassis | `chassis` | [chassis.md](chassis.md) | ✅ Complete (draft) |
+| Motion | `motion` | [motion.md](motion.md) | ✅ Complete (draft) |
+| Arm | `arm` | [arm.md](arm.md) | ✅ Complete (draft, exemplar) |
+| Arms | `arms` | [arms.md](arms.md) | ✅ Complete (draft) |
+| Body | `body` | [body.md](body.md) | ✅ Complete (draft) |
+| Gripper | `gripper` | [gripper.md](gripper.md) | ✅ Complete (draft) |
+| Hand | `hand` | [hand.md](hand.md) | ✅ Complete (draft) |
+| Head | `head` | [head.md](head.md) | ✅ Complete (draft) |
+| Light | `light` | [light.md](light.md) | ✅ Complete (draft) |
+| Power | `power` | [power.md](power.md) | ✅ Complete (draft) |
+| Teleop | `teleop` | [teleop.md](teleop.md) | ✅ Complete (draft) |
+| Voice | `voice` | [voice.md](voice.md) | ✅ Complete (draft) |
+| Camera | `camera` | [camera.md](camera.md) | ✅ Complete (draft) |
 
 ## Common Proxy Skeleton
 

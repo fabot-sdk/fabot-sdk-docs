@@ -13,22 +13,22 @@ SDK 内置 15 个能力模块的类型化 Proxy。能力经 `Robot` 的槽位属
 
 | 模块 | 能力 id | 文档 | 状态 |
 |------|---------|------|------|
-| Robot 入口 | — | [robot.md](robot.md) | 📝 待补充 |
-| IO | `io` | [io.md](io.md) | ✅ 已发布（范例） |
-| 面屏 | `screen` | [screen.md](screen.md) | ✅ 已发布（范例） |
-| 底盘 | `chassis` | [chassis.md](chassis.md) | ✅ 已发布（范例） |
-| 运动 | `motion` | [motion.md](motion.md) | 📝 待补充 |
-| 机械臂 | `arm` | [arm.md](arm.md) | 📝 待补充 |
-| 双臂 | `arms` | [arms.md](arms.md) | 📝 待补充 |
-| 躯干 | `body` | [body.md](body.md) | 📝 待补充 |
-| 夹爪 | `gripper` | [gripper.md](gripper.md) | 📝 待补充 |
-| 灵巧手 | `hand` | [hand.md](hand.md) | 📝 待补充 |
-| 头部 | `head` | [head.md](head.md) | 📝 待补充 |
-| 灯效 | `light` | [light.md](light.md) | 📝 待补充 |
-| 电源 | `power` | [power.md](power.md) | 📝 待补充 |
-| 遥操作 | `teleop` | [teleop.md](teleop.md) | 📝 待补充 |
-| 语音 | `voice` | [voice.md](voice.md) | 📝 待补充 |
-| 相机 | `camera` | [camera.md](camera.md) | 📝 待补充 |
+| Robot 入口 | — | [robot.md](robot.md) | ✅ 已补全（draft） |
+| IO | `io` | [io.md](io.md) | ✅ 已补全（draft） |
+| 面屏 | `screen` | [screen.md](screen.md) | ✅ 已补全（draft） |
+| 底盘 | `chassis` | [chassis.md](chassis.md) | ✅ 已补全（draft） |
+| 运动 | `motion` | [motion.md](motion.md) | ✅ 已补全（draft） |
+| 机械臂 | `arm` | [arm.md](arm.md) | ✅ 已补全（draft，范例） |
+| 双臂 | `arms` | [arms.md](arms.md) | ✅ 已补全（draft） |
+| 躯干 | `body` | [body.md](body.md) | ✅ 已补全（draft） |
+| 夹爪 | `gripper` | [gripper.md](gripper.md) | ✅ 已补全（draft） |
+| 灵巧手 | `hand` | [hand.md](hand.md) | ✅ 已补全（draft） |
+| 头部 | `head` | [head.md](head.md) | ✅ 已补全（draft） |
+| 灯效 | `light` | [light.md](light.md) | ✅ 已补全（draft） |
+| 电源 | `power` | [power.md](power.md) | ✅ 已补全（draft） |
+| 遥操作 | `teleop` | [teleop.md](teleop.md) | ✅ 已补全（draft） |
+| 语音 | `voice` | [voice.md](voice.md) | ✅ 已补全（draft） |
+| 相机 | `camera` | [camera.md](camera.md) | ✅ 已补全（draft） |
 
 ## 统一的 Proxy 骨架
 
