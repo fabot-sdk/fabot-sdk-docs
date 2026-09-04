@@ -26,9 +26,9 @@ docs/
 │   ├── configuration.md
 │   └── services.md
 ├── tutorials/              # 入门教程（python.md）
-├── examples/python/        # 使用示例（index + robot / chassis / io / mock / configuration）
+├── examples/python/        # 使用示例（index + 按能力的完整示例：robot / chassis / motion / arm / arms / body / gripper / hand / head / screen / light / power / camera / voice / teleop / io / mock / configuration）
 ├── reference/python/       # 接口参考（Robot 入口 + 15 个能力模块；八段式：模块概述 → API 总览 → 方法 → 通道 → 事件 → 异常 → 状态 → 资源）
-└── troubleshooting.md      # 故障排除（stub）
+└── troubleshooting.md      # 故障排除（按症状组织：连不上 / wait_ready / Operation 失败 / 急停后恢复）
 ```
 
 示例与 API 在 `examples/python/`、`reference/python/`。概念页（`overview` / `install` / `usage` / `troubleshooting`）只写 Python。

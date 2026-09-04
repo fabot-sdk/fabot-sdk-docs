@@ -182,7 +182,7 @@ Every subscription returns a `SubscriptionToken`; unsubscribe with `token.close(
 | `registry_changed` | `RegistryChangedEvent` | `registry`: `RegistryEvent` (`registry_revision` / `capability_id`) |
 | `config_changed` | `ConfigChangedEvent` | `config`: `ConfigState` (`revision` / `runtime_revision` / `slots` / `domains`, etc.) |
 | `service_state_changed` | `ServiceStateChangedEvent` | `service_state`: `ServiceState` (`service_id` / `desired` / `state` / `pid` / `restart_count` / `source_instance_id`; convenience properties `is_running` / `is_ready`) |
-| `faults_changed` | `FaultsChangedEvent` | `faults`: `RobotFaults`, fields in [status](#status) |
+| `faults_changed` | `FaultsChangedEvent` | `faults`: `RobotFaultSnapshot` (`revision` + `faults: list[RobotFaultRecord]`; each record has `capability_id` / `instance_id` / `fault_id` / `catalog_id` / `fault_class` / `first_seen_us` / `last_seen_us` / `count`). Note this differs in shape from the `RobotFaults` returned by `faults()` (organized per slot) |
 
 Every event carries an `EventHeader` (`name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`). `robot.events.subscribe(callback)` subscribes to every event on the bus; the callback receives raw `Event` envelopes that you can discriminate and decode with each event type's `matches()` / `from_event()`.
 

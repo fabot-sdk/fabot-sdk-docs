@@ -182,7 +182,7 @@ print(robot.estop.state().asserted)
 | `registry_changed` | `RegistryChangedEvent` | `registry`：`RegistryEvent`（`registry_revision` / `capability_id`） |
 | `config_changed` | `ConfigChangedEvent` | `config`：`ConfigState`（`revision` / `runtime_revision` / `slots` / `domains` 等） |
 | `service_state_changed` | `ServiceStateChangedEvent` | `service_state`：`ServiceState`（`service_id` / `desired` / `state` / `pid` / `restart_count` / `source_instance_id`；便捷属性 `is_running` / `is_ready`） |
-| `faults_changed` | `FaultsChangedEvent` | `faults`：`RobotFaults`，字段见 [status](#status) |
+| `faults_changed` | `FaultsChangedEvent` | `faults`：`RobotFaultSnapshot`（`revision` + `faults: list[RobotFaultRecord]`；每条记录含 `capability_id` / `instance_id` / `fault_id` / `catalog_id` / `fault_class` / `first_seen_us` / `last_seen_us` / `count`）。注意与 `faults()` 返回的 `RobotFaults`（按槽位组织）形态不同 |
 
 每个事件都带 `EventHeader`（`name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`）。`robot.events.subscribe(callback)` 订阅总线上的全部事件，回调收到原始 `Event`，可用各事件类型的 `matches()` / `from_event()` 判别并解码。
 

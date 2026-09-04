@@ -64,6 +64,19 @@ plugins:
             Python 示例: Python Examples
             Robot 与急停: Robot & E-Stop
             底盘导航: Chassis Navigation
+            运动示例: Motion
+            机械臂运动: Arm Motion
+            双臂运动: Dual-Arm Motion
+            躯干示例: Body
+            夹爪示例: Gripper
+            灵巧手示例: Dexterous Hand
+            头部运动: Head Motion
+            面屏示例: Screen
+            灯效示例: Light
+            电源示例: Power
+            相机示例: Camera
+            语音示例: Voice
+            遥操作示例: Teleop
             IO 事件流: IO Event Stream
             配置冲突重试: Configuration Conflict Retry
             Python API 参考: Python API Reference
@@ -133,6 +146,19 @@ nav:
       - Python 示例: examples/python/index.md
       - Robot 与急停: examples/python/robot.md
       - 底盘导航: examples/python/chassis.md
+      - 运动示例: examples/python/motion.md
+      - 机械臂运动: examples/python/arm.md
+      - 双臂运动: examples/python/arms.md
+      - 躯干示例: examples/python/body.md
+      - 夹爪示例: examples/python/gripper.md
+      - 灵巧手示例: examples/python/hand.md
+      - 头部运动: examples/python/head.md
+      - 面屏示例: examples/python/screen.md
+      - 灯效示例: examples/python/light.md
+      - 电源示例: examples/python/power.md
+      - 相机示例: examples/python/camera.md
+      - 语音示例: examples/python/voice.md
+      - 遥操作示例: examples/python/teleop.md
       - IO 事件流: examples/python/io.md
       - Mock: examples/python/mock.md
       - 配置冲突重试: examples/python/configuration.md
