@@ -61,7 +61,7 @@ git branch v0.1
 git push github v0.1
 ```
 
-推送 `main` 或任意 `v*` 时会重建**全部**版本再部署。本地 `npm run build` / `npm run dev` 只构建当前分支。
+推送 `main` 或任意 `v*` 时会重建**全部**版本再部署。本地 `npm run build` / `npm run preview` 会写出 `versions.json` 并显示顶栏版本选择；尚未切出 `v*` 时只有「最新」。本地构建只包含当前分支的页面，其它版本要等对应分支推送并由 CI 拼站后才能打开。
 
 ## 仓库维护
 

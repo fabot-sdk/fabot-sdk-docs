@@ -4,36 +4,39 @@
 
 ### 1.1 设计目标
 
-本规范采用以 **main**、**develop** 为核心的轻量化分支模型，目标是：
+本规范采用以 **main**、**develop** 为核心、以 **`v*` 版本分支** 发布历史文档的轻量化分支模型，目标是：
 
 - 保持提交历史清晰、可追踪；
 - 避免共享分支历史被重写；
 - 减少无意义的长期分支；
 - 明确内容只能按照规定方向流动；
 - 支持小型团队直接在 develop 上协作；
+- 用独立分支冻结已发布文档版本，与当前默认版并存；
 - 在需要时提供功能隔离、发布稳定和线上修复能力。
 
 ### 1.2 分支模型总览
 
-整个模型由 **2 个常驻分支** 和 **3 类临时分支** 构成，内容沿固定方向单向流动：
+整个模型由 **常驻分支（main / develop / `v*`）** 和 **3 类临时分支** 构成，内容沿固定方向单向流动：
 
 ```text
 feature/* ──merge──► develop ──merge──► release/* ──merge──► main
                          ▲                    │               │
                          │                    └──merge────────┤
-hotfix/* ──merge──► main │                                    │
+hotfix/* ──merge──► main │                                    ├──branch──► v0.1 / v0.2 / …
     └──merge─────────────┘                                    │
                                                               ▼
-                                                           版本标签
+                                                     当前默认版（Pages /）
+                                                     历史版（Pages /v0.1/ 等）
 ```
 
-一次完整的功能开发 → 发布 → 热修复周期：在 develop 上集成功能（或经 `feature/*`），需要时切 `release/*` 稳定后合入 main 并打标签；线上问题从 main 切 `hotfix/*`，分别合回 main 与 develop。
+一次完整的功能开发 → 发布 → 冻结历史版 → 热修复周期：在 develop 上集成功能（或经 `feature/*`），需要时切 `release/*` 稳定后合入 main；需要保留上一 SDK 版本文档时，从 main 切出 `v*` 并推送到 GitHub；当前默认版线上问题从 main 切 `hotfix/*`，分别合回 main 与 develop；历史版勘误只合回对应的 `v*`。
 
 ### 1.3 核心原则速览
 
 | 原则 | 一句话说明 |
 |------|------------|
-| 双核心分支 | main 保存正式发布状态，develop 保存下一版本集成状态 |
+| 双核心分支 | main 保存当前默认发布状态，develop 保存下一版本集成状态 |
+| 版本分支冻结 | `v*` 从 main 切出后只维护该历史版，不与 main 互相 merge |
 | 单向流动 | merge 只能按规定方向执行，禁止反向 merge 同步内容 |
 | 同步用 rebase | 本地未推送提交与远端同名分支同步时，一律使用 rebase |
 | 集成用 merge | 不同职责分支之间的正式集成统一使用 merge |
@@ -61,17 +64,18 @@ git push -u origin develop
 
 ### 2.1 常驻分支
 
-#### main —— 正式发布分支
+#### main —— 当前默认发布分支
 
-代表已经正式发布或随时可以正式发布的文档站点。
+代表当前默认线上文档（GitHub Pages 站点根路径 `/`，即「最新」）。
 
 **要求：**
 
-- 必须保持稳定；
-- 每个正式版本都应在 main 上创建版本标签（如 `v1.2.0`、`v1.2.1`、`v2.0.0`）；
+- 必须保持稳定，内容对应当前推荐使用的 SDK 版本；
 - 不允许直接进行日常功能开发（`develop` 启用后）；
 - 不允许直接推送未经评审或未经验证的提交；
-- 原则上只接收来自 release、hotfix 或特定发布流程的合并。
+- 原则上只接收来自 release、hotfix 或特定发布流程的合并；
+- 推送到 GitHub `main` 后由 Actions 重建全部版本并部署；
+- 需要冻结当前默认版为历史文档时，从 main 切出 `v*`（见 2.3），不要用标签代替版本分支。
 
 #### develop —— 集成分支
 
@@ -81,7 +85,7 @@ git push -u origin develop
 
 - 日常开发成果最终集成到 develop；
 - 可以包含尚未正式发布的内容；
-- 推送前应运行 `.venv/bin/mkdocs build`，确认无 WARNING/ERROR；
+- 推送前应运行 `npm run build`，确认无 ERROR；
 - 不允许通过 force push 重写历史；
 - 多人直接在 develop 上开发时，每次推送前必须先同步远端提交。
 
@@ -102,7 +106,7 @@ git push -u origin develop
 - 修改需要多个提交；
 - 开发周期超过一天；
 - 修改尚未完成，但需要推送远端备份；
-- 修改可能导致 develop 暂时无法通过 `mkdocs build`；
+- 修改可能导致 develop 暂时无法通过 `npm run build`；
 - 需要独立 Code Review；
 - 多个功能需要并行开发。
 
@@ -110,7 +114,7 @@ git push -u origin develop
 
 - 修改涉及站点信息架构或导航；
 - 修改影响多个目录（如 `usage/` 与 `reference/` 同时改）；
-- 修改暂时无法通过 `mkdocs build`；
+- 修改暂时无法通过 `npm run build`；
 - 多人可能同时修改相同页面；
 - 修改需要持续评审或反复调整。
 
@@ -141,8 +145,8 @@ git push -u origin develop
 
 **发布完成后：**
 
-1. 将 `release/*` 合并到 main；
-2. 在 main 上创建版本标签；
+1. 若需保留发布前的默认版文档，先按 6.6 从 main 切出 `v*` 并推送到 GitHub；
+2. 将 `release/*` 合并到 main；
 3. 将同一 `release/*` 合并回 develop，带回发布阶段产生的修复；
 4. 删除 `release/*`。
 
@@ -170,13 +174,46 @@ git push -u origin develop
 
 1. 从 main 创建 `hotfix/*`；
 2. 完成最小范围的修复；
-3. 运行 `.venv/bin/mkdocs build` 并做针对性核对；
+3. 运行 `npm run build` 并做针对性核对；
 4. 将 `hotfix/*` 合并到 main；
-5. 在 main 上创建补丁版本标签；
-6. 将同一 `hotfix/*` 合并到 develop；
-7. 删除 `hotfix/*`。
+5. 将同一 `hotfix/*` 合并到 develop（若该修复也适用于下一版本）；
+6. 删除 `hotfix/*`。
 
-> 线上问题不建议直接在 main 上修改。即使修复只有一个提交，也建议创建 hotfix 分支，以保证修复过程可评审、可验证和可追踪。
+历史版线上问题不要从 main 开 hotfix，应在对应 `v*` 上修复（见 2.3、6.7）。
+
+> 当前默认版的线上问题不建议直接在 main 上修改。即使修复只有一个提交，也建议创建 hotfix 分支，以保证修复过程可评审、可验证和可追踪。
+
+### 2.3 `v*` —— 历史文档版本分支
+
+用于冻结某一 SDK 版本对应的已发布文档，与 main 上的「最新」并存。`develop`、`feature/*`、`release/*` 不是版本分支，不会出现在站点顶栏。
+
+| 分支 | 站点路径（相对 Pages 根） | 顶栏显示 |
+|------|---------------------------|----------|
+| `main` | `/` | 最新 / Latest |
+| `v0.1` | `/v0.1/` | `v0.1` |
+| `v0.2` | `/v0.2/` | `v0.2` |
+
+| 项目 | 内容 |
+|------|------|
+| 创建来源 | `main`（须已包含版本切换器） |
+| 合并目标 | 只合回自身；**禁止** `v* → main`、**禁止** `main → v*` |
+| 命名 | `v` + 版本号，如 `v0.1`、`v0.2`（须匹配 `v*`，CI 才会收录） |
+| 生命周期 | 长期保留，发布后不删除 |
+
+**要求：**
+
+- 从当前 main 切出：`git branch v0.1` 后 `git push github v0.1`（Pages 使用 GitHub 远程；内网 `origin` 可按需同步）；
+- 切出后视为该版本的冻结线：只接受该版本的勘误与必要补丁，不接纳下一版本内容；
+- 推送 `main` 或任意 `v*` 时，Actions 会重建**全部**版本再部署；
+- 未推送到 GitHub 的 `v*` 不会出现在站点顶栏；
+- 属于共享分支，禁止 rebase / amend / force push；
+- 修改后运行 `npm run build`，确认无 ERROR。
+
+**不允许：**
+
+- 把 develop / main 的新版本文档 merge 进 `v*`；
+- 把 `v*` merge 回 main 或 develop（会用旧文档覆盖当前默认版）；
+- 用 `release/*` 或 annotated tag 代替 `v*` 分支来发布历史文档。
 
 ---
 
@@ -189,7 +226,9 @@ git push -u origin develop
 | `feature/* → develop` | 功能集成 |
 | `develop → release/*`（创建）→ `main` / `develop` | 发布稳定 |
 | `develop → main` | 省略 release 时的直接发布 |
-| `main → hotfix/*`（创建）→ `main` / `develop` | 线上热修复 |
+| `main → hotfix/*`（创建）→ `main` / `develop` | 当前默认版热修复 |
+| `main → v*`（创建） | 冻结历史文档版本 |
+| `v*` 上的勘误只提交或合回该 `v*` | 历史版维护 |
 
 ### 3.2 禁止的反向合并
 
@@ -199,6 +238,9 @@ git push -u origin develop
 develop → feature/*
 main    → hotfix/*
 main    → release/*
+main    → v*          （创建之后的持续 merge）
+v*      → main
+v*      → develop
 ```
 
 **也不建议**通过 `main → develop` 的方式同步修复：
@@ -208,7 +250,7 @@ main    → release/*
 
 这样可以避免 main 和 develop 之间反复双向合并。
 
-> 说明：从 develop 创建 release、从 main 创建 hotfix 属于**创建分支**，不属于反向 merge。
+> 说明：从 develop 创建 release、从 main 创建 hotfix 或 `v*` 属于**创建分支**，不属于反向 merge。创建 `v*` 之后不得再把 main merge 进去。
 
 ---
 
@@ -258,6 +300,7 @@ git rebase origin/develop
 
 - `main`
 - `develop`
+- 已推送的 `v*` 历史版本分支
 - 多人共同使用的 `feature/*`
 - 多人共同使用的 `release/*`
 - 多人共同使用的 `hotfix/*`
@@ -331,6 +374,10 @@ git push --force-with-lease
 | `release → develop` | 允许 |
 | `main → release` | 禁止 |
 | `develop → release` | 禁止 |
+| `main → v*`（创建） | 允许 |
+| `main → v*`（之后 merge） | 禁止 |
+| `v* → main` / `v* → develop` | 禁止 |
+| `develop → v*` | 禁止 |
 
 ### 5.3 `--no-ff` 使用规则
 
@@ -369,7 +416,7 @@ git merge --no-ff feature/usage-connection
 
 ### 6.1 直接在 develop 上完成小修改
 
-适用于：修改范围小、可以在较短时间内完成、不会破坏 `mkdocs build`、不需要多人并行修改、不需要独立评审周期。
+适用于：修改范围小、可以在较短时间内完成、不会破坏 `npm run build`、不需要多人并行修改、不需要独立评审周期。
 
 ```bash
 # 同步远端
@@ -431,14 +478,13 @@ git switch -c release/1.5.0
 git commit -m "fix(reference): 修正发布说明中的接口拼写"
 git commit -m "chore: 将站点版本调整为 1.5.0"
 
-# 合并到 main 并打标签
+# 如需冻结当前线上文档为历史版，先执行 6.6，再合并
 git switch main
 git fetch origin
 git rebase origin/main
 git merge --no-ff release/1.5.0
-git tag -a v1.5.0 -m "Release 1.5.0"
 git push origin main
-git push origin v1.5.0
+git push github main
 
 # 将发布修复同步回 develop
 git switch develop
@@ -457,16 +503,16 @@ git push origin --delete release/1.5.0
 适用于 develop 已经完成冻结和验证的情况：
 
 ```bash
+# 如需冻结当前线上文档为历史版，先执行 6.6，再合并
 git switch main
 git fetch origin
 git rebase origin/main
 git merge --no-ff develop
-git tag -a v1.5.0 -m "Release 1.5.0"
 git push origin main
-git push origin v1.5.0
+git push github main
 ```
 
-> 此流程应被视为一次**正式发布操作**，而不是日常同步。
+> 此流程应被视为一次**正式发布操作**，而不是日常同步。推送到 GitHub `main` 后，Actions 会重建全部版本再部署。
 
 ### 6.5 使用 hotfix 分支修复线上问题
 
@@ -480,14 +526,13 @@ git switch -c hotfix/1.5.1-wrong-api-unit
 # 完成修复
 git commit -m "fix(reference): 修正 Arm.movej 参数单位"
 
-# 合并到 main 并打补丁标签
+# 合并到 main
 git switch main
 git fetch origin
 git rebase origin/main
 git merge --no-ff hotfix/1.5.1-wrong-api-unit
-git tag -a v1.5.1 -m "Release 1.5.1"
 git push origin main
-git push origin v1.5.1
+git push github main
 
 # 将同一个修复分支合并到 develop
 git switch develop
@@ -501,6 +546,44 @@ git branch -d hotfix/1.5.1-wrong-api-unit
 git push origin --delete hotfix/1.5.1-wrong-api-unit
 ```
 
+### 6.6 从 main 冻结历史文档版本
+
+适用于：main 即将开始下一 SDK 版本的文档，或需要把当前线上内容固定为可切换的历史版。须在**已包含版本切换器**的 main 上操作。
+
+```bash
+git switch main
+git fetch origin
+git rebase origin/main
+git branch v0.1
+git push github v0.1
+# 内网仓库如需备份：
+# git push origin v0.1
+```
+
+**完成后：**
+
+- GitHub Pages 将 `v0.1` 发布到 `/v0.1/`，`main` 仍为「最新」（`/`）；
+- 此后 main 继续接收下一版本内容；
+- 不要再把 main merge 进 `v0.1`。
+
+### 6.7 在历史版本分支上勘误
+
+适用于：只修正某一已冻结版本的文档，不影响当前默认版。
+
+```bash
+git fetch github
+git switch v0.1
+git pull --rebase github v0.1
+# 仅修改该版本文档
+git commit -m "fix(reference): 修正 0.1 文档中的接口拼写"
+npm run build
+git push github v0.1
+```
+
+`pull --rebase` 只用于同步**本地尚未推送**的提交。已推送到 GitHub 的 `v*` 禁止 rebase / force push。
+
+不要把该提交 cherry-pick 或 merge 到 main，除非同一错误也存在于当前默认版（那时应在 main / hotfix 上单独修）。
+
 ---
 
 ## 7 冲突处理原则
@@ -508,7 +591,7 @@ git push origin --delete hotfix/1.5.1-wrong-api-unit
 合并或 rebase 发生冲突时：
 
 1. 由产生修改的一方负责解决冲突；
-2. 解决冲突后必须重新运行 `.venv/bin/mkdocs build`，确认无 WARNING/ERROR；
+2. 解决冲突后必须重新运行 `npm run build`，确认无 ERROR；
 3. 不允许只以「能够完成 merge」为目标机械处理冲突；
 4. 涉及语义变化时，必须由相关页面负责人确认；
 5. 共享分支发生错误合并时使用 revert，不重写历史。

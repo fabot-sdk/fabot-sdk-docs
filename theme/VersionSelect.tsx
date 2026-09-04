@@ -45,10 +45,15 @@ function versionHome(catalog: VersionCatalog, version: VersionItem, rest: string
   return rest.startsWith('/en') ? `${prefix}/en/` : `${prefix}/`;
 }
 
+const FALLBACK_CATALOG: VersionCatalog = {
+  siteRoot: '',
+  versions: [{ id: 'main', label: 'latest', prefix: '' }],
+};
+
 export function VersionSelect() {
   const t = useI18n();
   const location = useLocation();
-  const [catalog, setCatalog] = useState<VersionCatalog | null>(null);
+  const [catalog, setCatalog] = useState<VersionCatalog>(FALLBACK_CATALOG);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,10 +69,6 @@ export function VersionSelect() {
       cancelled = true;
     };
   }, []);
-
-  if (!catalog || catalog.versions.length < 2) {
-    return null;
-  }
 
   const selected = currentVersion(location.pathname, catalog);
 

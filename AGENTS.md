@@ -32,7 +32,7 @@
 - **frontmatter**：每页必填 `title` / `status` / `owner` / `updated`，`title` 与首个 `#` 标题一致；书写规范遵循 `fabot_system/docs/sdk/00-doc-guideline.md`。
 - **以真实 API 为准**：类名、方法签名、槽位属性以 `fabot` 包 `.pyi` 与 `src/schemas/` 契约为准；禁止凭记忆杜撰接口。能力模块页可用 fabot_system 的 `fabot-sdk-docgen` skill 生成。
 - **发布文档用语**：`docs/` 与 `README.md` 的正文、TODO、注释不得出现契约 / Contract YAML、`schemas/` / `src/schemas/`、fabot_system、docgen、adapter 配置模板等内部概念。公开 API 名称（`adapter` / `has_adapter` / `as_adapter`、Slot、Command、Operation、Channel、Event）可以保留。本文件是仓库维护说明，继续写 fabot_system 作为事实来源。
-- **多版本**：`main` 为默认版（URL `/`）；历史版用 `v0.1` 这类分支，发布到 `/v0.1/`。从已有切换器的 `main` 切分支并 `git push github v0.1` 后，CI 才会收录该版本。
+- **多版本**：`main` 为默认版（URL `/`）；历史版用 `v0.1` 这类分支，发布到 `/v0.1/`。从已有切换器的 `main` 切分支并 `git push github v0.1` 后，CI 才会收录该版本。本地 `npm run build` 会写出 `versions.json`，顶栏始终显示版本选择；只有 `main` 时选项为「最新」。
 - **验证**：改动后运行 `npm run build` 确认无 ERROR 再提交。
 - **Git**：无用户明确要求时不要 commit / push。commit 信息（subject / body）用中文；`type` / `scope` 仍英文。见 [`git-commit.md`](git-commit.md)、[`git-branch.md`](git-branch.md)。
 

@@ -2,7 +2,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  margin-left: 0.5rem;
+  margin-right: 0.75rem;
   font-size: 0.875rem;
   color: var(--rp-c-text-2);
 }
