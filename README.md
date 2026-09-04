@@ -54,3 +54,8 @@ pip install -r requirements.txt
 mkdocs serve   # 本地预览（含热重载），右上角切换语言
 mkdocs build   # 输出 site/（中文）与 site/en/（英文）
 ```
+
+## 仓库维护
+
+- Git 提交规范：[`git-commit.md`](git-commit.md)
+- Git 分支管理规范：[`git-branch.md`](git-branch.md)

@@ -16,6 +16,8 @@
 | `docs/reference/python/` | Python API 参考（Robot 入口 + 15 个能力模块，八段式：模块概述 → API 总览 → 方法 → 通道 → 事件 → 异常 → 状态 → 资源） |
 | `docs/troubleshooting.md` | 故障排除 |
 | `mkdocs.yml` | 站点配置、导航、i18n 语言与 `nav_translations` |
+| `git-commit.md` | Git 提交规范（不进站点） |
+| `git-branch.md` | Git 分支管理规范（不进站点） |
 
 示例与 API 在 `examples/python/`、`reference/python/`。概念页（`overview` / `install` / `usage` / `troubleshooting`）只写 Python。
 
@@ -26,6 +28,7 @@
 - **以真实 API 为准**：类名、方法签名、槽位属性以 `fabot` 包 `.pyi` 与 `src/schemas/` 契约为准；禁止凭记忆杜撰接口。能力模块页可用 fabot_system 的 `fabot-sdk-docgen` skill 生成。
 - **发布文档用语**：`docs/` 与 `README.md` 的正文、TODO、注释不得出现契约 / Contract YAML、`schemas/` / `src/schemas/`、fabot_system、docgen、adapter 配置模板等内部概念。公开 API 名称（`adapter` / `has_adapter` / `as_adapter`、Slot、Command、Operation、Channel、Event）可以保留。本文件是仓库维护说明，继续写 fabot_system 作为事实来源。
 - **验证**：改动后运行 `.venv/bin/mkdocs build` 确认无 WARNING/ERROR 再提交。
+- **Git**：无用户明确要求时不要 commit / push。commit 信息（subject / body）用中文；`type` / `scope` 仍英文。见 [`git-commit.md`](git-commit.md)、[`git-branch.md`](git-branch.md)。
 
 ## 构建
 
