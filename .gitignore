@@ -1,5 +1,7 @@
 # Rspress 构建产物
 doc_build/
+dist/
+.version-worktrees/
 
 # 旧 MkDocs 本地产物
 site/

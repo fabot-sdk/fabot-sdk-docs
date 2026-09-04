@@ -2,7 +2,7 @@ name: Deploy GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'v*']
   workflow_dispatch:
 
 permissions:
@@ -19,21 +19,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: |
+          git fetch origin '+refs/heads/main:refs/remotes/origin/main'
+          git fetch origin '+refs/heads/v*:refs/remotes/origin/v*' || true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run build
+      - run: node scripts/build-all-versions.mjs
         env:
-          RSPRESS_BASE: /fabot-sdk-docs/
-      - name: Prepare Pages artifact
-        run: |
-          touch doc_build/.nojekyll
-          rm -rf doc_build/__ssg__
+          RSPRESS_SITE_ROOT: /fabot-sdk-docs
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: doc_build
+          path: dist
 
   deploy:
     needs: build

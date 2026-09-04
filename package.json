@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "rspress dev",
     "build": "rspress build && node scripts/rewrite-asset-paths.mjs",
-    "preview": "rspress preview"
+    "preview": "rspress preview",
+    "build:versions": "node scripts/build-all-versions.mjs"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

@@ -48,7 +48,20 @@ npm run preview   # 用本地 HTTP 服务预览生产构建（推荐）
 
 构建会把 CSS/JS 写成相对路径，可以直接打开 `doc_build/index.html` 看排版。搜索、客户端路由和语言自动跳转仍建议用 `npm run dev` 或 `npm run preview`。
 
-推送到 GitHub `main` 后由 Actions 发布到 [GitHub Pages](https://fabot-sdk.github.io/fabot-sdk-docs/)。仓库 Settings → Pages → Source 选 **GitHub Actions**。
+推送到 GitHub `main` 或 `v*` 后由 Actions 发布到 [GitHub Pages](https://fabot-sdk.github.io/fabot-sdk-docs/)。仓库 Settings → Pages → Source 选 **GitHub Actions**。
+
+## 多版本（按分支）
+
+- `main`：当前默认版，路径为 `/`（线上即站点根）。
+- `v0.1`、`v0.2` 等：历史版，路径为 `/v0.1/`、`/v0.2/`。
+- 从已包含版本切换器的 `main` 切出版本分支后再推送，CI 才会把它编进站点：
+
+```bash
+git branch v0.1
+git push github v0.1
+```
+
+推送 `main` 或任意 `v*` 时会重建**全部**版本再部署。本地 `npm run build` / `npm run dev` 只构建当前分支。
 
 ## 仓库维护
 

@@ -30,5 +30,13 @@
   "troubleshooting": {
     "zh": "故障排除",
     "en": "Troubleshooting"
+  },
+  "latest": {
+    "zh": "最新",
+    "en": "Latest"
+  },
+  "version": {
+    "zh": "版本",
+    "en": "Version"
   }
 }

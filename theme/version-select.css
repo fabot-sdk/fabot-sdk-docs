@@ -1,0 +1,21 @@
+.doc-version-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--rp-c-text-2);
+}
+
+.doc-version-select__label {
+  white-space: nowrap;
+}
+
+.doc-version-select__control {
+  border: 1px solid var(--rp-c-divider);
+  border-radius: 6px;
+  background: var(--rp-c-bg);
+  color: var(--rp-c-text-1);
+  padding: 0.2rem 0.4rem;
+  font: inherit;
+}
