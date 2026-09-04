@@ -107,11 +107,11 @@ Calling synchronous interfaces from SDK-internal threads such as event callbacks
 
 ## Error Model
 
-Protocol errors raised by the SDK are uniformly subclasses of `FabotError`, carrying `code` / `category` / `retryable` / `trace_id`; they are subdivided by category into `Timeout` / `NotFound` / `InvalidArgument` / `ResourceConflict`, and so on, plus the configuration- and adapter-related `ConfigurationConflict` / `AdapterMismatch` / `AdapterUnbound`. See [Error Handling](usage/errors.md) for the full hierarchy and handling advice.
+Protocol errors raised by the SDK are uniformly subclasses of `FabotError`, carrying `code` / `category` / `retryable` / `trace_id`; they are subdivided by category into `Timeout` / `NotFound` / `InvalidArgument` / `ResourceConflict`, and so on, plus the configuration- and adapter-related `ConfigurationConflict` / `AdapterMismatch` / `AdapterUnbound`. See [Error Handling](usage/errors.md) for the full hierarchy and handling advice. For human-readable error / log / fault text, use `Catalogs`; see [Localized Text (Catalogs)](usage/catalogs.md) and [Catalogs](reference/python/catalogs.md).
 
 ## Next Steps
 
 - [Installation & Configuration](install/index.md): requirements, installing the Python SDK, version compatibility
 - [Python Tutorial](tutorials/python.md): get your first Python program running
-- [Common Operations](usage/index.md): connection, commands & operations, events & channels, status & faults, configuration, errors, mock
-- [Python API Reference](reference/python/index.md): the Robot entry point and the full interface of all 15 capability modules
+- [Common Operations](usage/index.md): connection, commands & operations, events & channels, status & faults, configuration, errors, Catalogs, mock
+- [Python API Reference](reference/python/index.md): the Robot entry point, Catalogs, and the full interface of all 15 capability modules

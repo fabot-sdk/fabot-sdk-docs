@@ -7,7 +7,7 @@ updated: 2026-09-04
 
 # 错误处理
 
-SDK 的所有调用失败都以 `FabotError` 及其子类抛出。本文说明异常层次、错误字段与错误码、Command / Operation 的错误表现、重试策略，以及面向人机界面的本地化错误文本。
+SDK 的所有调用失败都以 `FabotError` 及其子类抛出。本文说明异常层次、错误字段与错误码、Command / Operation 的错误表现与重试策略。面向人机界面的本地化文本见 [文本目录 Catalogs](catalogs.md)。
 
 ## 异常层次与错误字段
 
@@ -71,7 +71,7 @@ except FabotError as e:
 | 8xxxx | 平台错误（如 `ConfigurationConflict` 81001） |
 | 9xxxx | 能力私有错误 |
 
-程序中判断错误请用 `code` / `category`，不要匹配 `message` 文本；需要展示给人看的文本时用 Catalogs（见下文）。
+程序中判断错误请用 `code` / `category`，不要匹配 `message` 文本；需要展示给人看的文本时用文本目录，见 [文本目录 Catalogs](catalogs.md)。
 
 ## Command 与 Operation 的错误表现
 
@@ -97,23 +97,9 @@ Command / Operation 模型本身见 [命令与长时操作](commands-operations.
 - `InvalidArgument`、`ProtocolIncompatible` 等不可重试：修正调用参数，或检查 SDK 与机器人端的版本配套（见 [版本配套](../install/compatibility.md)）。
 - `ConfigurationConflict` 是特例：`retryable` 为 `False`，但语义上的处理就是重试——重新 `get()`、合并修改（`merge_touched`）后再 `apply()`，见 [配置管理](configuration.md)。
 
-## 本地化错误文本（Catalogs）
+## 本地化错误文本（文本目录）
 
-`Catalogs`（`fabot.catalogs`，可从 `fabot` 顶层导入）是嵌入 SDK 的日志/错误/故障文本目录，面向人机界面展示；运行时纯查表，不访问机器人：
-
-```python
-from fabot import Catalogs
-
-catalogs = Catalogs.load()
-catalogs.set_language("zh")                       # 未知语言回退到英文
-print(catalogs.format_error(err))                 # 按 err.code 查本地化错误文本
-print(catalogs.format_error(81001))               # 也可直接传错误码
-print(catalogs.format_fault(record, capability_id="chassis"))  # 本地化故障文本
-```
-
-- `format_error` 接受 `FabotError` 或 `int` 错误码；未命中时回退到 `error.message`，再回退到错误码字符串。
-- `format_fault` 按 `{capability_id}/{catalog_id}` 查模板。整机故障记录（`robot.faults()` 返回的 `RobotFaultRecord`）自带 `capability_id`；能力级故障记录（`CapabilityFaultRecord` / `FaultState`）不含，需显式传 `capability_id=`，否则抛 `ValueError`。
-- 另有 `format_log`，用于本地化日志记录文本。
+展示给人看的错误 / 日志 / 故障文本用 `Catalogs.format_error` / `format_log` / `format_fault`，不要匹配 `message`。加载、语言回退与未命中规则见 [文本目录 Catalogs](catalogs.md)，签名见 [文本目录 Catalogs](../reference/python/catalogs.md)。
 
 ## 常见本地错误
 

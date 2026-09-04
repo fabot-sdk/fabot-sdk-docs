@@ -69,7 +69,7 @@ if act == "idle":   # Activity 是 StrEnum，可直接与字符串比较
 - 整机聚合查询 `robot.faults() -> RobotFaults`：`revision` 加上每个槽位一个类型化故障袋字段（如 `faults.chassis`、`faults.left_arm`）；单能力用 `robot.<slot>.faults()`。
 - 已命名故障在故障袋中是 `FaultState` 字段：`active` / `catalog_id` / `fault_class`（`CapabilityStateClass`：`Nominal` / `Degraded` / `Fault`）/ `first_seen_us` / `last_seen_us` / `count`。**当前所有模块均未声明已命名故障**，故障袋只含 `revision`。
 - 故障**变化**通过事件推送：`robot.events.faults_changed`（整机，携带 `RobotFaults`）/ `robot.<slot>.events.fault_changed`（单能力）。
-- 故障的 `catalog_id` 可用 `Catalogs` 本地化展示，见 [错误处理](errors.md)。
+- 故障的 `catalog_id` 可用 `Catalogs` 本地化展示，见 [文本目录 Catalogs](catalogs.md)。
 
 ```python
 def on_faults(event):

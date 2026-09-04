@@ -69,7 +69,7 @@ if act == "idle":   # Activity is a StrEnum and compares directly with strings
 - Whole-robot aggregate query `robot.faults() -> RobotFaults`: a `revision` plus one typed fault-bag field per slot (e.g. `faults.chassis`, `faults.left_arm`); for a single capability use `robot.<slot>.faults()`.
 - A named fault appears as a `FaultState` field in the bag: `active` / `catalog_id` / `fault_class` (`CapabilityStateClass`: `Nominal` / `Degraded` / `Fault`) / `first_seen_us` / `last_seen_us` / `count`. **No module currently declares named faults**, so each bag contains only `revision`.
 - Fault **changes** are pushed via events: `robot.events.faults_changed` (whole robot, carrying `RobotFaults`) / `robot.<slot>.events.fault_changed` (single capability).
-- A fault's `catalog_id` can be localized for display with `Catalogs`; see [Error Handling](errors.md).
+- A fault's `catalog_id` can be localized for display with `Catalogs`; see [Localized Text (Catalogs)](catalogs.md).
 
 ```python
 def on_faults(event):

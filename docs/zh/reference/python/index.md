@@ -14,6 +14,7 @@ SDK 内置 15 个能力模块的类型化 Proxy。能力经 `Robot` 的槽位属
 | 模块 | 能力 id | 文档 | 状态 |
 |------|---------|------|------|
 | Robot 入口 | — | [robot.md](robot.md) | ✅ 已补全（draft） |
+| 文本目录 Catalogs（非能力） | — | [catalogs.md](catalogs.md) | ✅ 已补全（draft） |
 | IO | `io` | [io.md](io.md) | ✅ 已补全（draft） |
 | 面屏 | `screen` | [screen.md](screen.md) | ✅ 已补全（draft） |
 | 底盘 | `chassis` | [chassis.md](chassis.md) | ✅ 已补全（draft） |

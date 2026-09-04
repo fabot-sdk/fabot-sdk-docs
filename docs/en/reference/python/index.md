@@ -14,6 +14,7 @@ The SDK ships typed proxies for 15 built-in capability modules. Capabilities are
 | Module | Capability id | Doc | Status |
 |--------|---------------|-----|--------|
 | Robot Entry | — | [robot.md](robot.md) | ✅ Complete (draft) |
+| Catalogs (not a capability) | — | [catalogs.md](catalogs.md) | ✅ Complete (draft) |
 | IO | `io` | [io.md](io.md) | ✅ Complete (draft) |
 | Screen | `screen` | [screen.md](screen.md) | ✅ Complete (draft) |
 | Chassis | `chassis` | [chassis.md](chassis.md) | ✅ Complete (draft) |

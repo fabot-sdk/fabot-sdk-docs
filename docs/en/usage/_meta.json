@@ -5,6 +5,7 @@
   "events-channels",
   "status-faults",
   "errors",
+  "catalogs",
   "mock",
   "configuration",
   "services"

@@ -92,7 +92,7 @@ token = robot.logs.subscribe(on_log, min_level=LogLevel.Warn, slot="chassis")
 ```
 
 - `min_level`: `LogLevel.Debug` / `Info` / `Warn` / `Error`, default `Info`; when `slot` is given, only that slot's logs are delivered.
-- Main `LogRecord` fields: `ts_us` / `level` / `component` / `action` / `message` / `trace_id` / `capability_id`, etc.
+- Main `LogRecord` fields: `ts_us` / `level` / `component` / `action` / `message` / `trace_id` / `capability_id`, etc. For human-readable text use `Catalogs.format_log`; see [Localized Text (Catalogs)](catalogs.md).
 
 :::warning Callback thread constraint
 Event and log callbacks run on the SDK's I/O thread: keep them lightweight and return quickly. Never call any blocking API inside a callback (connection factory methods, Commands, `frames()` iteration, etc. raise `ClientThreadError`), and do not start new subscriptions from the callback thread either. For heavy processing, hand the work off to your own queue or thread.

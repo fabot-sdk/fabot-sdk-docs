@@ -65,7 +65,7 @@ Among the other dependencies, `flatbuffers` is likewise pinned exactly while `Py
 
 ## Error Text Catalogs Ship as an SDK Snapshot
 
-The localized log / error / fault texts in `Catalogs` are a snapshot embedded at the SDK's release version. If the robot platform is updated while the SDK is not, newly added error codes or faults are still reported correctly; they simply have no catalog entry yet and fall back to the raw ID. Upgrading the SDK brings the latest texts. See [Error Handling](../usage/errors.md) for usage.
+The localized log / error / fault texts in `Catalogs` are a snapshot embedded at the SDK's release version. If the robot platform is updated while the SDK is not, newly added error codes or faults are still reported correctly; they simply have no catalog entry yet and fall back to the raw ID. Upgrading the SDK brings the latest texts. See [Localized Text (Catalogs)](../usage/catalogs.md) for usage.
 
 ## Upgrade Steps
 

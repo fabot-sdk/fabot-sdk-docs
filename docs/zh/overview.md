@@ -107,11 +107,11 @@ SDK 内置 15 个能力模块的类型化 Proxy，经 `Robot` 的 22 个槽位�
 
 ## 错误模型
 
-SDK 抛出的协议错误统一是 `FabotError` 的子类，携带 `code` / `category` / `retryable` / `trace_id`；按类别细分为 `Timeout` / `NotFound` / `InvalidArgument` / `ResourceConflict` 等，另有配置与适配相关的 `ConfigurationConflict` / `AdapterMismatch` / `AdapterUnbound`。完整层次与处理建议见 [错误处理](usage/errors.md)。
+SDK 抛出的协议错误统一是 `FabotError` 的子类，携带 `code` / `category` / `retryable` / `trace_id`；按类别细分为 `Timeout` / `NotFound` / `InvalidArgument` / `ResourceConflict` 等，另有配置与适配相关的 `ConfigurationConflict` / `AdapterMismatch` / `AdapterUnbound`。完整层次与处理建议见 [错误处理](usage/errors.md)。展示给人看的错误 / 日志 / 故障文本用文本目录 `Catalogs`，用法见 [文本目录 Catalogs](usage/catalogs.md)，签名见 [文本目录 Catalogs](reference/python/catalogs.md)。
 
 ## 下一步
 
 - [安装与配置](install/index.md)：环境要求、安装 Python SDK、版本配套
 - [入门教程](tutorials/python.md)：跑通第一个 Python 程序
-- [常规操作](usage/index.md)：连接、命令与长时操作、事件与通道、状态与故障、配置、错误、Mock
-- [Python API 参考](reference/python/index.md)：Robot 入口与 15 个能力模块的完整接口
+- [常规操作](usage/index.md)：连接、命令与长时操作、事件与通道、状态与故障、配置、错误、文本目录、Mock
+- [Python API 参考](reference/python/index.md)：Robot 入口、文本目录与 15 个能力模块的完整接口

@@ -7,7 +7,7 @@ updated: 2026-09-04
 
 # Error Handling
 
-All SDK call failures are raised as `FabotError` and its subclasses. This page covers the exception hierarchy, error fields and codes, how errors surface from Commands / Operations, retry policy, and localized error text for HMIs.
+All SDK call failures are raised as `FabotError` and its subclasses. This page covers the exception hierarchy, error fields and codes, how errors surface from Commands / Operations, and retry policy. Localized display text for HMIs is covered in [Localized Text (Catalogs)](catalogs.md).
 
 ## Exception Hierarchy & Error Fields
 
@@ -71,7 +71,7 @@ Error codes are globally unique and allocated in ranges:
 | 8xxxx | Platform errors (e.g. `ConfigurationConflict` 81001) |
 | 9xxxx | Capability-private errors |
 
-In program logic, match on `code` / `category` — never on the `message` text. For human-readable text, use Catalogs (see below).
+In program logic, match on `code` / `category` — never on the `message` text. For human-readable text, use Catalogs; see [Localized Text (Catalogs)](catalogs.md).
 
 ## How Errors Surface from Commands & Operations
 
@@ -99,21 +99,7 @@ For the Command / Operation model itself, see [Commands & Operations](commands-o
 
 ## Localized Error Text (Catalogs)
 
-`Catalogs` (`fabot.catalogs`, importable from the `fabot` top level) is a catalog of log/error/fault texts embedded in the SDK, intended for HMI display. It is a pure table lookup at runtime and never contacts the robot:
-
-```python
-from fabot import Catalogs
-
-catalogs = Catalogs.load()
-catalogs.set_language("zh")                       # unknown locales fall back to English
-print(catalogs.format_error(err))                 # localized error text by err.code
-print(catalogs.format_error(81001))               # an int code works too
-print(catalogs.format_fault(record, capability_id="chassis"))  # localized fault text
-```
-
-- `format_error` accepts a `FabotError` or an `int` code; on a miss it falls back to `error.message`, then to the code string.
-- `format_fault` looks up a `{capability_id}/{catalog_id}` template. Robot-level fault records (`RobotFaultRecord` from `robot.faults()`) carry `capability_id`; capability-level records (`CapabilityFaultRecord` / `FaultState`) do not — pass `capability_id=` explicitly, otherwise a `ValueError` is raised.
-- `format_log` is also available for localized log record text.
+Use `Catalogs.format_error` / `format_log` / `format_fault` for human-readable error / log / fault text — do not match on `message`. Loading, locale fallback, and miss rules are in [Localized Text (Catalogs)](catalogs.md); signatures are in [Catalogs](../reference/python/catalogs.md).
 
 ## Common Local Errors
 

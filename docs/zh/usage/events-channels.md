@@ -92,7 +92,7 @@ token = robot.logs.subscribe(on_log, min_level=LogLevel.Warn, slot="chassis")
 ```
 
 - `min_level`：`LogLevel.Debug` / `Info` / `Warn` / `Error`，默认 `Info`；`slot` 指定后只收该槽位的日志。
-- `LogRecord` 主要字段：`ts_us` / `level` / `component` / `action` / `message` / `trace_id` / `capability_id` 等。
+- `LogRecord` 主要字段：`ts_us` / `level` / `component` / `action` / `message` / `trace_id` / `capability_id` 等。展示给人看的文本用 `Catalogs.format_log`，见 [文本目录 Catalogs](catalogs.md)。
 
 :::warning 回调线程约束
 事件与日志回调在 SDK 的 I/O 线程执行：保持轻量、尽快返回。禁止在回调内调用任何阻塞 API（连接工厂方法、Command、`frames()` 迭代等，会抛 `ClientThreadError`），也不要在回调线程里发起新的订阅。需要重处理时投递到自己的队列或线程。
