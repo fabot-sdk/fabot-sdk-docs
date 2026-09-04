@@ -4,6 +4,8 @@ import mermaid from 'rspress-plugin-mermaid';
 
 export default defineConfig({
   root: path.join(__dirname, 'docs'),
+  // GitHub Pages 项目站：https://fabot-sdk.github.io/fabot-sdk-docs/
+  base: process.env.RSPRESS_BASE ?? '/',
   title: 'fabot SDK 文档',
   description: 'fabot 机器人软件平台 SDK 使用文档（Python）',
   lang: 'zh',

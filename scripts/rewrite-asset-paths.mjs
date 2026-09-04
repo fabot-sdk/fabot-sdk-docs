@@ -1,6 +1,12 @@
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+const pagesBase = process.env.RSPRESS_BASE;
+if (pagesBase && pagesBase !== '/') {
+  console.log(`skip rewrite: RSPRESS_BASE=${pagesBase}`);
+  process.exit(0);
+}
+
 const root = path.resolve('doc_build');
 
 async function walk(dir) {

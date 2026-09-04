@@ -48,6 +48,8 @@ npm run preview   # 用本地 HTTP 服务预览生产构建（推荐）
 
 构建会把 CSS/JS 写成相对路径，可以直接打开 `doc_build/index.html` 看排版。搜索、客户端路由和语言自动跳转仍建议用 `npm run dev` 或 `npm run preview`。
 
+推送到 GitHub `main` 后由 Actions 发布到 [GitHub Pages](https://fabot-sdk.github.io/fabot-sdk-docs/)。仓库 Settings → Pages → Source 选 **GitHub Actions**。
+
 ## 仓库维护
 
 - Git 提交规范：[`git-commit.md`](git-commit.md)
