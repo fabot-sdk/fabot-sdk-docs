@@ -26,7 +26,9 @@ theme:
     - navigation.top
     - navigation.indexes
     - content.code.copy
+    - search.suggest
     - search.highlight
+    - search.share
 
 plugins:
   - search
