@@ -1,0 +1,42 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "home"
+  },
+  {
+    "type": "file",
+    "name": "overview",
+    "label": "overview"
+  },
+  {
+    "type": "dir-section-header",
+    "name": "install",
+    "label": "install"
+  },
+  {
+    "type": "dir-section-header",
+    "name": "usage",
+    "label": "usage"
+  },
+  {
+    "type": "dir-section-header",
+    "name": "tutorials",
+    "label": "tutorials"
+  },
+  {
+    "type": "dir-section-header",
+    "name": "examples",
+    "label": "pythonExamples"
+  },
+  {
+    "type": "dir-section-header",
+    "name": "reference",
+    "label": "pythonApi"
+  },
+  {
+    "type": "file",
+    "name": "troubleshooting",
+    "label": "troubleshooting"
+  }
+]

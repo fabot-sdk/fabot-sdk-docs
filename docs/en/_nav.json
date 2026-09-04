@@ -1,0 +1,7 @@
+[
+  {
+    "text": "home",
+    "link": "/",
+    "activeMatch": "^/$"
+  }
+]

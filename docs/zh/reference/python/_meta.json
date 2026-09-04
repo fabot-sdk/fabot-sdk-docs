@@ -1,0 +1,19 @@
+[
+  "index",
+  "robot",
+  "io",
+  "screen",
+  "chassis",
+  "motion",
+  "arm",
+  "arms",
+  "body",
+  "gripper",
+  "hand",
+  "head",
+  "light",
+  "power",
+  "teleop",
+  "voice",
+  "camera"
+]

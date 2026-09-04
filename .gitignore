@@ -1,7 +1,13 @@
-# MkDocs 构建产物
+# Rspress 构建产物
+doc_build/
+
+# 旧 MkDocs 本地产物
 site/
 
-# Python
+# Node
+node_modules/
+
+# Python（本地工具）
 .venv/
 __pycache__/
 *.pyc
