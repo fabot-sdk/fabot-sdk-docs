@@ -2,7 +2,7 @@
 title: Mock
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-07
 ---
 
 # Mock
@@ -38,11 +38,11 @@ def blocked(vx, vy, vtheta):
     outcome.statusMessage = "blocked by obstacle"
     return outcome
 
-robot.chassis.on_set_velocity = blocked
-result = robot.chassis.set_velocity(vx=0.2, vy=0.0, vtheta=0.0)
+robot.chassis.on_move = blocked
+result = robot.chassis.move(vx=0.2, vy=0.0, vtheta=0.0)
 print(result.success, result.statusMessage)   # False blocked by obstacle
 
-robot.chassis.on_set_velocity = None          # restore the default behavior
+robot.chassis.on_move = None          # restore the default behavior
 ```
 
 If the hook raises, the call raises `FabotError` (`category` is `Internal`, `detail` carries the exception message) — useful for exercising the application's error-handling paths:
@@ -51,8 +51,8 @@ If the hook raises, the call raises `FabotError` (`category` is `Internal`, `det
 def boom(vx, vy, vtheta):
     raise RuntimeError("boom")
 
-robot.chassis.on_set_velocity = boom
-# robot.chassis.set_velocity(...) will raise FabotError: Internal, boom
+robot.chassis.on_move = boom
+# robot.chassis.move(...) will raise FabotError: Internal, boom
 ```
 
 For the error model see [Error Handling](../../usage/errors.md); for Command signatures see each capability's API reference (e.g. [Chassis](../../reference/python/chassis.md), [Screen](../../reference/python/screen.md)).

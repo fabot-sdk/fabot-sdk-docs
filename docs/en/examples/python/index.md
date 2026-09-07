@@ -2,7 +2,7 @@
 title: Python Examples
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-07
 ---
 
 # Python Examples
@@ -28,6 +28,6 @@ Browse complete examples by capability. See [Usage](../../usage/index.md) for sh
 | Image capture and camera streams | [Camera](camera.md) |
 | Speech playback and transcription subscription | [Voice](voice.md) |
 | Gamepad teleoperation sessions | [Teleop](teleop.md) |
-| IO digital event stream | [IO Stream](io.md) |
+| IO pin claim and level I/O | [IO Pins](io.md) |
 | Offline development | [Mock](mock.md) |
 | Configuration conflict retry | [Configuration Retry](configuration.md) |

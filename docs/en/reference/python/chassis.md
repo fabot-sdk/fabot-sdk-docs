@@ -2,7 +2,7 @@
 title: Chassis
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-09-07
 ---
 
 # Chassis
@@ -21,7 +21,7 @@ updated: 2026-09-03
 | `get_max_speed` | — | `MaxSpeedT` | Command |
 | `set_max_acceleration` | `linear`, `angular` | `MaxAccelerationAppliedT` | Command |
 | `get_max_acceleration` | — | `MaxAccelerationT` | Command |
-| `set_velocity` | `vx`, `vy`, `vtheta` | `OutcomeT` | Command |
+| `move` | `vx`, `vy`, `vtheta` | `OutcomeT` | Command |
 | `pause` | — | `OutcomeT` | Command |
 | `resume` | — | `OutcomeT` | Command |
 | `list_stations` | — | `StationListT` | Command |
@@ -30,7 +30,7 @@ updated: 2026-09-03
 | `navigate_to_station` | `station_id`, `mode` | `NavigateToStationOperation` | Operation |
 | `relocalize` | `pose` | `RelocalizeOperation` | Operation |
 
-Command default `timeout_ms`: 2000 for `set_velocity`, 5000 for `stop` / `list_stations`, 3000 for all others (all overridable). All parameters are keyword-only.
+Command default `timeout_ms`: 2000 for `move`, 5000 for `stop` / `list_stations`, 3000 for all others (all overridable). All parameters are keyword-only.
 
 ## Methods
 
@@ -146,12 +146,12 @@ get_max_acceleration(*, timeout_ms: int = 3000) -> MaxAccelerationT
 
 `MaxAccelerationT`: `linear` (m/s²), `angular` (rad/s²).
 
-### set_velocity
+### move
 
 Send a velocity command.
 
 ```python
-set_velocity(*, vx: float, vy: float, vtheta: float, timeout_ms: int = 2000) -> OutcomeT
+move(*, vx: float, vy: float, vtheta: float, timeout_ms: int = 2000) -> OutcomeT
 ```
 
 **Parameters**
@@ -168,7 +168,7 @@ set_velocity(*, vx: float, vy: float, vtheta: float, timeout_ms: int = 2000) -> 
 `OutcomeT`: `success` / `statusMessage`.
 
 ```python
-robot.chassis.set_velocity(vx=0.3, vy=0.0, vtheta=0.2)   # m/s, rad/s
+robot.chassis.move(vx=0.3, vy=0.0, vtheta=0.2)   # m/s, rad/s
 # ... after moving for a while, stop
 outcome = robot.chassis.stop()
 print(outcome.success, outcome.statusMessage)

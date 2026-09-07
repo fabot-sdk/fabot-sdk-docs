@@ -2,7 +2,7 @@
 title: Overview & Architecture
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-07
 ---
 
 # Overview & Architecture
@@ -30,7 +30,7 @@ from fabot import Robot
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready()                                        # wait for bound, required slots to become ready
     print(robot.state().state)                                # robot-wide state snapshot
-    robot.chassis.set_velocity(vx=0.2, vy=0.0, vtheta=0.0)   # chassis velocity command
+    robot.chassis.move(vx=0.2, vy=0.0, vtheta=0.0)           # chassis velocity command
 ```
 
 `Robot.connect(ip, port, options=None)` establishes the connection and returns a `Robot`; `from_config` / `from_endpoint` / `from_backend` and the offline `Robot.mock()` are also available — see [Connection & Lifecycle](usage/connection.md).
@@ -50,7 +50,7 @@ The SDK ships typed proxies for 15 capability modules, accessed through the 22 s
 | Chassis `chassis` | `robot.chassis` | Velocity commands, station navigation, relative moves, relocalization → [chassis](reference/python/chassis.md) |
 | Motion `motion` | `robot.motion` | Whole-body motion planning and FSM control, estop and reset → [motion](reference/python/motion.md) |
 | Power `power` | `robot.power_1` / `robot.power_2` | Energy, voltage, current, temperature, and charging state monitoring → [power](reference/python/power.md) |
-| IO `io` | `robot.io` | Digital / analog IO read-write and level-change streams → [io](reference/python/io.md) |
+| IO `io` | `robot.io` | Digital pin acquire / release and level I/O → [io](reference/python/io.md) |
 | Camera `camera` | `robot.head_camera` / `robot.chest_camera` / `robot.left_wrist_camera` / `robot.right_wrist_camera` | Single-frame capture, stream configuration, image frame channels → [camera](reference/python/camera.md) |
 | Screen `screen` | `robot.screen` | Face-screen text / image / video display control → [screen](reference/python/screen.md) |
 | Light `light` | `robot.light` | Light-strip mode, color, brightness, animation period → [light](reference/python/light.md) |
@@ -83,7 +83,7 @@ Beyond the slot properties, `Robot` provides a set of robot-wide entry points:
 | Capability | A callable domain-functional unit (e.g. IO, chassis, arm) |
 | Command | A synchronous request-response call |
 | Operation | A long-running, cancelable task (e.g. navigation) |
-| Channel | A data stream actively pushed by the server (e.g. IO level changes) |
+| Channel | A data stream actively pushed by the server (e.g. camera images, joint positions) |
 | Event | A single message delivered by the subscription mechanism |
 | Slot | A pluggable capability installation position on the robot (e.g. `left_arm`, `head_camera`) |
 | Robot Facade | The unified application-facing entry point `Robot` |

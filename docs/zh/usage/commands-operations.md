@@ -2,7 +2,7 @@
 title: 命令与长时操作
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-07
 ---
 
 # 命令与长时操作
@@ -19,15 +19,19 @@ updated: 2026-09-04
 Command 是一次阻塞调用：发请求、等响应、返回解码后的结果对象，失败时抛 `FabotError` 子类。
 
 ```python
+from fabot.capabilities.io import PinDirection
+
 # 关键字参数；每个 command 都有 timeout_ms（默认值见各能力参考页）
-applied = robot.io.set_digital_output(channel="relay1", value=True)
-level = robot.io.get_digital_input(channel="di_1")
+robot.io.acquire(pin=17, direction=PinDirection.OUTPUT)
+applied = robot.io.set_level(pin=17, value=True)
+level = robot.io.get_level(pin=17)
 print(level.value)
+robot.io.release(pin=17)
 
 # 底盘限速与速度指令
 applied = robot.chassis.set_max_speed(linear=0.5, angular=0.8)
 print(applied.appliedLinear, applied.appliedAngular)
-robot.chassis.set_velocity(vx=0.3, vy=0.0, vtheta=0.2)
+robot.chassis.move(vx=0.3, vy=0.0, vtheta=0.2)
 robot.chassis.stop()
 ```
 

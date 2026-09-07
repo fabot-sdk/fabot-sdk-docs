@@ -2,7 +2,7 @@
 title: 连接与 Robot 入口
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-07
 ---
 
 # 连接与 Robot 入口
@@ -105,8 +105,11 @@ token.close()    # 退订；robot.close() 会统一关闭全部订阅
 - 槽位未绑定 adapter 时，访问其能力方法会抛 `AdapterUnbound`（属 `NotFound` 类别）；先用 `has_adapter`（只读属性）判断：
 
   ```python
+  from fabot.capabilities.io import PinDirection
+
   if robot.io.has_adapter:
-      robot.io.set_digital_output(channel="do0", value=True)
+      robot.io.acquire(pin=17, direction=PinDirection.OUTPUT)
+      robot.io.set_level(pin=17, value=True)
   ```
 
 - 需要访问具体 adapter 实现的强类型配置/扩展时，用 `proxy.as_adapter(FabotIo)`（`fabot.adapters` 下的强类型视图）；槽位未绑定抛 `AdapterUnbound`，绑定的 adapter 类型不符抛 `AdapterMismatch`。两类错误的处理见 [错误处理](errors.md)。

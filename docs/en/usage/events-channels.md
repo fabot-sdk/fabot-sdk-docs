@@ -2,12 +2,12 @@
 title: Events & Data Channels
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-07
 ---
 
 # Events & Data Channels
 
-The SDK provides two mechanisms for passively receiving data: **Events** are discrete semantic messages (e-stop triggers, fault changes, lifecycle transitions, etc.), and **data Channels** are streams continuously pushed by a capability (joint positions, camera images, IO level changes, etc.) with QoS levels. Rule of thumb: subscribe to events for state transitions, open a channel for high-frequency telemetry.
+The SDK provides two mechanisms for passively receiving data: **Events** are discrete semantic messages (e-stop triggers, fault changes, lifecycle transitions, etc.), and **data Channels** are streams continuously pushed by a capability (joint positions, camera images, and so on) with QoS levels. Rule of thumb: subscribe to events for state transitions, open a channel for high-frequency telemetry.
 
 ## Event Subscription
 
@@ -103,7 +103,7 @@ Event and log callbacks run on the SDK's I/O thread: keep them lightweight and r
 Capabilities that provide data channels expose typed channel entries. Calling one opens the channel and returns a Channel handle; iterate frames with `frames()`:
 
 ```python
-ch = robot.io.digital_events(qos_profile="latest")
+ch = robot.left_arm.joints(qos_profile="latest")
 try:
     for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
         print(frame.channel_id, frame.sequence, frame.timestamp_us, frame.payload)
@@ -127,7 +127,6 @@ finally:
 | gripper (`left_gripper` / `right_gripper`) | `joints()` |
 | head (`head`) | `joints()` |
 | motion (`motion`) | `joints()` |
-| io (`io`) | `digital_events()` |
 | camera (`head_camera` / `chest_camera` / `left_wrist_camera` / `right_wrist_camera`) | `frameset()` / `color()` / `depth()` / `rtsp()` / `webrtc()` |
 | voice (`voice`) | `wake()` / `transcript()` / `intent()` |
 

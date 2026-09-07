@@ -2,12 +2,12 @@
 title: 事件与数据通道
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-07
 ---
 
 # 事件与数据通道
 
-SDK 提供两种被动接收数据的机制：**事件（Event）** 是离散的语义消息（急停触发、故障变化、生命周期切换等），**数据通道（Channel）** 是能力持续推送的数据流（关节位置、相机图像、IO 电平变化等），带 QoS 档位。选择原则：状态迁移类信息订阅事件，高频遥测数据打开通道。
+SDK 提供两种被动接收数据的机制：**事件（Event）** 是离散的语义消息（急停触发、故障变化、生命周期切换等），**数据通道（Channel）** 是能力持续推送的数据流（关节位置、相机图像等），带 QoS 档位。选择原则：状态迁移类信息订阅事件，高频遥测数据打开通道。
 
 ## 事件订阅
 
@@ -103,7 +103,7 @@ token = robot.logs.subscribe(on_log, min_level=LogLevel.Warn, slot="chassis")
 提供数据通道的能力会生成类型化通道入口，调用即打开通道并返回 Channel 句柄，用 `frames()` 迭代帧：
 
 ```python
-ch = robot.io.digital_events(qos_profile="latest")
+ch = robot.left_arm.joints(qos_profile="latest")
 try:
     for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
         print(frame.channel_id, frame.sequence, frame.timestamp_us, frame.payload)
@@ -127,7 +127,6 @@ finally:
 | gripper（`left_gripper` / `right_gripper`） | `joints()` |
 | head（`head`） | `joints()` |
 | motion（`motion`） | `joints()` |
-| io（`io`） | `digital_events()` |
 | camera（`head_camera` / `chest_camera` / `left_wrist_camera` / `right_wrist_camera`） | `frameset()` / `color()` / `depth()` / `rtsp()` / `webrtc()` |
 | voice（`voice`） | `wake()` / `transcript()` / `intent()` |
 

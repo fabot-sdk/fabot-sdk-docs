@@ -2,7 +2,7 @@
 title: Python 示例
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-07
 ---
 
 # Python 示例
@@ -28,6 +28,6 @@ updated: 2026-09-04
 | 图像抓取与相机流 | [相机](camera.md) |
 | 语音播报与转写订阅 | [语音](voice.md) |
 | 手柄遥操作会话 | [遥操作](teleop.md) |
-| IO 数字量事件流 | [IO 流](io.md) |
+| IO 引脚占用与电平读写 | [IO 引脚](io.md) |
 | 离线开发 | [Mock](mock.md) |
 | 配置冲突重试 | [配置重试](configuration.md) |

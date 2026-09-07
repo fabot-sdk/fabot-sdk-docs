@@ -2,7 +2,7 @@
 title: Mock Testing
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-07
 ---
 
 # Mock Testing
@@ -40,8 +40,8 @@ robot = Robot.mock()
 
 # Record arguments; returning None -> default success response
 calls = []
-robot.chassis.on_set_velocity = lambda vx, vy, vtheta: calls.append((vx, vy, vtheta))
-robot.chassis.set_velocity(vx=0.2, vy=0.0, vtheta=0.0)
+robot.chassis.on_move = lambda vx, vy, vtheta: calls.append((vx, vy, vtheta))
+robot.chassis.move(vx=0.2, vy=0.0, vtheta=0.0)
 
 # Custom response
 def fake_stations():

@@ -2,7 +2,7 @@
 title: Mock
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-07
 ---
 
 # Mock
@@ -38,11 +38,11 @@ def blocked(vx, vy, vtheta):
     outcome.statusMessage = "blocked by obstacle"
     return outcome
 
-robot.chassis.on_set_velocity = blocked
-result = robot.chassis.set_velocity(vx=0.2, vy=0.0, vtheta=0.0)
+robot.chassis.on_move = blocked
+result = robot.chassis.move(vx=0.2, vy=0.0, vtheta=0.0)
 print(result.success, result.statusMessage)   # False blocked by obstacle
 
-robot.chassis.on_set_velocity = None          # 恢复默认行为
+robot.chassis.on_move = None          # 恢复默认行为
 ```
 
 钩子抛异常时，该次调用抛 `FabotError`（`category` 为 `Internal`，`detail` 为异常信息），可用于测试应用的错误处理路径：
@@ -51,8 +51,8 @@ robot.chassis.on_set_velocity = None          # 恢复默认行为
 def boom(vx, vy, vtheta):
     raise RuntimeError("boom")
 
-robot.chassis.on_set_velocity = boom
-# robot.chassis.set_velocity(...) 将抛 FabotError: Internal, boom
+robot.chassis.on_move = boom
+# robot.chassis.move(...) 将抛 FabotError: Internal, boom
 ```
 
 错误模型见 [错误处理](../../usage/errors.md)，Command 签名见各能力的 API 参考（如 [底盘](../../reference/python/chassis.md)、[屏幕](../../reference/python/screen.md)）。

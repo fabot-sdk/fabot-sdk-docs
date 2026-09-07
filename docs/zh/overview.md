@@ -2,7 +2,7 @@
 title: 概述与架构
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-07
 ---
 
 # 概述与架构
@@ -30,7 +30,7 @@ from fabot import Robot
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready()                                        # 等待已绑定且必需的槽位就绪
     print(robot.state().state)                                # 整机运行状态快照
-    robot.chassis.set_velocity(vx=0.2, vy=0.0, vtheta=0.0)   # 底盘速度指令
+    robot.chassis.move(vx=0.2, vy=0.0, vtheta=0.0)           # 底盘速度指令
 ```
 
 `Robot.connect(ip, port, options=None)` 建立连接并返回 `Robot`；也支持 `from_config` / `from_endpoint` / `from_backend` 与离线调试用的 `Robot.mock()`，详见 [连接与生命周期](usage/connection.md)。
@@ -50,7 +50,7 @@ SDK 内置 15 个能力模块的类型化 Proxy，经 `Robot` 的 22 个槽位�
 | 底盘 `chassis` | `robot.chassis` | 速度指令、站点导航、相对移动与重定位 → [chassis](reference/python/chassis.md) |
 | 运动 `motion` | `robot.motion` | 全身运动规划与运控状态机、急停与复位 → [motion](reference/python/motion.md) |
 | 电源 `power` | `robot.power_1` / `robot.power_2` | 电量、电压、电流、温度与充电状态监控 → [power](reference/python/power.md) |
-| IO `io` | `robot.io` | 数字 / 模拟 IO 读写与电平变化流 → [io](reference/python/io.md) |
+| IO `io` | `robot.io` | 数字引脚占用、释放与电平读写 → [io](reference/python/io.md) |
 | 相机 `camera` | `robot.head_camera` / `robot.chest_camera` / `robot.left_wrist_camera` / `robot.right_wrist_camera` | 单帧抓取、开流配置与图像帧通道 → [camera](reference/python/camera.md) |
 | 面屏 `screen` | `robot.screen` | 面屏文本 / 图片 / 视频显示控制 → [screen](reference/python/screen.md) |
 | 灯效 `light` | `robot.light` | 灯带模式、颜色、亮度与动画周期 → [light](reference/python/light.md) |
@@ -83,7 +83,7 @@ SDK 内置 15 个能力模块的类型化 Proxy，经 `Robot` 的 22 个槽位�
 | Capability | 能力，一个可被调用的领域功能单元（如 IO、底盘、机械臂） |
 | Command | 命令，一次同步请求-响应的调用 |
 | Operation | 操作，长时运行的可取消任务（如导航） |
-| Channel | 通道，服务端主动推送的数据流（如 IO 电平变化） |
+| Channel | 通道，服务端主动推送的数据流（如相机图像、关节位置） |
 | Event | 事件，订阅机制投递的单条消息 |
 | Slot | 槽位，机器人上的可插拔能力安装位（如 `left_arm`、`head_camera`） |
 | Robot Facade | 面向应用的统一入口 `Robot` |

@@ -1,31 +1,30 @@
 ---
-title: IO Stream
+title: IO Pins
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-07
 ---
 
-# IO Stream
+# IO Pins
 
-Collect the level-change stream of IO digital channels and filter by edge type. See [Events & Data Channels](../../usage/events-channels.md) for channels and QoS, and [IO](../../reference/python/io.md) for the API.
+Acquire a digital pin, write a level, then read it back. See [IO](../../reference/python/io.md) for the API.
 
 ```python
 from fabot import Robot
-from fabot.capabilities.io import DigitalEdge
+from fabot.capabilities.io import PinDirection
 
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready(["io"])
 
-    ch = robot.io.digital_events(qos_profile="realtime")
+    robot.io.acquire(pin=17, direction=PinDirection.OUTPUT)
     try:
-        for frame in ch.frames(poll_timeout_ms=100, timeout_ms=10000):
-            p = frame.payload
-            if p.edge == DigitalEdge.RISING:
-                print(p.channel, "rising ->", p.value, "at", p.timestampNs, "ns")
-            elif p.edge == DigitalEdge.FALLING:
-                print(p.channel, "falling ->", p.value, "at", p.timestampNs, "ns")
+        applied = robot.io.set_level(pin=17, value=True)
+        print(applied.outcome.success, applied.pin, applied.value)
+
+        level = robot.io.get_level(pin=17)
+        print("pin 17 =", level.value)
     finally:
-        ch.close()
+        robot.io.release(pin=17)
 ```
 
-`qos_profile` is a string (`"latest"` / `"realtime"` / `"reliable"`), not an enum. `payload` is a `DigitalEventT`: `channel` / `value` / `edge` / `timestampNs`; `edge` is one of `DigitalEdge.UNKNOWN` / `RISING` / `FALLING`, and the first sample is typically `UNKNOWN` because there is no prior level. To read or write individual digital / analog channels, use Commands such as `get_digital_input` / `set_digital_output` / `get_analog_input` / `set_analog_output`; see [IO](../../reference/python/io.md).
+Pin numbers are robot-specific. Acquire before reading or writing: `set_level` only works on a pin acquired as `OUTPUT`; `get_level` works on either `INPUT` or `OUTPUT`. Claiming the same pin again with the same direction succeeds; to change direction, `release` first. `UNKNOWN` is not a legal direction.

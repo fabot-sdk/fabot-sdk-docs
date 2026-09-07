@@ -2,7 +2,7 @@
 title: Connection & Robot Entry
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-07
 ---
 
 # Connection & Robot Entry
@@ -105,8 +105,11 @@ Capabilities are exposed by slot as **read-only attributes**, 22 slots in total:
 - Accessing capability methods of a slot with no adapter bound raises `AdapterUnbound` (category `NotFound`); check the `has_adapter` read-only attribute first:
 
   ```python
+  from fabot.capabilities.io import PinDirection
+
   if robot.io.has_adapter:
-      robot.io.set_digital_output(channel="do0", value=True)
+      robot.io.acquire(pin=17, direction=PinDirection.OUTPUT)
+      robot.io.set_level(pin=17, value=True)
   ```
 
 - When you need the strongly typed config/extensions of a concrete adapter implementation, use `proxy.as_adapter(FabotIo)` (a typed view under `fabot.adapters`); an unbound slot raises `AdapterUnbound`, and a mismatched adapter type raises `AdapterMismatch`. See [Error Handling](errors.md) for both.

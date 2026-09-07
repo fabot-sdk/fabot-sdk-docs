@@ -2,7 +2,7 @@
 title: Commands & Operations
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-07
 ---
 
 # Commands & Operations
@@ -19,15 +19,19 @@ All parameters of both kinds are keyword-only. See the [API reference](../refere
 A Command is a single blocking call: send the request, wait for the response, return the decoded result object, or raise a `FabotError` subclass on failure.
 
 ```python
+from fabot.capabilities.io import PinDirection
+
 # Keyword arguments; every command has timeout_ms (defaults documented per capability)
-applied = robot.io.set_digital_output(channel="relay1", value=True)
-level = robot.io.get_digital_input(channel="di_1")
+robot.io.acquire(pin=17, direction=PinDirection.OUTPUT)
+applied = robot.io.set_level(pin=17, value=True)
+level = robot.io.get_level(pin=17)
 print(level.value)
+robot.io.release(pin=17)
 
 # Chassis speed limit and velocity command
 applied = robot.chassis.set_max_speed(linear=0.5, angular=0.8)
 print(applied.appliedLinear, applied.appliedAngular)
-robot.chassis.set_velocity(vx=0.3, vy=0.0, vtheta=0.2)
+robot.chassis.move(vx=0.3, vy=0.0, vtheta=0.2)
 robot.chassis.stop()
 ```
 

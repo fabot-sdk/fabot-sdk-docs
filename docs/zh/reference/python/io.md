@@ -1,297 +1,160 @@
 ---
-title: IO（数字/模拟输入输出）
+title: IO（数字引脚）
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-09-07
 ---
 
-# IO（数字/模拟输入输出）
+# IO（数字引脚）
 
 ## 模块概述
 
 - 能力 id：`io`；槽位：`robot.io`
-- 读写机器人上的数字 / 模拟 IO 通道，并订阅数字通道的电平变化流。数字电平为 `bool`；模拟电平为 `float`，模拟输出值归一化到 `[0.0, 1.0]`。
+- 占用、释放数字引脚，并读写电平。电平为 `bool`。使用前须 `acquire`，用完后 `release`。
 
 ## API 总览
 
 | 方法 | 请求 | 响应 | 类型 |
 |------|------|------|------|
-| `set_digital_input` | `channel`, `value` | `DigitalLevelAppliedT` | Command |
-| `get_digital_input` | `channel` | `DigitalLevelAppliedT` | Command |
-| `set_digital_output` | `channel`, `value` | `DigitalLevelAppliedT` | Command |
-| `get_digital_output` | `channel` | `DigitalLevelAppliedT` | Command |
-| `set_analog_input` | `channel`, `value` | `AnalogLevelAppliedT` | Command |
-| `get_analog_input` | `channel` | `AnalogLevelAppliedT` | Command |
-| `set_analog_output` | `channel`, `value` | `AnalogLevelAppliedT` | Command |
-| `get_analog_output` | `channel` | `AnalogLevelAppliedT` | Command |
+| `acquire` | `pin`, `direction` | `PinAppliedT` | Command |
+| `release` | `pin` | `PinAppliedT` | Command |
+| `set_level` | `pin`, `value` | `PinLevelAppliedT` | Command |
+| `get_level` | `pin` | `PinLevelAppliedT` | Command |
 
-Command 默认 `timeout_ms` 均为 1000（均可覆盖）。参数均为关键字参数。本模块没有 Operation。
+Command 默认 `timeout_ms` 均为 1000（均可覆盖）。参数均为关键字参数。本模块没有 Operation，也没有数据通道。
 
-| 通道 | 内容 |
+`PinDirection` 枚举：
+
+| 取值 | 说明 |
 |------|------|
-| `digital_events()` | 数字通道电平变化流（`DigitalEventT`） |
+| `INPUT` | 输入 |
+| `OUTPUT` | 输出 |
+
+`UNKNOWN` 不是合法命令值，传入会被拒绝。脚号由机器人接线决定，以下示例用 `17`。
 
 ## 方法
 
 以下均为关键字参数。Command 超时见 [命令与长时操作](../../usage/commands-operations.md)，各节不重复展开。
 
-### set_digital_input
+### acquire
 
-写入数字输入通道电平（用于仿真注入等场景）。
+占用指定引脚并设定方向。同脚同方向再次 `acquire` 会成功（幂等）；同脚要改方向须先 `release`。
 
 ```python
-set_digital_input(*, channel: str, value: bool, timeout_ms: int = 1000) -> DigitalLevelAppliedT
+acquire(*, pin: int, direction: PinDirection, timeout_ms: int = 1000) -> PinAppliedT
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `channel` | `str` | （必填） | 通道名 |
+| `pin` | `int` | （必填） | 引脚号，须 ≥ 0 |
+| `direction` | `PinDirection` | （必填） | `INPUT` / `OUTPUT` |
+| `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
+
+**返回**
+
+`PinAppliedT`：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `outcome` | `OutcomeT` | `success` / `statusMessage` |
+| `pin` | `int` | 回显的引脚号 |
+
+```python
+from fabot.capabilities.io import PinDirection
+
+applied = robot.io.acquire(pin=17, direction=PinDirection.OUTPUT)
+print(applied.outcome.success, applied.pin)
+```
+
+### release
+
+释放已占用的引脚。未占用的脚上调用会被拒绝。
+
+```python
+release(*, pin: int, timeout_ms: int = 1000) -> PinAppliedT
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `pin` | `int` | （必填） | 引脚号，须 ≥ 0 |
+| `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
+
+**返回**
+
+`PinAppliedT`：字段同 `acquire`。
+
+```python
+applied = robot.io.release(pin=17)
+print(applied.outcome.success, applied.pin)
+```
+
+### set_level
+
+写数字输出电平。须先以 `OUTPUT` 占用该脚。
+
+```python
+set_level(*, pin: int, value: bool, timeout_ms: int = 1000) -> PinLevelAppliedT
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `pin` | `int` | （必填） | 引脚号，须 ≥ 0 |
 | `value` | `bool` | （必填） | 目标电平 |
 | `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
 
 **返回**
 
-`DigitalLevelAppliedT`：
+`PinLevelAppliedT`：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `outcome` | `OutcomeT` | `success` / `statusMessage` |
-| `channel` | `str` | 通道名 |
+| `pin` | `int` | 回显的引脚号 |
 | `value` | `bool` | 实际生效的电平 |
 
 ```python
-applied = robot.io.set_digital_input(channel="di_1", value=True)
-print(applied.outcome.success, applied.channel, applied.value)
+applied = robot.io.set_level(pin=17, value=True)
+print(applied.outcome.success, applied.pin, applied.value)
 ```
 
-### get_digital_input
+### get_level
 
-读取数字输入通道当前电平。
+读已占用引脚的当前电平（`INPUT` / `OUTPUT` 均可）。未占用的脚上调用会被拒绝。
 
 ```python
-get_digital_input(*, channel: str, timeout_ms: int = 1000) -> DigitalLevelAppliedT
+get_level(*, pin: int, timeout_ms: int = 1000) -> PinLevelAppliedT
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `channel` | `str` | （必填） | 通道名 |
+| `pin` | `int` | （必填） | 引脚号，须 ≥ 0 |
 | `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
 
 **返回**
 
-`DigitalLevelAppliedT`：字段同 `set_digital_input`，`value` 为读到的当前电平。
+`PinLevelAppliedT`：字段同 `set_level`，`value` 为读到的当前电平。
 
 ```python
-level = robot.io.get_digital_input(channel="di_1")
+from fabot.capabilities.io import PinDirection
+
+robot.io.acquire(pin=17, direction=PinDirection.OUTPUT)
+robot.io.set_level(pin=17, value=True)
+level = robot.io.get_level(pin=17)
 print(level.value)
-```
-
-### set_digital_output
-
-写入数字输出通道电平。
-
-```python
-set_digital_output(*, channel: str, value: bool, timeout_ms: int = 1000) -> DigitalLevelAppliedT
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `channel` | `str` | （必填） | 通道名 |
-| `value` | `bool` | （必填） | 目标电平 |
-| `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
-
-**返回**
-
-`DigitalLevelAppliedT`：字段同 `set_digital_input`。
-
-```python
-applied = robot.io.set_digital_output(channel="relay1", value=True)
-print(applied.outcome.success, applied.outcome.statusMessage)
-```
-
-### get_digital_output
-
-读取数字输出通道当前电平。
-
-```python
-get_digital_output(*, channel: str, timeout_ms: int = 1000) -> DigitalLevelAppliedT
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `channel` | `str` | （必填） | 通道名 |
-| `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
-
-**返回**
-
-`DigitalLevelAppliedT`：字段同 `set_digital_input`，`value` 为读到的当前电平。
-
-```python
-level = robot.io.get_digital_output(channel="relay1")
-print(level.value)
-```
-
-### set_analog_input
-
-写入模拟输入通道电平（用于仿真注入等场景）。
-
-```python
-set_analog_input(*, channel: str, value: float, timeout_ms: int = 1000) -> AnalogLevelAppliedT
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `channel` | `str` | （必填） | 通道名 |
-| `value` | `float` | （必填） | 目标电平 |
-| `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
-
-**返回**
-
-`AnalogLevelAppliedT`：
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `outcome` | `OutcomeT` | `success` / `statusMessage` |
-| `channel` | `str` | 通道名 |
-| `value` | `float` | 实际生效的电平 |
-
-```python
-applied = robot.io.set_analog_input(channel="ai_1", value=0.5)
-print(applied.outcome.success, applied.channel, applied.value)
-```
-
-### get_analog_input
-
-读取模拟输入通道当前电平。
-
-```python
-get_analog_input(*, channel: str, timeout_ms: int = 1000) -> AnalogLevelAppliedT
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `channel` | `str` | （必填） | 通道名 |
-| `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
-
-**返回**
-
-`AnalogLevelAppliedT`：字段同 `set_analog_input`，`value` 为读到的当前电平。
-
-```python
-level = robot.io.get_analog_input(channel="ai_1")
-print(level.value)
-```
-
-### set_analog_output
-
-写入模拟输出通道电平，输出值归一化到 `[0.0, 1.0]`。
-
-```python
-set_analog_output(*, channel: str, value: float, timeout_ms: int = 1000) -> AnalogLevelAppliedT
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `channel` | `str` | （必填） | 通道名 |
-| `value` | `float` | （必填） | 目标电平，范围 `[0.0, 1.0]` |
-| `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
-
-**返回**
-
-`AnalogLevelAppliedT`：字段同 `set_analog_input`。
-
-```python
-applied = robot.io.set_analog_output(channel="ao_1", value=0.8)
-print(applied.outcome.success, applied.outcome.statusMessage)
-```
-
-### get_analog_output
-
-读取模拟输出通道当前电平。
-
-```python
-get_analog_output(*, channel: str, timeout_ms: int = 1000) -> AnalogLevelAppliedT
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `channel` | `str` | （必填） | 通道名 |
-| `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
-
-**返回**
-
-`AnalogLevelAppliedT`：字段同 `set_analog_input`，`value` 为读到的当前电平。
-
-```python
-level = robot.io.get_analog_output(channel="ao_1")
-print(level.value)
+robot.io.release(pin=17)
 ```
 
 ## 通道
 
-打开参数与帧约定如下；通用用法见 [事件与数据通道](../../usage/events-channels.md)。
-
-### digital_events()
-
-订阅数字通道电平变化流。
-
-```python
-digital_events(qos_profile: str = "latest") -> DigitalEventsChannel
-```
-
-**打开参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `qos_profile` | `str` | `"latest"` | `"latest"` / `"realtime"` / `"reliable"` |
-
-**帧**（`DigitalEventsChannelFrame`）
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `channel_id` | `str` | 通道 id |
-| `sequence` | `int` | 帧序号 |
-| `timestamp_us` | `int` | 时间戳（微秒） |
-| `payload` | `DigitalEventT` | 见下表 |
-
-`payload`（`DigitalEventT`）字段：
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `channel` | `str` | 通道名 |
-| `value` | `bool` | 变化后的电平 |
-| `edge` | `DigitalEdge` | 边沿类型 |
-| `timestampNs` | `int` | 边沿时间戳（纳秒） |
-
-`DigitalEdge` 取值：`UNKNOWN`（0，边沿无法判定，例如首个样本没有历史电平）、`RISING`（1，上升沿）、`FALLING`（2，下降沿）。
-
-用 `frames(poll_timeout_ms=..., timeout_ms=...)` 迭代帧。
-
-```python
-from fabot.capabilities.io import DigitalEdge
-
-ch = robot.io.digital_events(qos_profile="latest")
-for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-    p = frame.payload
-    if p.edge == DigitalEdge.RISING:
-        print(p.channel, "rising ->", p.value)
-```
+本模块没有数据通道。通用通道用法见 [事件与数据通道](../../usage/events-channels.md)。
 
 ## 事件
 
@@ -369,4 +232,4 @@ token = robot.io.events.lifecycle_changed.subscribe(on_lifecycle)
 
 ## 资源
 
-本模块未声明独占资源：所有方法均为短耗时 Command，无排队或互斥约束，不同通道的读写互不影响。
+四个方法均为短耗时 Command，本模块未声明独占资源：命令之间没有排队或互斥约束。不同引脚的占用与读写互不影响；同一引脚须先 `acquire` 再读写，用完 `release`。
