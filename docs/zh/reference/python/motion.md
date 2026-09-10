@@ -2,7 +2,7 @@
 title: 运动 Motion
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-09-09
 ---
 
 # 运动 Motion
@@ -19,7 +19,7 @@ updated: 2026-09-03
 | `get_joints` | — | `list[JointPositionT]` | Command |
 | `stop` | — | `OutcomeT` | Command |
 | `get_fsm_state` | — | `FsmState` | Command |
-| `set_fsm_state` | `state` | `FsmState` | Command |
+| `set_fsm_state` | `state` | `FsmAppliedT` | Command |
 | `reset_fsm` | — | `OutcomeT` | Command |
 | `set_body_mode` | `mode` | `OutcomeT` | Command |
 
@@ -117,10 +117,10 @@ if state == FsmState.Hold:
 
 ### set_fsm_state
 
-切换运控状态机状态，返回实际生效的状态。
+切换运控状态机状态，返回实际生效结果。
 
 ```python
-set_fsm_state(*, state: FsmState, timeout_ms: int = 3000) -> FsmState
+set_fsm_state(*, state: FsmState, timeout_ms: int = 3000) -> FsmAppliedT
 ```
 
 **参数**
@@ -132,13 +132,18 @@ set_fsm_state(*, state: FsmState, timeout_ms: int = 3000) -> FsmState
 
 **返回**
 
-`FsmState`：实际生效的状态。
+`FsmAppliedT`：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `appliedState` | `int` | 实际生效的状态，对应 `FsmState` 取值 |
+| `outcome` | `OutcomeT` \| `None` | `success` / `statusMessage` |
 
 ```python
 from fabot.capabilities.motion import FsmState
 
 applied = robot.motion.set_fsm_state(state=FsmState.Hold)
-print(applied)
+print(applied.appliedState, applied.outcome)
 ```
 
 ### reset_fsm

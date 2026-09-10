@@ -2,7 +2,7 @@
 title: Body
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-09-10
 ---
 
 # Body
@@ -17,14 +17,14 @@ updated: 2026-09-03
 | Method | Request | Response | Type |
 |--------|---------|----------|------|
 | `get_joints` | — | `list[float]` | Command |
-| `get_velocity` | — | `float` | Command |
-| `set_velocity` | `velocity` | `VelocityAppliedT` | Command |
-| `set_waist_lift_velocity` | `velocity_scale` | `WaistLiftVelocityAppliedT` | Command |
-| `set_waist_turn_velocity` | `velocity_scale` | `WaistTurnVelocityAppliedT` | Command |
+| `get_move_duration` | — | `float` | Command |
+| `set_move_duration` | `move_duration` | `MoveDurationAppliedT` | Command |
+| `lift_waist` | `velocity_scale` | `LiftWaistVelocityAppliedT` | Command |
+| `turn_waist` | `velocity_scale` | `TurnWaistVelocityAppliedT` | Command |
 | `move_joints` | `positions`, `wait` | `MoveJointsOperation` | Operation |
 | `move_waist` | `mode`, `x`, `z`, `phi`, `wait` | `MoveWaistOperation` | Operation |
 
-Command default `timeout_ms`: 1000 for `get_joints`, 2000 for `get_velocity` / `set_velocity`, 1000 for `set_waist_lift_velocity` / `set_waist_turn_velocity` (all overridable). All parameters are keyword-only.
+Command default `timeout_ms`: 1000 for `get_joints`, 2000 for `get_move_duration` / `set_move_duration`, 1000 for `lift_waist` / `turn_waist` (all overridable). All parameters are keyword-only.
 
 | Channel | Content |
 |---------|---------|
@@ -52,12 +52,12 @@ get_joints(*, timeout_ms: int = 1000) -> list[float]
 
 `list[float]`: joint angles in radians.
 
-### get_velocity
+### get_move_duration
 
 Read the current interpolation duration of joint motion.
 
 ```python
-get_velocity(*, timeout_ms: int = 2000) -> float
+get_move_duration(*, timeout_ms: int = 2000) -> float
 ```
 
 **Parameters**
@@ -70,41 +70,41 @@ get_velocity(*, timeout_ms: int = 2000) -> float
 
 `float`: interpolation duration of joint motion in seconds; larger values mean slower motion.
 
-### set_velocity
+### set_move_duration
 
 Set the interpolation duration of joint motion; persists until changed.
 
 ```python
-set_velocity(*, velocity: float, timeout_ms: int = 2000) -> VelocityAppliedT
+set_move_duration(*, move_duration: float, timeout_ms: int = 2000) -> MoveDurationAppliedT
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `velocity` | `float` | (required) | Interpolation duration in seconds; must be positive and finite, larger values mean slower motion |
+| `move_duration` | `float` | (required) | Interpolation duration in seconds; must be positive and finite, larger values mean slower motion |
 | `timeout_ms` | `int` | `2000` | Command timeout (milliseconds) |
 
 **Returns**
 
-`VelocityAppliedT`:
+`MoveDurationAppliedT`:
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `outcome` | `OutcomeT` | `success` / `statusMessage` |
-| `appliedVelocity` | `float` | Actually applied interpolation duration (seconds) |
+| `appliedMoveDuration` | `float` | Actually applied interpolation duration (seconds) |
 
 ```python
-applied = robot.body.set_velocity(velocity=2.0)
-print(applied.outcome.success, applied.appliedVelocity)
+applied = robot.body.set_move_duration(move_duration=2.0)
+print(applied.outcome.success, applied.appliedMoveDuration)
 ```
 
-### set_waist_lift_velocity
+### lift_waist
 
 Drive waist lifting with a normalized scale; send 0 to stop.
 
 ```python
-set_waist_lift_velocity(*, velocity_scale: float, timeout_ms: int = 1000) -> WaistLiftVelocityAppliedT
+lift_waist(*, velocity_scale: float, timeout_ms: int = 1000) -> LiftWaistVelocityAppliedT
 ```
 
 **Parameters**
@@ -116,7 +116,7 @@ set_waist_lift_velocity(*, velocity_scale: float, timeout_ms: int = 1000) -> Wai
 
 **Returns**
 
-`WaistLiftVelocityAppliedT`:
+`LiftWaistVelocityAppliedT`:
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -124,17 +124,17 @@ set_waist_lift_velocity(*, velocity_scale: float, timeout_ms: int = 1000) -> Wai
 | `appliedVelocityScale` | `float` | Actually applied velocity scale |
 
 ```python
-robot.body.set_waist_lift_velocity(velocity_scale=0.5)
+robot.body.lift_waist(velocity_scale=0.5)
 # stop after reaching the target height
-robot.body.set_waist_lift_velocity(velocity_scale=0.0)
+robot.body.lift_waist(velocity_scale=0.0)
 ```
 
-### set_waist_turn_velocity
+### turn_waist
 
 Drive waist turning with a normalized scale; send 0 to stop.
 
 ```python
-set_waist_turn_velocity(*, velocity_scale: float, timeout_ms: int = 1000) -> WaistTurnVelocityAppliedT
+turn_waist(*, velocity_scale: float, timeout_ms: int = 1000) -> TurnWaistVelocityAppliedT
 ```
 
 **Parameters**
@@ -146,7 +146,7 @@ set_waist_turn_velocity(*, velocity_scale: float, timeout_ms: int = 1000) -> Wai
 
 **Returns**
 
-`WaistTurnVelocityAppliedT`: `outcome` / `appliedVelocityScale`, same field semantics as `set_waist_lift_velocity`.
+`TurnWaistVelocityAppliedT`: `outcome` / `appliedVelocityScale`, same field semantics as `lift_waist`.
 
 ### move_joints
 

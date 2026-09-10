@@ -2,7 +2,7 @@
 title: 双臂运动
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-09
 ---
 
 # 双臂运动
@@ -63,7 +63,7 @@ else:
     print(snap.state, snap.error)
 ```
 
-末端位姿为 `Pose3dT`：`x` / `y` / `z` 单位米，`qx` / `qy` / `qz` / `qw` 为姿态四元数。双臂笛卡尔运动只走 `move_dual_arm_*`，不要与单臂接口并行使用。
+末端位姿为 `Pose3dT`：`x` / `y` / `z` 单位米，`qx` / `qy` / `qz` / `qw` 为姿态四元数。双臂笛卡尔运动只走 `move_dual_arm_*`，不要与单臂的 `smooth_move_pose` / `direct_move_pose` 并行使用。
 
 ## 订阅关节位置流
 

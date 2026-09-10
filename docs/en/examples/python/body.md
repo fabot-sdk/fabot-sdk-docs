@@ -2,7 +2,7 @@
 title: Body
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-10
 ---
 
 # Body
@@ -44,21 +44,21 @@ Notes:
 
 ## Velocity-scaled lift control
 
-`set_waist_lift_velocity` drives the waist lift by a normalized scale in `[-1, 1]`: positive lifts up, negative lowers down; send `0` to stop. It returns a `WaistLiftVelocityAppliedT` with the actually applied value.
+`lift_waist` drives the waist lift by a normalized scale in `[-1, 1]`: positive lifts up, negative lowers down; send `0` to stop. It returns a `LiftWaistVelocityAppliedT` with the actually applied value.
 
 ```python
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready(["body"])
 
-    applied = robot.body.set_waist_lift_velocity(velocity_scale=0.5)
+    applied = robot.body.lift_waist(velocity_scale=0.5)
     print("applied:", applied.outcome.success, "velocity scale:", applied.appliedVelocityScale)
 
     # ... stop after reaching the target height
-    stop = robot.body.set_waist_lift_velocity(velocity_scale=0.0)
+    stop = robot.body.lift_waist(velocity_scale=0.0)
     print(stop.outcome.statusMessage)
 ```
 
-Use `set_waist_turn_velocity` for waist rotation — same parameters and return fields. Use `set_velocity` for the joint interpolation duration (seconds; larger means slower motion).
+Use `turn_waist` for waist rotation — same parameters and return fields. Use `set_move_duration` for the joint interpolation duration (seconds; larger means slower motion).
 
 ## Subscribe to the joint position stream
 

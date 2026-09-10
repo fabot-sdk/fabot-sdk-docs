@@ -2,7 +2,7 @@
 title: 运动
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-09
 ---
 
 # 运动
@@ -11,7 +11,7 @@ updated: 2026-09-04
 
 ## 查询与切换运控状态机
 
-`get_fsm_state` / `set_fsm_state` 均为 Command。FSM 状态为 `FsmState` 枚举：`Home` / `Hold` / `Ocs2` / `MoveJ`；`set_fsm_state` 返回实际生效的状态：
+`get_fsm_state` / `set_fsm_state` 均为 Command。FSM 状态为 `FsmState` 枚举：`Home` / `Hold` / `Ocs2` / `MoveJ`。`get_fsm_state` 返回 `FsmState`；`set_fsm_state` 返回 `FsmAppliedT`，用 `appliedState` / `outcome` 读取实际生效的状态与执行结果：
 
 ```python
 from fabot import Robot
@@ -25,12 +25,12 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 
     if state != FsmState.Hold:
         applied = robot.motion.set_fsm_state(state=FsmState.Hold)
-        print("切换到:", applied)
+        print("切换到:", applied.appliedState, applied.outcome)
 ```
 
 注意：
 
-- `set_fsm_state` 的返回是生效后的 `FsmState`，可能与请求不同，以返回值为准。
+- `set_fsm_state` 返回 `FsmAppliedT`：`appliedState` 是生效后的状态（对应 `FsmState` 取值），可能与请求不同，以返回值为准；`outcome` 为执行结果。
 - `set_fsm_state` 与 `reset_fsm` 占用整机运动控制资源，执行期间另一个同类调用会被直接拒绝而非排队；状态异常时用 `reset_fsm` 复位（默认超时 30 秒），见 [运动](../../reference/python/motion.md)。
 - 身体约束模式用 `set_body_mode(mode="BODY_RELATIVE")` 等设置，模式名为大小写敏感的字符串。
 

@@ -2,7 +2,7 @@
 title: 躯干 Body
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-09-10
 ---
 
 # 躯干 Body
@@ -17,14 +17,14 @@ updated: 2026-09-03
 | 方法 | 请求 | 响应 | 类型 |
 |------|------|------|------|
 | `get_joints` | — | `list[float]` | Command |
-| `get_velocity` | — | `float` | Command |
-| `set_velocity` | `velocity` | `VelocityAppliedT` | Command |
-| `set_waist_lift_velocity` | `velocity_scale` | `WaistLiftVelocityAppliedT` | Command |
-| `set_waist_turn_velocity` | `velocity_scale` | `WaistTurnVelocityAppliedT` | Command |
+| `get_move_duration` | — | `float` | Command |
+| `set_move_duration` | `move_duration` | `MoveDurationAppliedT` | Command |
+| `lift_waist` | `velocity_scale` | `LiftWaistVelocityAppliedT` | Command |
+| `turn_waist` | `velocity_scale` | `TurnWaistVelocityAppliedT` | Command |
 | `move_joints` | `positions`, `wait` | `MoveJointsOperation` | Operation |
 | `move_waist` | `mode`, `x`, `z`, `phi`, `wait` | `MoveWaistOperation` | Operation |
 
-Command 默认 `timeout_ms`：`get_joints` 为 1000，`get_velocity` / `set_velocity` 为 2000，`set_waist_lift_velocity` / `set_waist_turn_velocity` 为 1000（均可覆盖）。参数均为关键字参数。
+Command 默认 `timeout_ms`：`get_joints` 为 1000，`get_move_duration` / `set_move_duration` 为 2000，`lift_waist` / `turn_waist` 为 1000（均可覆盖）。参数均为关键字参数。
 
 | 通道 | 内容 |
 |------|------|
@@ -52,12 +52,12 @@ get_joints(*, timeout_ms: int = 1000) -> list[float]
 
 `list[float]`：各关节角，单位弧度。
 
-### get_velocity
+### get_move_duration
 
 读取当前关节运动的插值时长。
 
 ```python
-get_velocity(*, timeout_ms: int = 2000) -> float
+get_move_duration(*, timeout_ms: int = 2000) -> float
 ```
 
 **参数**
@@ -70,41 +70,41 @@ get_velocity(*, timeout_ms: int = 2000) -> float
 
 `float`：关节运动的插值时长，单位秒；值越大运动越慢。
 
-### set_velocity
+### set_move_duration
 
 设置关节运动的插值时长，持久生效。
 
 ```python
-set_velocity(*, velocity: float, timeout_ms: int = 2000) -> VelocityAppliedT
+set_move_duration(*, move_duration: float, timeout_ms: int = 2000) -> MoveDurationAppliedT
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `velocity` | `float` | （必填） | 插值时长，单位秒；须为正有限值，越大运动越慢 |
+| `move_duration` | `float` | （必填） | 插值时长，单位秒；须为正有限值，越大运动越慢 |
 | `timeout_ms` | `int` | `2000` | Command 超时（毫秒） |
 
 **返回**
 
-`VelocityAppliedT`：
+`MoveDurationAppliedT`：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `outcome` | `OutcomeT` | `success` / `statusMessage` |
-| `appliedVelocity` | `float` | 实际生效的插值时长（秒） |
+| `appliedMoveDuration` | `float` | 实际生效的插值时长（秒） |
 
 ```python
-applied = robot.body.set_velocity(velocity=2.0)
-print(applied.outcome.success, applied.appliedVelocity)
+applied = robot.body.set_move_duration(move_duration=2.0)
+print(applied.outcome.success, applied.appliedMoveDuration)
 ```
 
-### set_waist_lift_velocity
+### lift_waist
 
 按归一化比例驱动腰部升降；松手后发 0 停止。
 
 ```python
-set_waist_lift_velocity(*, velocity_scale: float, timeout_ms: int = 1000) -> WaistLiftVelocityAppliedT
+lift_waist(*, velocity_scale: float, timeout_ms: int = 1000) -> LiftWaistVelocityAppliedT
 ```
 
 **参数**
@@ -116,7 +116,7 @@ set_waist_lift_velocity(*, velocity_scale: float, timeout_ms: int = 1000) -> Wai
 
 **返回**
 
-`WaistLiftVelocityAppliedT`：
+`LiftWaistVelocityAppliedT`：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -124,17 +124,17 @@ set_waist_lift_velocity(*, velocity_scale: float, timeout_ms: int = 1000) -> Wai
 | `appliedVelocityScale` | `float` | 实际生效的速度比例 |
 
 ```python
-robot.body.set_waist_lift_velocity(velocity_scale=0.5)
+robot.body.lift_waist(velocity_scale=0.5)
 # 到达目标高度后停止
-robot.body.set_waist_lift_velocity(velocity_scale=0.0)
+robot.body.lift_waist(velocity_scale=0.0)
 ```
 
-### set_waist_turn_velocity
+### turn_waist
 
 按归一化比例驱动腰部旋转；松手后发 0 停止。
 
 ```python
-set_waist_turn_velocity(*, velocity_scale: float, timeout_ms: int = 1000) -> WaistTurnVelocityAppliedT
+turn_waist(*, velocity_scale: float, timeout_ms: int = 1000) -> TurnWaistVelocityAppliedT
 ```
 
 **参数**
@@ -146,7 +146,7 @@ set_waist_turn_velocity(*, velocity_scale: float, timeout_ms: int = 1000) -> Wai
 
 **返回**
 
-`WaistTurnVelocityAppliedT`：`outcome` / `appliedVelocityScale`，字段含义同 `set_waist_lift_velocity`。
+`TurnWaistVelocityAppliedT`：`outcome` / `appliedVelocityScale`，字段含义同 `lift_waist`。
 
 ### move_joints
 

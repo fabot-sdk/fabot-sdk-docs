@@ -2,7 +2,7 @@
 title: Head
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-09-09
 ---
 
 # Head
@@ -17,12 +17,12 @@ updated: 2026-09-03
 | Method | Request | Response | Type |
 |--------|---------|----------|------|
 | `get_joints` | — | `list[float]` | Command |
-| `get_velocity` | — | `float` | Command |
-| `set_velocity` | `velocity` | `VelocityAppliedT` | Command |
+| `get_move_duration` | — | `float` | Command |
+| `set_move_duration` | `move_duration` | `MoveDurationAppliedT` | Command |
 | `check_arrive` | `threshold`, `target_joints` | `bool` | Command |
 | `move_joints` | `positions`, `wait` | `MoveJointsOperation` | Operation |
 
-Command default `timeout_ms`: 1000 for `get_joints` / `check_arrive`, 2000 for `get_velocity` / `set_velocity` (all overridable). All parameters are keyword-only.
+Command default `timeout_ms`: 1000 for `get_joints` / `check_arrive`, 2000 for `get_move_duration` / `set_move_duration` (all overridable). All parameters are keyword-only.
 
 | Channel | Content |
 |---------|---------|
@@ -55,12 +55,12 @@ positions = robot.head.get_joints()
 print(positions)
 ```
 
-### get_velocity
+### get_move_duration
 
 Read the current interpolation-duration setting.
 
 ```python
-get_velocity(*, timeout_ms: int = 2000) -> float
+get_move_duration(*, timeout_ms: int = 2000) -> float
 ```
 
 **Parameters**
@@ -74,36 +74,36 @@ get_velocity(*, timeout_ms: int = 2000) -> float
 `float`: the persistent MoveJ interpolation duration in seconds; larger values mean slower motion.
 
 ```python
-print(robot.head.get_velocity())
+print(robot.head.get_move_duration())
 ```
 
-### set_velocity
+### set_move_duration
 
 Set the interpolation duration; applies persistently to all subsequent moves.
 
 ```python
-set_velocity(*, velocity: float, timeout_ms: int = 2000) -> VelocityAppliedT
+set_move_duration(*, move_duration: float, timeout_ms: int = 2000) -> MoveDurationAppliedT
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `velocity` | `float` | (required) | Interpolation duration in seconds; must be positive and finite, larger values mean slower motion |
+| `move_duration` | `float` | (required) | Interpolation duration in seconds; must be positive and finite, larger values mean slower motion |
 | `timeout_ms` | `int` | `2000` | Command timeout (milliseconds) |
 
 **Returns**
 
-`VelocityAppliedT`:
+`MoveDurationAppliedT`:
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `outcome` | `OutcomeT` \| `None` | `success` / `statusMessage` |
-| `appliedVelocity` | `float` | Interpolation duration actually applied (seconds) |
+| `appliedMoveDuration` | `float` | Interpolation duration actually applied (seconds) |
 
 ```python
-applied = robot.head.set_velocity(velocity=2.0)
-print(applied.outcome.success, applied.appliedVelocity)
+applied = robot.head.set_move_duration(move_duration=2.0)
+print(applied.outcome.success, applied.appliedMoveDuration)
 ```
 
 ### check_arrive

@@ -2,7 +2,7 @@
 title: Hand
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-09-09
 ---
 
 # Hand
@@ -165,8 +165,8 @@ move_joints(*, positions: list[float], duration_s: float, position_threshold: fl
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | `positions` | `list[float]` | (required) | Target apertures, recommended normalized 0~1 |
-| `duration_s` | `float` | (required) | Arrival timeout for this move (seconds); `0` uses the system default and only bounds the wait |
-| `position_threshold` | `float` | (required) | Arrival threshold for this move, same unit as `positions`; `0` uses the system default |
+| `duration_s` | `float` | (required) | Arrival timeout for this move (seconds); a value greater than 0 overrides the default 10, pass `0.0` to use the default |
+| `position_threshold` | `float` | (required) | Arrival threshold for this move, same unit as `positions`; a value greater than 0 overrides the default 0.02, pass `0.0` to use the default |
 
 **Returns**
 

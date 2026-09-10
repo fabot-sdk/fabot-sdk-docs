@@ -2,7 +2,7 @@
 title: Dual-Arm Motion
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-09
 ---
 
 # Dual-Arm Motion
@@ -63,7 +63,7 @@ else:
     print(snap.state, snap.error)
 ```
 
-An end-effector pose is a `Pose3dT`: `x` / `y` / `z` in meters, `qx` / `qy` / `qz` / `qw` as the orientation quaternion. Dual-arm Cartesian motion only goes through `move_dual_arm_*`; do not use it in parallel with the single-arm interfaces.
+An end-effector pose is a `Pose3dT`: `x` / `y` / `z` in meters, `qx` / `qy` / `qz` / `qw` as the orientation quaternion. Dual-arm Cartesian motion only goes through `move_dual_arm_*`; do not run it in parallel with the single-arm `smooth_move_pose` / `direct_move_pose`.
 
 ## Subscribe to the joint position stream
 

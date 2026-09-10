@@ -2,7 +2,7 @@
 title: Dexterous Hand
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-09
 ---
 
 # Dexterous Hand
@@ -47,6 +47,7 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 
 Notes:
 
+- Pass `0.0` for `duration_s` / `position_threshold` to use the defaults (10 seconds / 0.02).
 - The `appliedVelocity` / `appliedTorque` returned by `set_velocity` / `set_torque` are the actually applied values and may differ from the requested ones.
 - The progress snapshot's `feedback` is a `ProgressT` (`progress` / `statusMessage`) and may be `None` right after the task starts.
 - `move_joints` on the same hand exclusively owns that hand's resource; new tasks are queued. Read `error` for the failure reason — see [Error Handling](../../usage/errors.md).

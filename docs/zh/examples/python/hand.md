@@ -2,7 +2,7 @@
 title: 灵巧手
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-09
 ---
 
 # 灵巧手
@@ -47,6 +47,7 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 
 注意：
 
+- `duration_s` / `position_threshold` 传 `0.0` 使用默认值（10 秒 / 0.02）。
 - `set_velocity` / `set_torque` 返回的 `appliedVelocity` / `appliedTorque` 是实际生效值，可能与请求值不同。
 - 进度快照的 `feedback` 为 `ProgressT`（`progress` / `statusMessage`），任务刚启动时可能为 `None`。
 - 同一只手上的 `move_joints` 独占该手资源，新任务排队执行；失败原因读 `error`，错误处理见 [错误处理](../../usage/errors.md)。

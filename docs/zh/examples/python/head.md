@@ -2,7 +2,7 @@
 title: 头部运动
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-09
 ---
 
 # 头部运动
@@ -11,7 +11,7 @@ updated: 2026-09-04
 
 ## 转动头部到目标关节角
 
-`move_joints` 返回长时 Operation：通过 `events()` 持续取进度快照，终态后读取结果。目标关节角 `positions` 为弧度列表；`wait=True` 时任务等到到位或超时再结束。运动快慢由插值时长决定：先用 `set_velocity` 设置（秒，越大越慢），对所有后续运动持久生效。
+`move_joints` 返回长时 Operation：通过 `events()` 持续取进度快照，终态后读取结果。目标关节角 `positions` 为弧度列表；`wait=True` 时任务等到到位或超时再结束。运动快慢由插值时长决定：先用 `set_move_duration` 设置（秒，越大越慢），对所有后续运动持久生效。
 
 ```python
 from fabot import Robot
@@ -20,8 +20,8 @@ from fabot.core.types import OperationState
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready(["head"])
 
-    applied = robot.head.set_velocity(velocity=2.0)
-    print("插值时长已生效:", applied.appliedVelocity, "s")
+    applied = robot.head.set_move_duration(move_duration=2.0)
+    print("插值时长已生效:", applied.appliedMoveDuration, "s")
 
     target = [0.3, 0.5]   # 目标关节角（弧度）
     op = robot.head.move_joints(positions=target, wait=True)
@@ -71,7 +71,7 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 ```python
 positions = robot.head.get_joints()
 print("当前关节角:", positions)
-print("当前插值时长:", robot.head.get_velocity(), "s")
+print("当前插值时长:", robot.head.get_move_duration(), "s")
 
 arrived = robot.head.check_arrive(threshold=0.05, target_joints=[])
 print("已到位:", arrived)

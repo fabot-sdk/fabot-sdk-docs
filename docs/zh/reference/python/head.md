@@ -2,7 +2,7 @@
 title: 头部 Head
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-09-09
 ---
 
 # 头部 Head
@@ -17,12 +17,12 @@ updated: 2026-09-03
 | 方法 | 请求 | 响应 | 类型 |
 |------|------|------|------|
 | `get_joints` | — | `list[float]` | Command |
-| `get_velocity` | — | `float` | Command |
-| `set_velocity` | `velocity` | `VelocityAppliedT` | Command |
+| `get_move_duration` | — | `float` | Command |
+| `set_move_duration` | `move_duration` | `MoveDurationAppliedT` | Command |
 | `check_arrive` | `threshold`, `target_joints` | `bool` | Command |
 | `move_joints` | `positions`, `wait` | `MoveJointsOperation` | Operation |
 
-Command 默认 `timeout_ms`：`get_joints` / `check_arrive` 为 1000，`get_velocity` / `set_velocity` 为 2000（均可覆盖）。参数均为关键字参数。
+Command 默认 `timeout_ms`：`get_joints` / `check_arrive` 为 1000，`get_move_duration` / `set_move_duration` 为 2000（均可覆盖）。参数均为关键字参数。
 
 | 通道 | 内容 |
 |------|------|
@@ -55,12 +55,12 @@ positions = robot.head.get_joints()
 print(positions)
 ```
 
-### get_velocity
+### get_move_duration
 
 读取当前的插值时长设置。
 
 ```python
-get_velocity(*, timeout_ms: int = 2000) -> float
+get_move_duration(*, timeout_ms: int = 2000) -> float
 ```
 
 **参数**
@@ -74,36 +74,36 @@ get_velocity(*, timeout_ms: int = 2000) -> float
 `float`：持久生效的 MoveJ 插值时长，单位秒；值越大运动越慢。
 
 ```python
-print(robot.head.get_velocity())
+print(robot.head.get_move_duration())
 ```
 
-### set_velocity
+### set_move_duration
 
 设置插值时长，对所有后续运动持久生效。
 
 ```python
-set_velocity(*, velocity: float, timeout_ms: int = 2000) -> VelocityAppliedT
+set_move_duration(*, move_duration: float, timeout_ms: int = 2000) -> MoveDurationAppliedT
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `velocity` | `float` | （必填） | 插值时长，单位秒；须为正有限值，越大运动越慢 |
+| `move_duration` | `float` | （必填） | 插值时长，单位秒；须为正有限值，越大运动越慢 |
 | `timeout_ms` | `int` | `2000` | Command 超时（毫秒） |
 
 **返回**
 
-`VelocityAppliedT`：
+`MoveDurationAppliedT`：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `outcome` | `OutcomeT` \| `None` | `success` / `statusMessage` |
-| `appliedVelocity` | `float` | 实际生效的插值时长（秒） |
+| `appliedMoveDuration` | `float` | 实际生效的插值时长（秒） |
 
 ```python
-applied = robot.head.set_velocity(velocity=2.0)
-print(applied.outcome.success, applied.appliedVelocity)
+applied = robot.head.set_move_duration(move_duration=2.0)
+print(applied.outcome.success, applied.appliedMoveDuration)
 ```
 
 ### check_arrive

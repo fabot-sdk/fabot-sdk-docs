@@ -2,7 +2,7 @@
 title: Motion
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-09-09
 ---
 
 # Motion
@@ -19,7 +19,7 @@ updated: 2026-09-03
 | `get_joints` | — | `list[JointPositionT]` | Command |
 | `stop` | — | `OutcomeT` | Command |
 | `get_fsm_state` | — | `FsmState` | Command |
-| `set_fsm_state` | `state` | `FsmState` | Command |
+| `set_fsm_state` | `state` | `FsmAppliedT` | Command |
 | `reset_fsm` | — | `OutcomeT` | Command |
 | `set_body_mode` | `mode` | `OutcomeT` | Command |
 
@@ -117,10 +117,10 @@ if state == FsmState.Hold:
 
 ### set_fsm_state
 
-Switch the motion-control state machine. Returns the state that was actually applied.
+Switch the motion-control state machine. Returns the result that was actually applied.
 
 ```python
-set_fsm_state(*, state: FsmState, timeout_ms: int = 3000) -> FsmState
+set_fsm_state(*, state: FsmState, timeout_ms: int = 3000) -> FsmAppliedT
 ```
 
 **Parameters**
@@ -132,13 +132,18 @@ set_fsm_state(*, state: FsmState, timeout_ms: int = 3000) -> FsmState
 
 **Returns**
 
-`FsmState`: the state actually applied.
+`FsmAppliedT`:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `appliedState` | `int` | The state actually applied, corresponding to a `FsmState` value |
+| `outcome` | `OutcomeT` \| `None` | `success` / `statusMessage` |
 
 ```python
 from fabot.capabilities.motion import FsmState
 
 applied = robot.motion.set_fsm_state(state=FsmState.Hold)
-print(applied)
+print(applied.appliedState, applied.outcome)
 ```
 
 ### reset_fsm

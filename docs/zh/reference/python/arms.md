@@ -2,7 +2,7 @@
 title: 双臂 Arms
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-09-09
 ---
 
 # 双臂 Arms
@@ -11,7 +11,7 @@ updated: 2026-09-03
 
 - 能力 id：`arms`；槽位：`robot.arms`
 - 双臂协同运动与控制：双臂关节运动、双臂末端位姿 / 路径运动、插值时长设置、阻抗拖拽、双臂抱闸与相对位姿保持。
-- 笛卡尔空间的双臂运动只经本模块的 `move_dual_arm_*` 下发，不要与 `robot.left_arm` / `robot.right_arm` 的单臂 `move_pose` 并行使用。
+- 笛卡尔空间的双臂运动只经本模块的 `move_dual_arm_*` 下发，不要与 `robot.left_arm` / `robot.right_arm` 的单臂 `smooth_move_pose` / `direct_move_pose` 并行使用。
 
 ## API 总览
 
@@ -19,10 +19,10 @@ updated: 2026-09-03
 |------|------|------|------|
 | `get_joints` | — | `list[float]` | Command |
 | `get_pose` | — | `DualArmPoseMoveT` | Command |
-| `get_joints_velocity` | — | `float` | Command |
-| `set_joints_velocity` | `velocity` | `JointsVelocityAppliedT` | Command |
-| `get_poses_velocity` | — | `float` | Command |
-| `set_poses_velocity` | `velocity` | `PosesVelocityAppliedT` | Command |
+| `get_joints_move_duration` | — | `float` | Command |
+| `set_joints_move_duration` | `move_duration` | `JointsMoveDurationAppliedT` | Command |
+| `get_poses_move_duration` | — | `float` | Command |
+| `set_poses_move_duration` | `move_duration` | `PosesMoveDurationAppliedT` | Command |
 | `get_drag` | — | `DragStateT` | Command |
 | `set_drag` | `open`, `mode` | `OutcomeT` | Command |
 | `get_brake` | — | `BrakeStateT` | Command |
@@ -85,12 +85,12 @@ get_pose(*, timeout_ms: int = 1000) -> DualArmPoseMoveT
 | `wait` | `bool` | 保留字段 |
 | `frameId` | `str` | 位姿参考坐标系 |
 
-### get_joints_velocity
+### get_joints_move_duration
 
 读取关节运动（MoveJ）插值时长。
 
 ```python
-get_joints_velocity(*, timeout_ms: int = 2000) -> float
+get_joints_move_duration(*, timeout_ms: int = 2000) -> float
 ```
 
 **参数**
@@ -103,41 +103,41 @@ get_joints_velocity(*, timeout_ms: int = 2000) -> float
 
 `float`：当前 MoveJ 插值时长，单位秒。
 
-### set_joints_velocity
+### set_joints_move_duration
 
 设置关节运动（MoveJ）插值时长，持久生效。
 
 ```python
-set_joints_velocity(*, velocity: float, timeout_ms: int = 2000) -> JointsVelocityAppliedT
+set_joints_move_duration(*, move_duration: float, timeout_ms: int = 2000) -> JointsMoveDurationAppliedT
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `velocity` | `float` | （必填） | MoveJ 插值时长，单位秒 |
+| `move_duration` | `float` | （必填） | MoveJ 插值时长，单位秒 |
 | `timeout_ms` | `int` | `2000` | Command 超时（毫秒） |
 
 **返回**
 
-`JointsVelocityAppliedT`：
+`JointsMoveDurationAppliedT`：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `outcome` | `OutcomeT` \| `None` | `success` / `statusMessage` |
-| `appliedVelocity` | `float` | 实际生效的插值时长（秒） |
+| `appliedMoveDuration` | `float` | 实际生效的插值时长（秒） |
 
 ```python
-applied = robot.arms.set_joints_velocity(velocity=2.0)
-print(applied.outcome.success, applied.appliedVelocity)
+applied = robot.arms.set_joints_move_duration(move_duration=2.0)
+print(applied.outcome.success, applied.appliedMoveDuration)
 ```
 
-### get_poses_velocity
+### get_poses_move_duration
 
 读取末端位姿运动（MoveL）插值时长。
 
 ```python
-get_poses_velocity(*, timeout_ms: int = 2000) -> float
+get_poses_move_duration(*, timeout_ms: int = 2000) -> float
 ```
 
 **参数**
@@ -150,24 +150,24 @@ get_poses_velocity(*, timeout_ms: int = 2000) -> float
 
 `float`：当前 MoveL 插值时长，单位秒。
 
-### set_poses_velocity
+### set_poses_move_duration
 
 设置末端位姿运动（MoveL）插值时长，持久生效。
 
 ```python
-set_poses_velocity(*, velocity: float, timeout_ms: int = 2000) -> PosesVelocityAppliedT
+set_poses_move_duration(*, move_duration: float, timeout_ms: int = 2000) -> PosesMoveDurationAppliedT
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `velocity` | `float` | （必填） | MoveL 插值时长，单位秒 |
+| `move_duration` | `float` | （必填） | MoveL 插值时长，单位秒 |
 | `timeout_ms` | `int` | `2000` | Command 超时（毫秒） |
 
 **返回**
 
-`PosesVelocityAppliedT`：`outcome`（`OutcomeT` \| `None`）/ `appliedVelocity`（`float`，实际生效值，秒）。
+`PosesMoveDurationAppliedT`：`outcome`（`OutcomeT` \| `None`）/ `appliedMoveDuration`（`float`，实际生效值，秒）。
 
 ### get_drag
 

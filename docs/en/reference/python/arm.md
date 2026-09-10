@@ -2,7 +2,7 @@
 title: Arm
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-09-09
 ---
 
 # Arm
@@ -22,7 +22,8 @@ updated: 2026-09-03
 | `set_brake` | `open` | `OutcomeT` | Command |
 | `set_enabled` | `enabled` | `OutcomeT` | Command |
 | `move_joints` | `positions`, `wait` | `MoveJointsOperation` | Operation |
-| `move_pose` | `pose`, `mode`, `wait`, `frame_id` | `MovePoseOperation` | Operation |
+| `smooth_move_pose` | `pose`, `wait`, `frame_id` | `SmoothMovePoseOperation` | Operation |
+| `direct_move_pose` | `pose`, `wait` | `DirectMovePoseOperation` | Operation |
 
 Command default `timeout_ms`: 1000 for `get_joints` / `get_pose`, 3000 for `set_enabled`, 10000 for `get_brake` / `set_brake` (all overridable). All parameters are keyword-only.
 
@@ -184,12 +185,12 @@ for snap in op.events(poll_timeout_ms=200, timeout_ms=30000):
         break
 ```
 
-### move_pose
+### smooth_move_pose
 
-Run a long-running end-effector pose move. Returns a pollable, cancelable Operation.
+Run a long-running smooth end-effector pose move. Returns a pollable, cancelable Operation.
 
 ```python
-move_pose(*, pose: Pose3dT, mode: PoseMoveMode, wait: bool, frame_id: str) -> MovePoseOperation
+smooth_move_pose(*, pose: Pose3dT, wait: bool, frame_id: str) -> SmoothMovePoseOperation
 ```
 
 **Parameters**
@@ -197,24 +198,45 @@ move_pose(*, pose: Pose3dT, mode: PoseMoveMode, wait: bool, frame_id: str) -> Mo
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | `pose` | `Pose3dT` | (required) | Target pose: `x` / `y` / `z` (meters), `qx` / `qy` / `qz` / `qw` |
-| `mode` | `PoseMoveMode` | (required) | `SMOOTH` or `DIRECT` |
 | `wait` | `bool` | (required) | When `True`, the task finishes after arrival or timeout |
 | `frame_id` | `str` | (required) | Pose reference frame; an empty string is equivalent to `arm_base` |
 
 **Returns**
 
-`MovePoseOperation`. Snapshot fields match `move_joints`: `state` / `feedback: ProgressT` / `result: OutcomeT` / `error`. The handle supports `cancel()`.
+`SmoothMovePoseOperation`. Snapshot fields match `move_joints`: `state` / `feedback: ProgressT` / `result: OutcomeT` / `error`. The handle supports `cancel()`.
 
 ```python
-from fabot.capabilities.arm import PoseMoveMode
 from fabot.types.Pose3d import Pose3dT
 
 pose = Pose3dT()
 pose.x, pose.y, pose.z = 0.3, 0.0, 0.4
 pose.qw = 1.0
-op = robot.right_arm.move_pose(
-    pose=pose, mode=PoseMoveMode.SMOOTH, wait=True, frame_id="arm_base",
+op = robot.right_arm.smooth_move_pose(
+    pose=pose, wait=True, frame_id="arm_base",
 )
+```
+
+### direct_move_pose
+
+Run a long-running direct end-effector pose move. Returns a pollable, cancelable Operation. This method has no `frame_id`.
+
+```python
+direct_move_pose(*, pose: Pose3dT, wait: bool) -> DirectMovePoseOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `pose` | `Pose3dT` | (required) | Target pose: `x` / `y` / `z` (meters), `qx` / `qy` / `qz` / `qw` |
+| `wait` | `bool` | (required) | When `True`, the task finishes after arrival or timeout |
+
+**Returns**
+
+`DirectMovePoseOperation`. Snapshot fields match `move_joints`: `state` / `feedback: ProgressT` / `result: OutcomeT` / `error`. The handle supports `cancel()`.
+
+```python
+op = robot.right_arm.direct_move_pose(pose=pose, wait=True)
 ```
 
 ## Channels
@@ -359,4 +381,4 @@ Changes arrive on `lifecycle_changed`. See [Status, Faults & Lifecycle](../../us
 
 ## Resources
 
-On a given arm, `move_joints` and `move_pose` share one resource; new tasks queue.
+On a given arm, `move_joints` / `smooth_move_pose` / `direct_move_pose` share one resource; new tasks queue.

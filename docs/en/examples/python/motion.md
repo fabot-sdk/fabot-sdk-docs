@@ -2,7 +2,7 @@
 title: Motion
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-09
 ---
 
 # Motion
@@ -11,7 +11,7 @@ Query and switch the whole-body motion control state machine (FSM), and subscrib
 
 ## Query and Switch the FSM State
 
-`get_fsm_state` / `set_fsm_state` are Commands. The FSM state is the `FsmState` enum: `Home` / `Hold` / `Ocs2` / `MoveJ`; `set_fsm_state` returns the state actually applied:
+`get_fsm_state` / `set_fsm_state` are Commands. The FSM state is the `FsmState` enum: `Home` / `Hold` / `Ocs2` / `MoveJ`. `get_fsm_state` returns `FsmState`; `set_fsm_state` returns `FsmAppliedT` — read `appliedState` / `outcome` for the state actually applied and the command result:
 
 ```python
 from fabot import Robot
@@ -25,12 +25,12 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 
     if state != FsmState.Hold:
         applied = robot.motion.set_fsm_state(state=FsmState.Hold)
-        print("switched to:", applied)
+        print("switched to:", applied.appliedState, applied.outcome)
 ```
 
 Notes:
 
-- `set_fsm_state` returns the `FsmState` that took effect, which may differ from the request — trust the return value.
+- `set_fsm_state` returns `FsmAppliedT`: `appliedState` is the state that took effect (a `FsmState` value) and may differ from the request — trust the return value; `outcome` is the command result.
 - `set_fsm_state` and `reset_fsm` hold the whole-body motion control resource: while one is running, another call on the same resource is rejected outright instead of queued. Use `reset_fsm` to recover from an abnormal state (30 s default timeout) — see [Motion](../../reference/python/motion.md).
 - Body constraint modes are set with `set_body_mode(mode="BODY_RELATIVE")` etc.; the mode name is a case-sensitive string.
 

@@ -2,7 +2,7 @@
 title: 机械臂 Arm
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-09-09
 ---
 
 # 机械臂 Arm
@@ -22,7 +22,8 @@ updated: 2026-09-03
 | `set_brake` | `open` | `OutcomeT` | Command |
 | `set_enabled` | `enabled` | `OutcomeT` | Command |
 | `move_joints` | `positions`, `wait` | `MoveJointsOperation` | Operation |
-| `move_pose` | `pose`, `mode`, `wait`, `frame_id` | `MovePoseOperation` | Operation |
+| `smooth_move_pose` | `pose`, `wait`, `frame_id` | `SmoothMovePoseOperation` | Operation |
+| `direct_move_pose` | `pose`, `wait` | `DirectMovePoseOperation` | Operation |
 
 Command 默认 `timeout_ms`：`get_joints` / `get_pose` 为 1000，`set_enabled` 为 3000，`get_brake` / `set_brake` 为 10000（均可覆盖）。参数均为关键字参数。
 
@@ -184,12 +185,12 @@ for snap in op.events(poll_timeout_ms=200, timeout_ms=30000):
         break
 ```
 
-### move_pose
+### smooth_move_pose
 
-按末端位姿执行长时运动，返回可轮询、可取消的 Operation。
+按末端位姿执行平滑长时运动，返回可轮询、可取消的 Operation。
 
 ```python
-move_pose(*, pose: Pose3dT, mode: PoseMoveMode, wait: bool, frame_id: str) -> MovePoseOperation
+smooth_move_pose(*, pose: Pose3dT, wait: bool, frame_id: str) -> SmoothMovePoseOperation
 ```
 
 **参数**
@@ -197,24 +198,45 @@ move_pose(*, pose: Pose3dT, mode: PoseMoveMode, wait: bool, frame_id: str) -> Mo
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
 | `pose` | `Pose3dT` | （必填） | 目标末端位姿：`x` / `y` / `z`（米），`qx` / `qy` / `qz` / `qw` |
-| `mode` | `PoseMoveMode` | （必填） | `SMOOTH`（平滑）或 `DIRECT`（直接） |
 | `wait` | `bool` | （必填） | `True` 时任务等到到位或超时再结束 |
 | `frame_id` | `str` | （必填） | 位姿参考坐标系；空串等价 `arm_base` |
 
 **返回**
 
-`MovePoseOperation`。快照字段与 `move_joints` 相同：`state` / `feedback: ProgressT` / `result: OutcomeT` / `error`，可 `cancel()`。
+`SmoothMovePoseOperation`。快照字段与 `move_joints` 相同：`state` / `feedback: ProgressT` / `result: OutcomeT` / `error`，可 `cancel()`。
 
 ```python
-from fabot.capabilities.arm import PoseMoveMode
 from fabot.types.Pose3d import Pose3dT
 
 pose = Pose3dT()
 pose.x, pose.y, pose.z = 0.3, 0.0, 0.4
 pose.qw = 1.0
-op = robot.right_arm.move_pose(
-    pose=pose, mode=PoseMoveMode.SMOOTH, wait=True, frame_id="arm_base",
+op = robot.right_arm.smooth_move_pose(
+    pose=pose, wait=True, frame_id="arm_base",
 )
+```
+
+### direct_move_pose
+
+按末端位姿执行直接长时运动，返回可轮询、可取消的 Operation。本方法没有 `frame_id`。
+
+```python
+direct_move_pose(*, pose: Pose3dT, wait: bool) -> DirectMovePoseOperation
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `pose` | `Pose3dT` | （必填） | 目标末端位姿：`x` / `y` / `z`（米），`qx` / `qy` / `qz` / `qw` |
+| `wait` | `bool` | （必填） | `True` 时任务等到到位或超时再结束 |
+
+**返回**
+
+`DirectMovePoseOperation`。快照字段与 `move_joints` 相同：`state` / `feedback: ProgressT` / `result: OutcomeT` / `error`，可 `cancel()`。
+
+```python
+op = robot.right_arm.direct_move_pose(pose=pose, wait=True)
 ```
 
 ## 通道
@@ -359,4 +381,4 @@ token = robot.right_arm.events.lifecycle_changed.subscribe(on_lifecycle)
 
 ## 资源
 
-同一只手臂上的 `move_joints` / `move_pose` 共享同一资源，新任务排队执行。
+同一只手臂上的 `move_joints` / `smooth_move_pose` / `direct_move_pose` 共享同一资源，新任务排队执行。

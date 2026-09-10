@@ -2,7 +2,7 @@
 title: Arms
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-09-09
 ---
 
 # Arms
@@ -11,7 +11,7 @@ updated: 2026-09-03
 
 - Capability id: `arms`; slot: `robot.arms`
 - Dual-arm coordinated motion and control: dual-arm joint moves, dual-arm end-effector pose / path moves, interpolation-duration settings, impedance drag, dual-arm brakes, and relative pose hold.
-- Cartesian dual-arm motion goes only through this module's `move_dual_arm_*`; do not run it in parallel with the single-arm `move_pose` on `robot.left_arm` / `robot.right_arm`.
+- Cartesian dual-arm motion goes only through this module's `move_dual_arm_*`; do not run it in parallel with the single-arm `smooth_move_pose` / `direct_move_pose` on `robot.left_arm` / `robot.right_arm`.
 
 ## API Overview
 
@@ -19,10 +19,10 @@ updated: 2026-09-03
 |--------|---------|----------|------|
 | `get_joints` | — | `list[float]` | Command |
 | `get_pose` | — | `DualArmPoseMoveT` | Command |
-| `get_joints_velocity` | — | `float` | Command |
-| `set_joints_velocity` | `velocity` | `JointsVelocityAppliedT` | Command |
-| `get_poses_velocity` | — | `float` | Command |
-| `set_poses_velocity` | `velocity` | `PosesVelocityAppliedT` | Command |
+| `get_joints_move_duration` | — | `float` | Command |
+| `set_joints_move_duration` | `move_duration` | `JointsMoveDurationAppliedT` | Command |
+| `get_poses_move_duration` | — | `float` | Command |
+| `set_poses_move_duration` | `move_duration` | `PosesMoveDurationAppliedT` | Command |
 | `get_drag` | — | `DragStateT` | Command |
 | `set_drag` | `open`, `mode` | `OutcomeT` | Command |
 | `get_brake` | — | `BrakeStateT` | Command |
@@ -85,12 +85,12 @@ get_pose(*, timeout_ms: int = 1000) -> DualArmPoseMoveT
 | `wait` | `bool` | Reserved field |
 | `frameId` | `str` | Pose reference frame |
 
-### get_joints_velocity
+### get_joints_move_duration
 
 Read the joint-move (MoveJ) interpolation duration.
 
 ```python
-get_joints_velocity(*, timeout_ms: int = 2000) -> float
+get_joints_move_duration(*, timeout_ms: int = 2000) -> float
 ```
 
 **Parameters**
@@ -103,41 +103,41 @@ get_joints_velocity(*, timeout_ms: int = 2000) -> float
 
 `float`: current MoveJ interpolation duration in seconds.
 
-### set_joints_velocity
+### set_joints_move_duration
 
 Set the joint-move (MoveJ) interpolation duration; the setting persists.
 
 ```python
-set_joints_velocity(*, velocity: float, timeout_ms: int = 2000) -> JointsVelocityAppliedT
+set_joints_move_duration(*, move_duration: float, timeout_ms: int = 2000) -> JointsMoveDurationAppliedT
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `velocity` | `float` | (required) | MoveJ interpolation duration in seconds |
+| `move_duration` | `float` | (required) | MoveJ interpolation duration in seconds |
 | `timeout_ms` | `int` | `2000` | Command timeout (milliseconds) |
 
 **Returns**
 
-`JointsVelocityAppliedT`:
+`JointsMoveDurationAppliedT`:
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `outcome` | `OutcomeT` \| `None` | `success` / `statusMessage` |
-| `appliedVelocity` | `float` | Actually applied duration (seconds) |
+| `appliedMoveDuration` | `float` | Actually applied duration (seconds) |
 
 ```python
-applied = robot.arms.set_joints_velocity(velocity=2.0)
-print(applied.outcome.success, applied.appliedVelocity)
+applied = robot.arms.set_joints_move_duration(move_duration=2.0)
+print(applied.outcome.success, applied.appliedMoveDuration)
 ```
 
-### get_poses_velocity
+### get_poses_move_duration
 
 Read the end-effector move (MoveL) interpolation duration.
 
 ```python
-get_poses_velocity(*, timeout_ms: int = 2000) -> float
+get_poses_move_duration(*, timeout_ms: int = 2000) -> float
 ```
 
 **Parameters**
@@ -150,24 +150,24 @@ get_poses_velocity(*, timeout_ms: int = 2000) -> float
 
 `float`: current MoveL interpolation duration in seconds.
 
-### set_poses_velocity
+### set_poses_move_duration
 
 Set the end-effector move (MoveL) interpolation duration; the setting persists.
 
 ```python
-set_poses_velocity(*, velocity: float, timeout_ms: int = 2000) -> PosesVelocityAppliedT
+set_poses_move_duration(*, move_duration: float, timeout_ms: int = 2000) -> PosesMoveDurationAppliedT
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `velocity` | `float` | (required) | MoveL interpolation duration in seconds |
+| `move_duration` | `float` | (required) | MoveL interpolation duration in seconds |
 | `timeout_ms` | `int` | `2000` | Command timeout (milliseconds) |
 
 **Returns**
 
-`PosesVelocityAppliedT`: `outcome` (`OutcomeT` \| `None`) / `appliedVelocity` (`float`, actually applied value in seconds).
+`PosesMoveDurationAppliedT`: `outcome` (`OutcomeT` \| `None`) / `appliedMoveDuration` (`float`, actually applied value in seconds).
 
 ### get_drag
 

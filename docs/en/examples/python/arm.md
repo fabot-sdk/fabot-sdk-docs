@@ -2,7 +2,7 @@
 title: Arm Motion
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-09
 ---
 
 # Arm Motion
@@ -41,25 +41,27 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 Notes:
 
 - The snapshot's `feedback` is a `ProgressT` (`progress` / `statusMessage`) and may be `None` right after the task starts; the terminal `result` is an `OutcomeT` (`success` / `statusMessage`) — read `error` for the failure reason, see [Error Handling](../../usage/errors.md).
-- `move_joints` / `move_pose` on the same arm share a single resource: new tasks queue; call `op.cancel()` to abort a running task.
+- `move_joints` / `smooth_move_pose` / `direct_move_pose` on the same arm share a single resource: new tasks queue; call `op.cancel()` to abort a running task.
 
 ## Move to an End-Effector Pose
 
-`move_pose` targets an end-effector pose: `pose` is a `Pose3dT` (`x` / `y` / `z` in meters, `qx` / `qy` / `qz` / `qw` quaternion); `mode` is `PoseMoveMode.SMOOTH` (smooth) or `PoseMoveMode.DIRECT` (direct); `frame_id` is the reference frame, an empty string means `arm_base`.
+`smooth_move_pose` targets an end-effector pose with a smooth move: `pose` is a `Pose3dT` (`x` / `y` / `z` in meters, `qx` / `qy` / `qz` / `qw` quaternion); `frame_id` is the reference frame, an empty string means `arm_base`. Use `direct_move_pose` for a direct move (no `frame_id`).
 
 ```python
-from fabot.capabilities.arm import PoseMoveMode
 from fabot.types.Pose3d import Pose3dT
 
 pose = Pose3dT()
 pose.x, pose.y, pose.z = 0.3, 0.0, 0.4
 pose.qw = 1.0   # identity quaternion, no rotation
 
-op = robot.right_arm.move_pose(
-    pose=pose, mode=PoseMoveMode.SMOOTH, wait=True, frame_id="arm_base",
+op = robot.right_arm.smooth_move_pose(
+    pose=pose, wait=True, frame_id="arm_base",
 )
 snap = op.get(timeout_ms=30000)
 print(snap.state, snap.result)
+
+# Contrast: direct move, no frame_id
+# op = robot.right_arm.direct_move_pose(pose=pose, wait=True)
 ```
 
 ## Subscribe to the Joint Positions Stream

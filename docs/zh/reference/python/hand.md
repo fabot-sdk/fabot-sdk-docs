@@ -2,7 +2,7 @@
 title: 灵巧手 Hand
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-09-09
 ---
 
 # 灵巧手 Hand
@@ -165,8 +165,8 @@ move_joints(*, positions: list[float], duration_s: float, position_threshold: fl
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
 | `positions` | `list[float]` | （必填） | 目标开合度，建议归一化 0~1 |
-| `duration_s` | `float` | （必填） | 当次到位超时（秒）；`0` 使用系统默认值，仅约束等待时长 |
-| `position_threshold` | `float` | （必填） | 当次到位阈值，与 `positions` 同单位；`0` 使用系统默认值 |
+| `duration_s` | `float` | （必填） | 当次到位超时（秒）；大于 0 时覆盖默认值 10，传 `0.0` 使用默认 |
+| `position_threshold` | `float` | （必填） | 当次到位阈值，与 `positions` 同单位；大于 0 时覆盖默认值 0.02，传 `0.0` 使用默认 |
 
 **返回**
 

@@ -2,7 +2,7 @@
 title: 躯干
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-10
 ---
 
 # 躯干
@@ -44,21 +44,21 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 
 ## 速度比例控制升降
 
-`set_waist_lift_velocity` 按归一化比例 `[-1, 1]` 驱动腰部升降：正上升、负下降，松手后发 `0` 停止。返回 `WaistLiftVelocityAppliedT`，可读取实际生效值。
+`lift_waist` 按归一化比例 `[-1, 1]` 驱动腰部升降：正上升、负下降，松手后发 `0` 停止。返回 `LiftWaistVelocityAppliedT`，可读取实际生效值。
 
 ```python
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready(["body"])
 
-    applied = robot.body.set_waist_lift_velocity(velocity_scale=0.5)
+    applied = robot.body.lift_waist(velocity_scale=0.5)
     print("生效:", applied.outcome.success, "速度比例:", applied.appliedVelocityScale)
 
     # ... 到达目标高度后停止
-    stop = robot.body.set_waist_lift_velocity(velocity_scale=0.0)
+    stop = robot.body.lift_waist(velocity_scale=0.0)
     print(stop.outcome.statusMessage)
 ```
 
-腰部旋转用 `set_waist_turn_velocity`，参数与返回字段相同；关节插值时长用 `set_velocity`（秒，越大运动越慢）。
+腰部旋转用 `turn_waist`，参数与返回字段相同；关节插值时长用 `set_move_duration`（秒，越大运动越慢）。
 
 ## 订阅关节位置流
 

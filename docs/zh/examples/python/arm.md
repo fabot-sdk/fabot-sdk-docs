@@ -2,7 +2,7 @@
 title: 机械臂运动
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-09
 ---
 
 # 机械臂运动
@@ -41,25 +41,27 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 注意：
 
 - 快照的 `feedback` 为 `ProgressT`（`progress` / `statusMessage`），任务刚启动时可能为 `None`；终态 `result` 为 `OutcomeT`（`success` / `statusMessage`），失败原因读 `error`，错误处理见 [错误处理](../../usage/errors.md)。
-- 同一只手臂的 `move_joints` / `move_pose` 共享同一资源，新任务排队执行；进行中可 `op.cancel()` 取消。
+- 同一只手臂的 `move_joints` / `smooth_move_pose` / `direct_move_pose` 共享同一资源，新任务排队执行；进行中可 `op.cancel()` 取消。
 
 ## 按末端位姿运动
 
-`move_pose` 以末端位姿为目标：`pose` 为 `Pose3dT`（`x` / `y` / `z` 米，`qx` / `qy` / `qz` / `qw` 四元数）；`mode` 取 `PoseMoveMode.SMOOTH`（平滑）或 `PoseMoveMode.DIRECT`（直接）；`frame_id` 为参考坐标系，空串等价 `arm_base`。
+`smooth_move_pose` 以末端位姿为目标做平滑运动：`pose` 为 `Pose3dT`（`x` / `y` / `z` 米，`qx` / `qy` / `qz` / `qw` 四元数）；`frame_id` 为参考坐标系，空串等价 `arm_base`。直接到位用 `direct_move_pose`（无 `frame_id`）。
 
 ```python
-from fabot.capabilities.arm import PoseMoveMode
 from fabot.types.Pose3d import Pose3dT
 
 pose = Pose3dT()
 pose.x, pose.y, pose.z = 0.3, 0.0, 0.4
 pose.qw = 1.0   # 无旋转的单位四元数
 
-op = robot.right_arm.move_pose(
-    pose=pose, mode=PoseMoveMode.SMOOTH, wait=True, frame_id="arm_base",
+op = robot.right_arm.smooth_move_pose(
+    pose=pose, wait=True, frame_id="arm_base",
 )
 snap = op.get(timeout_ms=30000)
 print(snap.state, snap.result)
+
+# 对照：直接到位，无 frame_id
+# op = robot.right_arm.direct_move_pose(pose=pose, wait=True)
 ```
 
 ## 订阅关节位置流

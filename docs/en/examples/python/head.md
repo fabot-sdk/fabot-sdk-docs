@@ -2,7 +2,7 @@
 title: Head Motion
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-09-09
 ---
 
 # Head Motion
@@ -11,7 +11,7 @@ Control the head pitch / yaw joints and track motion progress. See [Commands & O
 
 ## Move the Head to Target Joint Angles
 
-`move_joints` returns a long-running Operation: poll progress snapshots via `events()` and read the result once a terminal state is reached. `positions` is a list of target joint angles in radians; with `wait=True` the task finishes only after arriving or timing out. Motion speed is governed by the interpolation duration: set it first with `set_velocity` (seconds — larger means slower); it applies persistently to all subsequent motions.
+`move_joints` returns a long-running Operation: poll progress snapshots via `events()` and read the result once a terminal state is reached. `positions` is a list of target joint angles in radians; with `wait=True` the task finishes only after arriving or timing out. Motion speed is governed by the interpolation duration: set it first with `set_move_duration` (seconds — larger means slower); it applies persistently to all subsequent motions.
 
 ```python
 from fabot import Robot
@@ -20,8 +20,8 @@ from fabot.core.types import OperationState
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready(["head"])
 
-    applied = robot.head.set_velocity(velocity=2.0)
-    print("interpolation duration applied:", applied.appliedVelocity, "s")
+    applied = robot.head.set_move_duration(move_duration=2.0)
+    print("interpolation duration applied:", applied.appliedMoveDuration, "s")
 
     target = [0.3, 0.5]   # target joint angles (radians)
     op = robot.head.move_joints(positions=target, wait=True)
@@ -71,7 +71,7 @@ Notes:
 ```python
 positions = robot.head.get_joints()
 print("current joint angles:", positions)
-print("current interpolation duration:", robot.head.get_velocity(), "s")
+print("current interpolation duration:", robot.head.get_move_duration(), "s")
 
 arrived = robot.head.check_arrive(threshold=0.05, target_joints=[])
 print("arrived:", arrived)
