@@ -77,7 +77,16 @@ git branch v1.0.0
 git push github v1.0.0
 ```
 
-推送 `main` 或任意 `v*` 时会重建**全部**版本再部署。本地 `npm run build` / `npm run preview` 会写出 `versions.json` 并显示顶栏版本选择；尚未切出 `v*` 时只有一项。本地构建只包含当前分支的页面，其它版本要等对应分支推送并由 CI 拼站后才能打开。
+推送 `main` 或任意 `v*` 时会重建**全部**版本再部署。本地 `npm run build` / `npm run preview` 会写出 `versions.json` 并显示顶栏版本选择，但只收录**已构建出目录**的版本：单版本构建时下拉只有 `v<version>(最新)` 一项。
+
+要在本地预览全部版本与版本切换，用多版本汇总构建：
+
+```bash
+npm run build:versions      # 按分支逐个构建并汇总到 dist/（每个版本会执行 npm ci，较慢）
+npm run preview:versions    # 预览 dist/，顶栏可切到各历史版本
+```
+
+切换版本时会尽量停留在同名页面；目标版本没有该页面（例如新增的更新日志在冻结版里不存在）则回退到该版本首页。
 
 ## 仓库维护
 

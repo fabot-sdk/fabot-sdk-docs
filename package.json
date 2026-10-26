@@ -8,7 +8,9 @@
     "build": "rspress build && node scripts/rewrite-asset-paths.mjs && node scripts/write-versions-json.mjs",
     "preview": "rspress preview",
     "serve": "npm run build && npm run preview",
-    "build:versions": "node scripts/build-all-versions.mjs"
+    "build:versions": "node scripts/build-all-versions.mjs",
+    "preview:versions": "RSPRESS_OUT_DIR=dist rspress preview",
+    "serve:versions": "npm run build:versions && npm run preview:versions"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

@@ -3,10 +3,9 @@ import { cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const repoRoot = process.cwd();
-const siteRoot = (process.env.RSPRESS_SITE_ROOT || '/fabot-sdk-docs').replace(
-  /\/$/,
-  '',
-);
+// 默认按站点根目录构建，便于本地 `npm run preview:versions` 预览；
+// GitHub Pages 由 workflow 显式传入 /fabot-sdk-docs
+const siteRoot = (process.env.RSPRESS_SITE_ROOT ?? '').replace(/\/$/, '');
 const dist = path.join(repoRoot, 'dist');
 const workRoot = path.join(repoRoot, '.version-worktrees');
 

@@ -62,5 +62,9 @@
   "downloadDevHint": {
     "zh": "下载文件只在构建产物中生成，请执行 npm run build 后用 npm run preview 预览。",
     "en": "Download files are only generated in the production build. Run npm run build, then npm run preview."
+  },
+  "versionUnavailable": {
+    "zh": "该版本文档尚未发布",
+    "en": "Docs for this version are not published yet"
   }
 }

@@ -6,6 +6,8 @@ export default defineConfig({
   root: path.join(__dirname, 'docs'),
   // GitHub Pages 项目站：https://fabot-sdk.github.io/fabot-sdk-docs/
   base: process.env.RSPRESS_BASE ?? '/',
+  // 多版本汇总产物在 dist/，用 `npm run preview:versions` 预览
+  outDir: process.env.RSPRESS_OUT_DIR ?? 'doc_build',
   title: 'fabot SDK 文档',
   description: 'fabot 机器人软件平台 SDK 使用文档（Python）',
   lang: 'zh',
