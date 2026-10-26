@@ -77,7 +77,7 @@ git branch v1.0.0
 git push github v1.0.0
 ```
 
-推送 `main` 或任意 `v*` 时会重建**全部**版本再部署。本地 `npm run build` / `npm run preview` 会写出 `versions.json` 并显示顶栏版本选择，但只收录**已构建出目录**的版本：单版本构建时下拉只有 `v<version>(最新)` 一项。
+推送 `main` 或任意 `v*` 时会重建**全部**版本再部署。本地 `npm run build` / `npm run preview` 会写出 `versions.json`，顶栏列出 `v<version>(最新)` 以及每个 `v*` 分支（例如 `v1.0.2(最新)`、`v1.0.0`）。单版本构建没有历史版目录，点选时提示「该版本文档尚未发布」。
 
 要在本地预览全部版本与版本切换，用多版本汇总构建：
 

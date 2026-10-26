@@ -31,5 +31,14 @@ export default defineConfig({
     // 下载入口放在顶栏，关闭内置在 H1 下的 LLMS UI
     llmsUI: false,
   },
+  builderConfig: {
+    performance: {
+      buildCache: {
+        // base 来自环境变量，rspress.config.ts 内容不变时不会让持久缓存失效，
+        // 否则下一次 `npm run build` 会沿用上一次的 /v1.0.0/ 等 base
+        cacheDigest: [process.env.RSPRESS_BASE ?? '/'],
+      },
+    },
+  },
   plugins: [mermaid()],
 });

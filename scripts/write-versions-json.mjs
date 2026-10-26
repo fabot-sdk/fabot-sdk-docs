@@ -35,13 +35,6 @@ function listVersionIds() {
 
 const dest =
   process.argv[2] || path.join(process.cwd(), 'doc_build', 'versions.json');
-const outDir = path.dirname(dest);
-
-// 只收录真正构建出来的版本目录：本地 `npm run build` 只产出 main，
-// 历史版目录由 `npm run build:versions` 汇总生成，避免下拉里出现打不开的版本
-function isBuilt(id) {
-  return existsSync(path.join(outDir, id, 'index.html'));
-}
 
 const siteRoot = (
   process.env.RSPRESS_SITE_ROOT ||
@@ -49,15 +42,15 @@ const siteRoot = (
   '/'
 ).replace(/\/$/, '');
 
+// 下拉列出 main 与全部 v* 分支。目录还没构建出来的历史版仍显示，
+// 点选时由页面探测，打不开则提示「尚未发布」，而不是从列表里消失。
 const catalog = {
   siteRoot,
-  versions: listVersionIds()
-    .filter((id) => id === 'main' || isBuilt(id))
-    .map((id) => ({
-      id,
-      label: id === 'main' ? latestLabel() : id,
-      prefix: id === 'main' ? '' : `/${id}`,
-    })),
+  versions: listVersionIds().map((id) => ({
+    id,
+    label: id === 'main' ? latestLabel() : id,
+    prefix: id === 'main' ? '' : `/${id}`,
+  })),
 };
 
 mkdirSync(path.dirname(dest), { recursive: true });

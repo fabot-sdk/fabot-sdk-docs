@@ -19,26 +19,37 @@ function normalizeBase(base: string): string {
   return trimmed === '/' ? '' : trimmed;
 }
 
-// rspress 的路由会把站点 base 从 pathname 里剥掉，所以不能靠 URL 判断当前版本；
-// 每个版本是按各自的 base 单独构建的，用构建出的 base 反查版本
-function currentVersion(runtimeBase: string, catalog: VersionCatalog): VersionItem {
-  const root = normalizeBase(catalog.siteRoot);
-  const exact = catalog.versions.find(
-    (item) => `${root}${item.prefix}` === runtimeBase,
-  );
-  if (exact) {
-    return exact;
+// rspress 的路由会把站点 base 从 pathname 里剥掉，地址栏里的 /v1.0.0 仍在。
+// 先用构建 base 反查；对不上时再看浏览器地址，避免历史版页面仍显示成最新版。
+function matchPrefixed(probe: string, catalog: VersionCatalog): VersionItem | undefined {
+  const normalized = normalizeBase(probe);
+  if (!normalized) {
+    return undefined;
   }
-  // 页面自带的 catalog 与本页构建 base 不一致时，退化为按版本前缀后缀匹配
+  const root = normalizeBase(catalog.siteRoot);
   const tagged = catalog.versions
     .filter((item) => item.prefix)
     .sort((a, b) => b.prefix.length - a.prefix.length);
   for (const item of tagged) {
-    if (runtimeBase === item.prefix || runtimeBase.endsWith(item.prefix)) {
+    const base = `${root}${item.prefix}`;
+    if (normalized === base || normalized.startsWith(`${base}/`)) {
       return item;
     }
   }
-  return catalog.versions.find((item) => item.id === 'main') ?? catalog.versions[0];
+  return undefined;
+}
+
+function currentVersion(
+  runtimeBase: string,
+  browserPath: string,
+  catalog: VersionCatalog,
+): VersionItem {
+  return (
+    matchPrefixed(runtimeBase, catalog) ??
+    matchPrefixed(browserPath, catalog) ??
+    catalog.versions.find((item) => item.id === 'main') ??
+    catalog.versions[0]
+  );
 }
 
 // 版本内部的页面路径。pathname 可能已剥掉 base，也可能保留，两种都归一
@@ -86,11 +97,22 @@ export function VersionSelect() {
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [unavailable, setUnavailable] = useState<string | null>(null);
   const probes = useRef(new Map<string, boolean>());
+  const indexHtml = useRef<Promise<string> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     fetch(withBase('/versions.json'))
-      .then((res) => (res.ok ? res.json() : null))
+      .then(async (res) => {
+        if (!res.ok) {
+          return null;
+        }
+        const type = res.headers.get('content-type') || '';
+        // 预览服务器会把不存在的路径回退成首页 HTML，不能当成目录
+        if (!type.includes('json')) {
+          return null;
+        }
+        return (await res.json()) as VersionCatalog;
+      })
       .then((data: VersionCatalog | null) => {
         if (!cancelled && data?.versions?.length) {
           setCatalog(data);
@@ -104,10 +126,21 @@ export function VersionSelect() {
 
   // 本页构建时使用的站点 base（含版本前缀），用于反查当前版本
   const runtimeBase = normalizeBase(withBase('/'));
-  const selected = currentVersion(runtimeBase, catalog);
+  const browserPath = typeof window === 'undefined' ? '' : window.location.pathname;
+  const selected = currentVersion(runtimeBase, browserPath, catalog);
 
   // 探测目标地址是否存在：切版本时目标页面可能在该版本里还没写（如新增页），
   // 需要回退到该版本首页，而不是跳进 404
+  const siteIndexHtml = () => {
+    if (!indexHtml.current) {
+      indexHtml.current = fetch(withBase('/index.html'), { cache: 'no-store' })
+        .then((res) => (res.ok ? res.text() : ''))
+        .catch(() => '');
+    }
+    return indexHtml.current;
+  };
+
+  // 预览服务器对缺失路径返回 200 和站点首页。和首页正文相同、且请求的不是首页时，视为不存在。
   const exists = async (url: string): Promise<boolean> => {
     const cached = probes.current.get(url);
     if (cached !== undefined) {
@@ -115,10 +148,24 @@ export function VersionSelect() {
     }
     let ok = false;
     try {
-      const res = await fetch(url, { method: 'HEAD', cache: 'no-store' });
-      // 个别静态服务对不存在的路径返回 200 + 404 页，用 content-type 兜底没意义，
-      // 这里只认状态码，避免把 404 页当成正常页面
-      ok = res.ok;
+      const res = await fetch(url, { method: 'GET', cache: 'no-store' });
+      if (!res.ok) {
+        ok = false;
+      } else {
+        const type = res.headers.get('content-type') || '';
+        if (!type.includes('text/html')) {
+          ok = true;
+        } else {
+          const html = await res.text();
+          const path = new URL(url, window.location.origin).pathname;
+          const indexPath = new URL(withBase('/index.html'), window.location.origin)
+            .pathname;
+          const rootPath = new URL(withBase('/'), window.location.origin).pathname;
+          const askingForIndex =
+            path === indexPath || path === rootPath || path === `${rootPath.replace(/\/$/, '')}/`;
+          ok = askingForIndex || html !== (await siteIndexHtml());
+        }
+      }
     } catch {
       ok = false;
     }
