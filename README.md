@@ -42,11 +42,26 @@ docs/
 npm install
 
 npm run dev       # 本地预览（含热重载），右上角切换语言
-npm run build     # 输出 doc_build/（中文无前缀，英文在 en/）
-npm run preview   # 用本地 HTTP 服务预览生产构建（推荐）
+npm run build     # 只构建，输出 doc_build/（中文无前缀，英文在 en/），不启动服务
+npm run preview   # 用本地 HTTP 服务预览已构建的 doc_build/
+npm run serve     # 构建 + 预览一步到位（要验证下载用这个）
 ```
 
+`npm run build` 属于一次性任务，跑完就退出，这是预期行为；要访问站点请再执行 `npm run preview`，或直接用 `npm run serve`。
+
 构建会把 CSS/JS 写成相对路径，可以直接打开 `doc_build/index.html` 看排版。搜索、客户端路由和语言自动跳转仍建议用 `npm run dev` 或 `npm run preview`。
+
+## 导出与下载
+
+构建会为每个页面额外生成 Markdown，并输出全站汇总文件；顶栏「下载」下拉提供三个入口：
+
+- 本页 Markdown：当前页面的 `.md`，随当前路由变化。
+- 全站 Markdown：`llms-full.txt`，全站内容合并为单个文件（英文为 `en/llms-full.txt`）。
+- 全站索引：`llms.txt`，按导航与侧栏顺序列出页面（英文为 `en/llms.txt`）。
+
+这些文件由 `rspress.config.ts` 中的 `llms: true` 生成，下拉入口在 `theme/DownloadMenu.tsx`，样式在 `theme/download-menu.css`。
+
+下载文件**只在构建阶段生成**：`npm run dev` 无法下载（开发服务器会把 `.md`、`llms*.txt` 等未知路径回退成 HTML 页面，浏览器随即报「无法从网站上读取文件」），此时下拉里会显示提示文案。要本地验证下载，请用 `npm run serve`（等价于 `npm run build` + `npm run preview`）。
 
 推送到 GitHub `main` 或 `v*` 后由 Actions 发布到 [GitHub Pages](https://fabot-sdk.github.io/fabot-sdk-docs/)。仓库 Settings → Pages → Source 选 **GitHub Actions**。
 

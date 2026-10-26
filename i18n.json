@@ -38,5 +38,25 @@
   "version": {
     "zh": "版本",
     "en": "Version"
+  },
+  "download": {
+    "zh": "下载",
+    "en": "Download"
+  },
+  "downloadPage": {
+    "zh": "本页 Markdown",
+    "en": "This page (Markdown)"
+  },
+  "downloadFull": {
+    "zh": "全站 Markdown",
+    "en": "All pages (Markdown)"
+  },
+  "downloadIndex": {
+    "zh": "全站索引（llms.txt）",
+    "en": "Site index (llms.txt)"
+  },
+  "downloadDevHint": {
+    "zh": "下载文件只在构建产物中生成，请执行 npm run build 后用 npm run preview 预览。",
+    "en": "Download files are only generated in the production build. Run npm run build, then npm run preview."
   }
 }

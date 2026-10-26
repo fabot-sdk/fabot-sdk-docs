@@ -6,6 +6,7 @@
     "dev": "rspress dev",
     "build": "rspress build && node scripts/rewrite-asset-paths.mjs && node scripts/write-versions-json.mjs",
     "preview": "rspress preview",
+    "serve": "npm run build && npm run preview",
     "build:versions": "node scripts/build-all-versions.mjs"
   },
   "engines": {

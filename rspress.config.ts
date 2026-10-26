@@ -23,5 +23,11 @@ export default defineConfig({
       description: 'fabot robot software platform SDK documentation (Python)',
     },
   ],
+  // 构建时额外输出每页 Markdown、llms.txt 与 llms-full.txt（下载入口见 theme/DownloadMenu.tsx）
+  llms: true,
+  themeConfig: {
+    // 下载入口放在顶栏，关闭内置在 H1 下的 LLMS UI
+    llmsUI: false,
+  },
   plugins: [mermaid()],
 });
