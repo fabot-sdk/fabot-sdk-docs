@@ -19,3 +19,14 @@
   padding: 0.2rem 0.4rem;
   font: inherit;
 }
+
+.doc-version-select__control:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.doc-version-select__hint {
+  font-size: 0.75rem;
+  white-space: nowrap;
+  color: var(--rp-c-danger);
+}
