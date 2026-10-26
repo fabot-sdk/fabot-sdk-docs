@@ -2,7 +2,7 @@
 title: 急停
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-10-26
 ---
 
 # 急停
@@ -56,4 +56,4 @@ with Robot.connect("192.168.1.10", 7557) as robot:
     print("故障修订号:", faults.revision)
 ```
 
-注意：`robot.faults()` 返回按槽位组织的 `RobotFaults`（`revision` + 22 个槽位故障袋，字段见 [Robot](../../reference/python/robot.md)），而 `faults_changed` 事件的 `faults` 是故障记录列表（`RobotFaultSnapshot`），两者形态不同。
+注意：`robot.faults()` 返回按槽位组织的 `RobotFaults`（`revision` + 23 个槽位故障袋，字段见 [Robot](../../reference/python/robot.md)），而 `faults_changed` 事件的 `faults` 是故障记录列表（`RobotFaultSnapshot`），两者形态不同。

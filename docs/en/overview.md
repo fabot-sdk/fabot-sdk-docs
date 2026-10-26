@@ -2,7 +2,7 @@
 title: Overview & Architecture
 status: draft
 owner: fabot-core
-updated: 2026-09-07
+updated: 2026-10-26
 ---
 
 # Overview & Architecture
@@ -37,7 +37,7 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 
 ## Capabilities, Slots, and Proxies
 
-The SDK ships typed proxies for 15 capability modules, accessed through the 22 slot properties on `Robot` (`robot.<slot>`). The same capability can be installed in multiple slots (e.g. left and right arms); each slot is an independent instance of the same API.
+The SDK ships typed proxies for 15 capability modules, accessed through the 23 slot properties on `Robot` (`robot.<slot>`). The same capability can be installed in multiple slots (e.g. left and right arms); each slot is an independent instance of the same API.
 
 | Module | Slot properties | Description |
 |--------|-----------------|-------------|
@@ -51,7 +51,7 @@ The SDK ships typed proxies for 15 capability modules, accessed through the 22 s
 | Motion `motion` | `robot.motion` | Whole-body motion planning and FSM control, estop and reset → [motion](reference/python/motion.md) |
 | Power `power` | `robot.power_1` / `robot.power_2` | Energy, voltage, current, temperature, and charging state monitoring → [power](reference/python/power.md) |
 | IO `io` | `robot.io` | Digital pin acquire / release and level I/O → [io](reference/python/io.md) |
-| Camera `camera` | `robot.head_camera` / `robot.chest_camera` / `robot.left_wrist_camera` / `robot.right_wrist_camera` | Single-frame capture, stream configuration, image frame channels → [camera](reference/python/camera.md) |
+| Camera `camera` | `robot.head_camera` / `robot.chest_camera` / `robot.waist_camera` / `robot.left_wrist_camera` / `robot.right_wrist_camera` | Single-frame capture, intrinsics query, stream configuration, image frame channels → [camera](reference/python/camera.md) |
 | Screen `screen` | `robot.screen` | Face-screen text / image / video display control → [screen](reference/python/screen.md) |
 | Light `light` | `robot.light` | Light-strip mode, color, brightness, animation period → [light](reference/python/light.md) |
 | Voice `voice` | `robot.voice` | Wake-up / transcription / intent recognition and speech synthesis → [voice](reference/python/voice.md) |

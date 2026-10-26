@@ -2,7 +2,7 @@
 title: 连接与 Robot 入口
 status: draft
 owner: fabot-core
-updated: 2026-09-07
+updated: 2026-10-26
 ---
 
 # 连接与 Robot 入口
@@ -89,7 +89,7 @@ token.close()    # 退订；robot.close() 会统一关闭全部订阅
 
 ## 能力槽位
 
-能力以**只读属性**按槽位暴露，共 22 个槽位：
+能力以**只读属性**按槽位暴露，共 23 个槽位：
 
 | 槽位属性 | 能力模块 | 槽位属性 | 能力模块 |
 |----------|----------|----------|----------|
@@ -100,7 +100,7 @@ token.close()    # 退订；robot.close() 会统一关闭全部订阅
 | `left_gripper` / `right_gripper` | gripper | `head` | head |
 | `body` | body | `light` | light |
 | `power_1` / `power_2` | power | `voice` | voice |
-| `head_camera` / `chest_camera` | camera | `left_wrist_camera` / `right_wrist_camera` | camera |
+| `head_camera` / `chest_camera` / `waist_camera` | camera | `left_wrist_camera` / `right_wrist_camera` | camera |
 
 - 槽位未绑定 adapter 时，访问其能力方法会抛 `AdapterUnbound`（属 `NotFound` 类别）；先用 `has_adapter`（只读属性）判断：
 

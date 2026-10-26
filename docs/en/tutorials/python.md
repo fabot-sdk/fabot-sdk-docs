@@ -2,7 +2,7 @@
 title: Your First Program (Python)
 status: draft
 owner: fabot-core
-updated: 2026-09-07
+updated: 2026-10-26
 ---
 
 # Your First Program (Python)
@@ -46,7 +46,7 @@ Replace the IP with your robot's address, save as `hello_fabot.py`, and run `pyt
 - `Robot.connect(ip, port)`: connects to the control-plane endpoint; the `with` block guarantees `close()` on exit. For other connection styles (`from_endpoint` / `from_config` / `mock`) and `ClientOptions`, see [Connection & the Robot Entry Point](../usage/connection.md).
 - `wait_ready()`: blocks until the bound, enabled, and required slots are ready; unbound optional slots do not block startup. The wait timeout is controlled by `ClientOptions.resolve_timeout_ms`.
 - `version()` returns the platform version string; `state()` returns a `RobotState` snapshot whose `.state` field is the robot-wide run state (`RobotRunState`). See [Status, Faults & Lifecycle](../usage/status-faults.md).
-- Capabilities are accessed through read-only slot properties (`robot.screen`, `robot.io`, and so on — 22 slots in total). Every call returns a result object: `applied.outcome.success` from `show_text` reports success, and `level.value` from `get_level` is the current level. Acquire a pin before reading or writing, then `release` it when finished. Field details are on the [Screen](../reference/python/screen.md) and [IO](../reference/python/io.md) reference pages.
+- Capabilities are accessed through read-only slot properties (`robot.screen`, `robot.io`, and so on — 23 slots in total). Every call returns a result object: `applied.outcome.success` from `show_text` reports success, and `level.value` from `get_level` is the current level. Acquire a pin before reading or writing, then `release` it when finished. Field details are on the [Screen](../reference/python/screen.md) and [IO](../reference/python/io.md) reference pages.
 - Calling an unbound slot raises `AdapterUnbound`; on a real robot you can check `robot.io.has_adapter` first. Error types and handling are covered in [Error Handling](../usage/errors.md).
 
 ## Next Steps

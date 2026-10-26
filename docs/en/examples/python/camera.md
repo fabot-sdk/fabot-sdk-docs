@@ -2,12 +2,12 @@
 title: Camera
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-10-26
 ---
 
 # Camera
 
-Capture image frames, subscribe to camera image streams, and get preview playback URLs. The camera has four slots (`head_camera` / `chest_camera` / `left_wrist_camera` / `right_wrist_camera`) — one API set, each an independent camera. For the channel model see [Events and Channels](../../usage/events-channels.md); for interfaces and fields see [Camera](../../reference/python/camera.md).
+Capture image frames, subscribe to camera image streams, and get preview playback URLs. The camera has five slots (`head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera`) — one API set, each an independent camera. For the channel model see [Events and Channels](../../usage/events-channels.md); for interfaces and fields see [Camera](../../reference/python/camera.md).
 
 ## Capture a Frame Set
 
@@ -92,3 +92,37 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 
     robot.head_camera.close()
 ```
+
+## Reading camera intrinsics
+
+`get_intrinsics` returns the color and depth intrinsics (`IntrinsicsT`). It contains K and distortion only, not the color-to-depth extrinsics. The pipeline must already be started by `open()`; otherwise `outcome.success` is `False`.
+
+```python
+from fabot import Robot
+from fabot.capabilities.camera import StreamKind, StreamProfileT
+
+with Robot.connect("192.168.1.10", 7557) as robot:
+    robot.wait_ready(["head_camera"])
+
+    profile = StreamProfileT()
+    profile.stream = StreamKind.COLOR
+    profile.width, profile.height, profile.fps = 1280, 720, 30
+    profile.encoding = "rgb8"
+    robot.head_camera.open(profiles=[profile], enable_sync=True)
+
+    intr = robot.head_camera.get_intrinsics()
+    if intr.color is not None:
+        print("Color intrinsics:", intr.color.width, "x", intr.color.height,
+              "| fx/fy:", intr.color.fx, intr.color.fy,
+              "| distortion:", intr.color.distortionModel, intr.color.d)
+    if intr.depth is not None:
+        print("Depth intrinsics:", intr.depth.width, "x", intr.depth.height)
+
+    robot.head_camera.close()
+```
+
+Notes:
+
+- When depth is aligned to color, depth frames actually use the color intrinsics; the depth path still reports its own calibration.
+- When neither path is available (slot unconfigured, pipeline not started, or calibration not yet received), `outcome.success` is `False`; the command does not block waiting.
+

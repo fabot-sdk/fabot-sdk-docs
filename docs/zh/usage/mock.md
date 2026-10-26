@@ -2,7 +2,7 @@
 title: Mock 测试
 status: draft
 owner: fabot-core
-updated: 2026-09-07
+updated: 2026-10-26
 ---
 
 # Mock 测试
@@ -21,7 +21,7 @@ robot = Robot.mock()                     # MockRobot：Robot 的子类
 robot.connection.is_connected()          # True：创建即"已连接"，无需 connect()/wait_ready()
 ```
 
-- `MockRobot` 与 `Robot` 的 22 个槽位属性同名，应用代码无需区分；只是每个 proxy 是对应的 Mock proxy（如 `ChassisMockProxy`，继承 `ChassisProxy`），额外暴露一组 `on_<command>` 钩子。槽位清单见 [连接与 Robot 入口](connection.md)。
+- `MockRobot` 与 `Robot` 的 23 个槽位属性同名，应用代码无需区分；只是每个 proxy 是对应的 Mock proxy（如 `ChassisMockProxy`，继承 `ChassisProxy`），额外暴露一组 `on_<command>` 钩子。槽位清单见 [连接与 Robot 入口](connection.md)。
 - 每个 Command / Operation 都有对应的钩子属性，覆盖该能力的全部调用。
 
 ## 注入 Command 行为

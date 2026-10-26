@@ -2,12 +2,12 @@
 title: 相机
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-10-26
 ---
 
 # 相机
 
-抓取图像帧、订阅相机图像流与预览播放地址。相机有四个槽位（`head_camera` / `chest_camera` / `left_wrist_camera` / `right_wrist_camera`），同一套 API、各自独立。通道模型见 [事件与数据通道](../../usage/events-channels.md)，接口与字段见 [相机](../../reference/python/camera.md)。
+抓取图像帧、订阅相机图像流与预览播放地址。相机有五个槽位（`head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera`），同一套 API、各自独立。通道模型见 [事件与数据通道](../../usage/events-channels.md)，接口与字段见 [相机](../../reference/python/camera.md)。
 
 ## 抓取一组帧
 
@@ -92,3 +92,37 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 
     robot.head_camera.close()
 ```
+
+## 读取相机内参
+
+`get_intrinsics` 返回彩色 / 深度两路内参（`IntrinsicsT`），只含 K 与畸变，不含彩色–深度外参。pipeline 需已由 `open()` 启动，否则 `outcome.success` 为 `False`。
+
+```python
+from fabot import Robot
+from fabot.capabilities.camera import StreamKind, StreamProfileT
+
+with Robot.connect("192.168.1.10", 7557) as robot:
+    robot.wait_ready(["head_camera"])
+
+    profile = StreamProfileT()
+    profile.stream = StreamKind.COLOR
+    profile.width, profile.height, profile.fps = 1280, 720, 30
+    profile.encoding = "rgb8"
+    robot.head_camera.open(profiles=[profile], enable_sync=True)
+
+    intr = robot.head_camera.get_intrinsics()
+    if intr.color is not None:
+        print("彩色内参:", intr.color.width, "x", intr.color.height,
+              "| fx/fy:", intr.color.fx, intr.color.fy,
+              "| 畸变:", intr.color.distortionModel, intr.color.d)
+    if intr.depth is not None:
+        print("深度内参:", intr.depth.width, "x", intr.depth.height)
+
+    robot.head_camera.close()
+```
+
+注意：
+
+- 深度对齐到彩色时，深度帧实际使用彩色内参，深度路仍回报自身标定结果。
+- 两路都拿不到（槽位未配置、pipeline 未启动或标定尚未到达）时 `outcome.success` 为 `False`，命令不阻塞等待。
+

@@ -2,7 +2,7 @@
 title: 概述与架构
 status: draft
 owner: fabot-core
-updated: 2026-09-07
+updated: 2026-10-26
 ---
 
 # 概述与架构
@@ -37,7 +37,7 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 
 ## 能力、槽位与 Proxy
 
-SDK 内置 15 个能力模块的类型化 Proxy，经 `Robot` 的 22 个槽位属性访问（`robot.<slot>`）。同一能力可安装在多个槽位（如左右臂），各槽位是同一套 API、彼此独立的实例。
+SDK 内置 15 个能力模块的类型化 Proxy，经 `Robot` 的 23 个槽位属性访问（`robot.<slot>`）。同一能力可安装在多个槽位（如左右臂），各槽位是同一套 API、彼此独立的实例。
 
 | 模块 | 槽位属性 | 说明 |
 |------|----------|------|
@@ -51,7 +51,7 @@ SDK 内置 15 个能力模块的类型化 Proxy，经 `Robot` 的 22 个槽位�
 | 运动 `motion` | `robot.motion` | 全身运动规划与运控状态机、急停与复位 → [motion](reference/python/motion.md) |
 | 电源 `power` | `robot.power_1` / `robot.power_2` | 电量、电压、电流、温度与充电状态监控 → [power](reference/python/power.md) |
 | IO `io` | `robot.io` | 数字引脚占用、释放与电平读写 → [io](reference/python/io.md) |
-| 相机 `camera` | `robot.head_camera` / `robot.chest_camera` / `robot.left_wrist_camera` / `robot.right_wrist_camera` | 单帧抓取、开流配置与图像帧通道 → [camera](reference/python/camera.md) |
+| 相机 `camera` | `robot.head_camera` / `robot.chest_camera` / `robot.waist_camera` / `robot.left_wrist_camera` / `robot.right_wrist_camera` | 单帧抓取、内参查询、开流配置与图像帧通道 → [camera](reference/python/camera.md) |
 | 面屏 `screen` | `robot.screen` | 面屏文本 / 图片 / 视频显示控制 → [screen](reference/python/screen.md) |
 | 灯效 `light` | `robot.light` | 灯带模式、颜色、亮度与动画周期 → [light](reference/python/light.md) |
 | 语音 `voice` | `robot.voice` | 语音唤醒 / 转写 / 意图识别与合成播报 → [voice](reference/python/voice.md) |

@@ -2,15 +2,15 @@
 title: Camera
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-10-26
 ---
 
 # Camera
 
 ## Module Overview
 
-- Capability id: `camera`; slots: `robot.head_camera` / `robot.chest_camera` / `robot.left_wrist_camera` / `robot.right_wrist_camera`
-- Camera access and image streams: single-shot capture, stream configuration, image-frame channels, and preview playback URLs. All four slots share the same API on independent cameras.
+- Capability id: `camera`; slots: `robot.head_camera` / `robot.chest_camera` / `robot.waist_camera` / `robot.left_wrist_camera` / `robot.right_wrist_camera`
+- Camera access and image streams: single-shot capture, intrinsics query, stream configuration, image-frame channels, and preview playback URLs. All five slots share the same API on independent cameras.
 
 ## API Overview
 
@@ -19,10 +19,11 @@ updated: 2026-09-03
 | `capture` | — | `CaptureT` | Command |
 | `capture_color` | — | `ColorCaptureT` | Command |
 | `capture_depth` | — | `DepthCaptureT` | Command |
+| `get_intrinsics` | — | `IntrinsicsT` | Command |
 | `open` | `profiles`, `enable_sync` | `CameraSessionT` | Command |
 | `close` | — | `CameraSessionT` | Command |
 
-Command default `timeout_ms`: 10000 for `capture` / `capture_color` / `capture_depth`, 3000 for `open` / `close` (all overridable). All parameters are keyword-only. This module has no Operations.
+Command default `timeout_ms`: 10000 for `capture` / `capture_color` / `capture_depth`, 1000 for `get_intrinsics`, 3000 for `open` / `close` (all overridable). All parameters are keyword-only. This module has no Operations.
 
 | Channel | Content |
 |---------|---------|
@@ -124,6 +125,52 @@ capture_depth(*, timeout_ms: int = 10000) -> DepthCaptureT
 **Returns**
 
 `DepthCaptureT`: `image` (`ImageFrameT`) / `outcome` (`OutcomeT`), same as `capture_color`.
+
+### get_intrinsics
+
+Read the camera intrinsics (color and depth paths are independent). Intrinsics only (K and distortion) — **no color-to-depth extrinsics**.
+
+```python
+get_intrinsics(*, timeout_ms: int = 1000) -> IntrinsicsT
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
+
+**Returns**
+
+`IntrinsicsT`:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `cameraSlot` | `str` | Camera slot |
+| `color` | `OpticalIntrinsicsT` \| `None` | Color-path intrinsics; `None` when that path is unavailable |
+| `depth` | `OpticalIntrinsicsT` \| `None` | Depth-path intrinsics; `None` when that path is unavailable |
+| `outcome` | `OutcomeT` \| `None` | `success` / `statusMessage` |
+
+`OpticalIntrinsicsT` fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `stream` | `int` | Stream kind (`StreamKind`: `COLOR` / `DEPTH` / `INFRARED`) |
+| `width` / `height` | `int` | Image width / height the intrinsics apply to (pixels) |
+| `fx` / `fy` | `float` | Focal lengths (pixels) |
+| `cx` / `cy` | `float` | Principal point (pixels) |
+| `distortionModel` | `str` | Distortion model: `plumb_bob` / `rational_polynomial` / `kannala_brandt4` / `none` |
+| `d` | `list[float]` | Distortion coefficients in OpenCV order (`plumb_bob` is `[k1, k2, p1, p2, k3]`; `rational_polynomial` appends `k4, k5, k6`) |
+
+`outcome.success` is `True` when at least one of the two paths has intrinsics; the missing path's field is `None`. It is `False` when neither path has intrinsics, the slot is unconfigured, the pipeline has not been started (no `open()`), or the camera calibration has not been received yet — the command does not block waiting. When depth is aligned to color, depth frames use the color intrinsics.
+
+```python
+intr = robot.head_camera.get_intrinsics()   # requires open() to start the pipeline
+if intr.color:
+    print(intr.color.stream, intr.color.width, intr.color.height, intr.color.fx)
+    print(intr.color.distortionModel, intr.color.d)
+print(intr.outcome.success)
+```
 
 ### open
 

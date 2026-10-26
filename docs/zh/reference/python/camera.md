@@ -2,15 +2,15 @@
 title: 相机 Camera
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-10-26
 ---
 
 # 相机 Camera
 
 ## 模块概述
 
-- 能力 id：`camera`；槽位：`robot.head_camera` / `robot.chest_camera` / `robot.left_wrist_camera` / `robot.right_wrist_camera`
-- 相机接入与图像流：单帧抓取、开流配置、图像帧通道与预览播放地址。四个槽位是同一套 API、各自独立的相机。
+- 能力 id：`camera`；槽位：`robot.head_camera` / `robot.chest_camera` / `robot.waist_camera` / `robot.left_wrist_camera` / `robot.right_wrist_camera`
+- 相机接入与图像流：单帧抓取、内参查询、开流配置、图像帧通道与预览播放地址。五个槽位是同一套 API、各自独立的相机。
 
 ## API 总览
 
@@ -19,10 +19,11 @@ updated: 2026-09-03
 | `capture` | — | `CaptureT` | Command |
 | `capture_color` | — | `ColorCaptureT` | Command |
 | `capture_depth` | — | `DepthCaptureT` | Command |
+| `get_intrinsics` | — | `IntrinsicsT` | Command |
 | `open` | `profiles`, `enable_sync` | `CameraSessionT` | Command |
 | `close` | — | `CameraSessionT` | Command |
 
-Command 默认 `timeout_ms`：`capture` / `capture_color` / `capture_depth` 为 10000，`open` / `close` 为 3000（均可覆盖）。参数均为关键字参数。本模块没有 Operation。
+Command 默认 `timeout_ms`：`capture` / `capture_color` / `capture_depth` 为 10000，`get_intrinsics` 为 1000，`open` / `close` 为 3000（均可覆盖）。参数均为关键字参数。本模块没有 Operation。
 
 | 通道 | 内容 |
 |------|------|
@@ -124,6 +125,52 @@ capture_depth(*, timeout_ms: int = 10000) -> DepthCaptureT
 **返回**
 
 `DepthCaptureT`：`image`（`ImageFrameT`）/ `outcome`（`OutcomeT`），同 `capture_color`。
+
+### get_intrinsics
+
+读取相机内参（彩色 / 深度两路，各自独立）。只含内参（K 与畸变），**不含彩色–深度外参**。
+
+```python
+get_intrinsics(*, timeout_ms: int = 1000) -> IntrinsicsT
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
+
+**返回**
+
+`IntrinsicsT`：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `cameraSlot` | `str` | 相机槽位 |
+| `color` | `OpticalIntrinsicsT` \| `None` | 彩色路内参；该路不可用时为 `None` |
+| `depth` | `OpticalIntrinsicsT` \| `None` | 深度路内参；该路不可用时为 `None` |
+| `outcome` | `OutcomeT` \| `None` | `success` / `statusMessage` |
+
+`OpticalIntrinsicsT` 字段：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `stream` | `int` | 流类型（`StreamKind`：`COLOR` / `DEPTH` / `INFRARED`） |
+| `width` / `height` | `int` | 内参对应的图像宽 / 高（像素） |
+| `fx` / `fy` | `float` | 焦距（像素） |
+| `cx` / `cy` | `float` | 主点（像素） |
+| `distortionModel` | `str` | 畸变模型：`plumb_bob` / `rational_polynomial` / `kannala_brandt4` / `none` |
+| `d` | `list[float]` | 畸变系数，OpenCV 顺序（`plumb_bob` 为 `[k1, k2, p1, p2, k3]`，`rational_polynomial` 再追加 `k4, k5, k6`） |
+
+两路至少一路有内参时 `outcome.success` 为 `True`，缺失的那一路字段为 `None`。两路都没有、槽位未配置、pipeline 未启动（未 `open()`）或尚未收到相机标定时 `success` 为 `False`；命令不阻塞等待。深度对齐到彩色时，深度帧使用彩色内参。
+
+```python
+intr = robot.head_camera.get_intrinsics()   # 需先 open() 启动 pipeline
+if intr.color:
+    print(intr.color.stream, intr.color.width, intr.color.height, intr.color.fx)
+    print(intr.color.distortionModel, intr.color.d)
+print(intr.outcome.success)
+```
 
 ### open
 

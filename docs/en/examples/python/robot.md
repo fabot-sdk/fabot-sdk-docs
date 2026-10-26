@@ -2,7 +2,7 @@
 title: E-Stop
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-10-26
 ---
 
 # E-Stop
@@ -56,4 +56,4 @@ with Robot.connect("192.168.1.10", 7557) as robot:
     print("Faults revision:", faults.revision)
 ```
 
-Note: `robot.faults()` returns `RobotFaults` organized per slot (`revision` plus 22 slot fault bags; fields in [Robot](../../reference/python/robot.md)), while the `faults_changed` event carries `faults` as a list of fault records (`RobotFaultSnapshot`) — the two shapes differ.
+Note: `robot.faults()` returns `RobotFaults` organized per slot (`revision` plus 23 slot fault bags; fields in [Robot](../../reference/python/robot.md)), while the `faults_changed` event carries `faults` as a list of fault records (`RobotFaultSnapshot`) — the two shapes differ.

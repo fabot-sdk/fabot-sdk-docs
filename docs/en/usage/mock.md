@@ -2,7 +2,7 @@
 title: Mock Testing
 status: draft
 owner: fabot-core
-updated: 2026-09-07
+updated: 2026-10-26
 ---
 
 # Mock Testing
@@ -21,7 +21,7 @@ robot = Robot.mock()                     # MockRobot: a subclass of Robot
 robot.connection.is_connected()          # True: connected on creation, no connect()/wait_ready() needed
 ```
 
-- `MockRobot` exposes the same 22 slot attributes as `Robot`, so application code needs no distinction; each proxy is simply the corresponding Mock proxy (e.g. `ChassisMockProxy`, which inherits `ChassisProxy`) with an extra set of `on_<command>` hooks. See [Connection & the Robot Entry Point](connection.md) for the slot list.
+- `MockRobot` exposes the same 23 slot attributes as `Robot`, so application code needs no distinction; each proxy is simply the corresponding Mock proxy (e.g. `ChassisMockProxy`, which inherits `ChassisProxy`) with an extra set of `on_<command>` hooks. See [Connection & the Robot Entry Point](connection.md) for the slot list.
 - Every Command / Operation has a corresponding hook attribute covering all calls of that capability.
 
 ## Injecting Command Behavior

@@ -2,7 +2,7 @@
 title: Configuration
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-10-26
 ---
 
 # Configuration
@@ -18,7 +18,7 @@ print(cfg.io.adapter_id)            # "fabot_io"
 print(cfg.to_yaml())                # export as YAML
 ```
 
-Each slot on `RobotConfig` is a `SlotBinding` attribute (e.g. `cfg.io`, `cfg.left_arm`, `cfg.chassis`; see [Overview](../overview.md) for all 22 slots).
+Each slot on `RobotConfig` is a `SlotBinding` attribute (e.g. `cfg.io`, `cfg.left_arm`, `cfg.chassis`; see [Overview](../overview.md) for all 23 slots).
 
 ## Modifying Configuration
 

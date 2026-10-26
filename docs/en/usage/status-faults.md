@@ -2,7 +2,7 @@
 title: Status, Faults & Lifecycle
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-10-26
 ---
 
 # Status, Faults & Lifecycle
@@ -17,7 +17,7 @@ The SDK exposes runtime information on three levels: **whole-robot aggregated st
 |--------|---------|-------|
 | `state()` | `RobotState` | Whole-robot run-state snapshot; the `.state` field is a `RobotRunState` |
 | `status()` | `RobotStatus` | Aggregates the `power_1` / `power_2` / `screen` / `voice` status bags + `generation` / `revision` (configuration generation) |
-| `faults()` | `RobotFaults` | Aggregates the current fault bags of all 22 slots |
+| `faults()` | `RobotFaults` | Aggregates the current fault bags of all 23 slots |
 | `version()` | `str` | Robot platform version |
 | `sdk_version` | `str` | The SDK's own version (a property, not a method) |
 

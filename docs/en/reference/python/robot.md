@@ -2,7 +2,7 @@
 title: Robot Entry
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-10-26
 ---
 
 # Robot Entry
@@ -76,7 +76,7 @@ wait_ready(slots: Sequence[str] | None = None) -> None
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `slots` | `Sequence[str]` | `None` | Slot ids to wait for; `None` means all 22 slots |
+| `slots` | `Sequence[str]` | `None` | Slot ids to wait for; `None` means all 23 slots |
 
 Semantics: reads the current slot configuration and blocking-resolves the handle of every target slot that is **enabled, required, and bound**; slots that are unbound, disabled, or `required=False` are skipped, not waited on. The per-slot resolve timeout is `ClientOptions.resolve_timeout_ms`; a failed resolve raises.
 
@@ -87,7 +87,7 @@ robot.wait_ready(["left_arm", "io"])     # only the given slots
 
 ## slots
 
-Capabilities are exposed as read-only slot attributes (`robot.io`, `robot.chassis`, and so on); there are 22 slots.
+Capabilities are exposed as read-only slot attributes (`robot.io`, `robot.chassis`, and so on); there are 23 slots.
 
 | Slot attribute | Capability id | Docs |
 |----------------|---------------|------|
@@ -102,7 +102,7 @@ Capabilities are exposed as read-only slot attributes (`robot.io`, `robot.chassi
 | `motion` | `motion` | [Motion](motion.md) |
 | `teleop` | `teleop` | [Teleop](teleop.md) |
 | `arms` | `arms` | [Arms](arms.md) |
-| `head_camera` / `chest_camera` | `camera` | [Camera](camera.md) |
+| `head_camera` / `chest_camera` / `waist_camera` | `camera` | [Camera](camera.md) |
 | `left_wrist_camera` / `right_wrist_camera` | `camera` | [Camera](camera.md) |
 | `screen` | `screen` | [Screen](screen.md) |
 | `light` | `light` | [Light](light.md) |
@@ -232,7 +232,7 @@ Convenience properties: `is_running` / `is_idle` / `is_degraded` / `is_fault` / 
 
 Only power / screen / voice currently provide status bags; the other slots do not participate in the aggregation (their fields keep default values).
 
-`RobotFaults`: `revision` (`int`) plus 22 per-slot fault-bag fields (`body` / `left_arm` / `right_arm` / `left_hand` / `right_hand` / `left_gripper` / `right_gripper` / `head` / `chassis` / `power_1` / `power_2` / `io` / `motion` / `teleop` / `arms` / `head_camera` / `chest_camera` / `left_wrist_camera` / `right_wrist_camera` / `screen` / `light` / `voice`); see the "Faults" section of each capability module page for the bag types.
+`RobotFaults`: `revision` (`int`) plus 23 per-slot fault-bag fields (`body` / `left_arm` / `right_arm` / `left_hand` / `right_hand` / `left_gripper` / `right_gripper` / `head` / `chassis` / `power_1` / `power_2` / `io` / `motion` / `teleop` / `arms` / `head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera` / `screen` / `light` / `voice`); see the "Faults" section of each capability module page for the bag types.
 
 ```python
 st = robot.state()

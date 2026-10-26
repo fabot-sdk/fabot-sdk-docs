@@ -2,7 +2,7 @@
 title: Events & Data Channels
 status: draft
 owner: fabot-core
-updated: 2026-09-07
+updated: 2026-10-26
 ---
 
 # Events & Data Channels
@@ -127,7 +127,7 @@ finally:
 | gripper (`left_gripper` / `right_gripper`) | `joints()` |
 | head (`head`) | `joints()` |
 | motion (`motion`) | `joints()` |
-| camera (`head_camera` / `chest_camera` / `left_wrist_camera` / `right_wrist_camera`) | `frameset()` / `color()` / `depth()` / `rtsp()` / `webrtc()` |
+| camera (`head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera`) | `frameset()` / `color()` / `depth()` / `rtsp()` / `webrtc()` |
 | voice (`voice`) | `wake()` / `transcript()` / `intent()` |
 
 Per-channel payload types and details are documented on each module's reference page ([Python API Reference](../reference/python/index.md)). Note that camera `rtsp()` / `webrtc()` return preview playback URLs (`StreamUrlT`) rather than frame iteration.

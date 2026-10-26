@@ -2,7 +2,7 @@
 title: Robot 入口
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-10-26
 ---
 
 # Robot 入口
@@ -76,7 +76,7 @@ wait_ready(slots: Sequence[str] | None = None) -> None
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `slots` | `Sequence[str]` | `None` | 要等待的槽位 id；`None` 表示全部 22 个槽位 |
+| `slots` | `Sequence[str]` | `None` | 要等待的槽位 id；`None` 表示全部 23 个槽位 |
 
 语义：读取当前槽位配置，对每个**已启用、必需且已绑定**的目标槽位阻塞解析句柄；未绑定、被禁用或 `required=False` 的槽位直接跳过，不予等待。单个槽位的解析超时由 `ClientOptions.resolve_timeout_ms` 控制；解析失败抛异常。
 
@@ -87,7 +87,7 @@ robot.wait_ready(["left_arm", "io"])     # 只等指定槽位
 
 ## slots
 
-能力以只读属性按槽位暴露（`robot.io`、`robot.chassis` 等），共 22 个槽位。
+能力以只读属性按槽位暴露（`robot.io`、`robot.chassis` 等），共 23 个槽位。
 
 | 槽位属性 | 能力 id | 文档 |
 |----------|---------|------|
@@ -102,7 +102,7 @@ robot.wait_ready(["left_arm", "io"])     # 只等指定槽位
 | `motion` | `motion` | [运动 Motion](motion.md) |
 | `teleop` | `teleop` | [遥操作 Teleop](teleop.md) |
 | `arms` | `arms` | [双臂 Arms](arms.md) |
-| `head_camera` / `chest_camera` | `camera` | [相机 Camera](camera.md) |
+| `head_camera` / `chest_camera` / `waist_camera` | `camera` | [相机 Camera](camera.md) |
 | `left_wrist_camera` / `right_wrist_camera` | `camera` | [相机 Camera](camera.md) |
 | `screen` | `screen` | [面屏 Screen](screen.md) |
 | `light` | `light` | [灯效 Light](light.md) |
@@ -232,7 +232,7 @@ token.close()
 
 当前仅 power / screen / voice 提供状态袋，其余槽位不参与聚合（对应字段保持默认值）。
 
-`RobotFaults`：`revision`（`int`）加 22 个槽位故障袋字段（`body` / `left_arm` / `right_arm` / `left_hand` / `right_hand` / `left_gripper` / `right_gripper` / `head` / `chassis` / `power_1` / `power_2` / `io` / `motion` / `teleop` / `arms` / `head_camera` / `chest_camera` / `left_wrist_camera` / `right_wrist_camera` / `screen` / `light` / `voice`），各故障袋类型见对应模块页的「异常」一节。
+`RobotFaults`：`revision`（`int`）加 23 个槽位故障袋字段（`body` / `left_arm` / `right_arm` / `left_hand` / `right_hand` / `left_gripper` / `right_gripper` / `head` / `chassis` / `power_1` / `power_2` / `io` / `motion` / `teleop` / `arms` / `head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera` / `screen` / `light` / `voice`），各故障袋类型见对应模块页的「异常」一节。
 
 ```python
 st = robot.state()

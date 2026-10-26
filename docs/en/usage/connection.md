@@ -2,7 +2,7 @@
 title: Connection & Robot Entry
 status: draft
 owner: fabot-core
-updated: 2026-09-07
+updated: 2026-10-26
 ---
 
 # Connection & Robot Entry
@@ -89,7 +89,7 @@ token.close()    # unsubscribe; robot.close() closes all subscriptions
 
 ## Capability Slots
 
-Capabilities are exposed by slot as **read-only attributes**, 22 slots in total:
+Capabilities are exposed by slot as **read-only attributes**, 23 slots in total:
 
 | Slot attribute | Capability module | Slot attribute | Capability module |
 |----------------|-------------------|----------------|-------------------|
@@ -100,7 +100,7 @@ Capabilities are exposed by slot as **read-only attributes**, 22 slots in total:
 | `left_gripper` / `right_gripper` | gripper | `head` | head |
 | `body` | body | `light` | light |
 | `power_1` / `power_2` | power | `voice` | voice |
-| `head_camera` / `chest_camera` | camera | `left_wrist_camera` / `right_wrist_camera` | camera |
+| `head_camera` / `chest_camera` / `waist_camera` | camera | `left_wrist_camera` / `right_wrist_camera` | camera |
 
 - Accessing capability methods of a slot with no adapter bound raises `AdapterUnbound` (category `NotFound`); check the `has_adapter` read-only attribute first:
 

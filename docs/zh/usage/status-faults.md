@@ -2,7 +2,7 @@
 title: 状态、故障与生命周期
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-10-26
 ---
 
 # 状态、故障与生命周期
@@ -17,7 +17,7 @@ SDK 把机器人运行时信息分三层暴露：**整机聚合状态**（`robot
 |------|------|------|
 | `state()` | `RobotState` | 整机运行状态快照，`.state` 字段是 `RobotRunState` |
 | `status()` | `RobotStatus` | 聚合 `power_1` / `power_2` / `screen` / `voice` 四个状态袋 + `generation` / `revision`（配置代际） |
-| `faults()` | `RobotFaults` | 聚合全部 22 个槽位的当前故障袋 |
+| `faults()` | `RobotFaults` | 聚合全部 23 个槽位的当前故障袋 |
 | `version()` | `str` | 机器人平台版本 |
 | `sdk_version` | `str` | SDK 自身版本（属性，非方法） |
 

@@ -2,7 +2,7 @@
 title: 配置管理
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-10-26
 ---
 
 # 配置管理
@@ -18,7 +18,7 @@ print(cfg.io.adapter_id)            # "fabot_io"
 print(cfg.to_yaml())                # 导出为 YAML
 ```
 
-`RobotConfig` 上每个槽位是一个 `SlotBinding` 属性（如 `cfg.io`、`cfg.left_arm`、`cfg.chassis`；全部 22 个槽位见 [概览](../overview.md)）。
+`RobotConfig` 上每个槽位是一个 `SlotBinding` 属性（如 `cfg.io`、`cfg.left_arm`、`cfg.chassis`；全部 23 个槽位见 [概览](../overview.md)）。
 
 ## 修改配置
 
