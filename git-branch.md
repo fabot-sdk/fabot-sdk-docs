@@ -189,9 +189,11 @@ git push -u origin develop
 
 | 分支 | 站点路径（相对 Pages 根） | 顶栏显示 |
 |------|---------------------------|----------|
-| `main` | `/` | 最新 / Latest |
-| `v0.1` | `/v0.1/` | `v0.1` |
-| `v0.2` | `/v0.2/` | `v0.2` |
+| `main` | `/` | `v<package.json 的 version>(最新)` / `v<version>(Latest)` |
+| `v1.0.0` | `/v1.0.0/` | `v1.0.0` |
+| `v1.0.1` | `/v1.0.1/` | `v1.0.1` |
+
+> `main` 的顶栏文案取自 main 分支 `package.json` 的 `version`（CI 读 `origin/main:package.json`）；推进到新的 SDK 版本时先改该字段，再冻结新的 `v*` 分支。
 
 | 项目 | 内容 |
 |------|------|

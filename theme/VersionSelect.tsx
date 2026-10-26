@@ -50,6 +50,16 @@ const FALLBACK_CATALOG: VersionCatalog = {
   versions: [{ id: 'main', label: 'latest', prefix: '' }],
 };
 
+// main 显示为「v1.0.2(最新)」：label 由构建脚本按 package.json 的 version 写入
+function optionLabel(item: VersionItem, latest: string): string {
+  if (item.id !== 'main') {
+    return item.label;
+  }
+  return item.label && item.label !== 'latest'
+    ? `${item.label}(${latest})`
+    : latest;
+}
+
 export function VersionSelect() {
   const t = useI18n();
   const location = useLocation();
@@ -100,7 +110,7 @@ export function VersionSelect() {
       >
         {catalog.versions.map((item) => (
           <option key={item.id} value={item.id}>
-            {item.id === 'main' ? t('latest') : item.label}
+            {optionLabel(item, t('latest'))}
           </option>
         ))}
       </select>

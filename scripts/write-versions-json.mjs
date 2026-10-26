@@ -1,6 +1,18 @@
 import { execSync } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+
+// main 的版本号取自 package.json；缺省时回退为 latest，保持旧行为
+function latestLabel() {
+  try {
+    const pkg = JSON.parse(
+      readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'),
+    );
+    return pkg.version ? `v${pkg.version}` : 'latest';
+  } catch {
+    return 'latest';
+  }
+}
 
 function listVersionIds() {
   let refs = '';
@@ -33,7 +45,7 @@ const catalog = {
   siteRoot,
   versions: listVersionIds().map((id) => ({
     id,
-    label: id === 'main' ? 'latest' : id,
+    label: id === 'main' ? latestLabel() : id,
     prefix: id === 'main' ? '' : `/${id}`,
   })),
 };

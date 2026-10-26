@@ -44,6 +44,17 @@ function worktreeAdd(dest, ref) {
   sh(`git worktree add --detach "${dest}" "${ref}"`);
 }
 
+// main 的版本号以 main 分支的 package.json 为准：CI 在推送 v* 分支时
+// checkout 的是该分支，不能读当前工作树的 package.json
+function latestLabel() {
+  try {
+    const pkg = JSON.parse(sh('git show origin/main:package.json'));
+    return pkg.version ? `v${pkg.version}` : 'latest';
+  } catch {
+    return 'latest';
+  }
+}
+
 function worktreeRemove(dest) {
   try {
     sh(`git worktree remove --force "${dest}"`);
@@ -63,7 +74,7 @@ const catalog = {
   siteRoot,
   versions: ids.map((id) => ({
     id,
-    label: id === 'main' ? 'latest' : id,
+    label: id === 'main' ? latestLabel() : id,
     prefix: id === 'main' ? '' : `/${id}`,
   })),
 };
