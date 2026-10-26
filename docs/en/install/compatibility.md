@@ -2,7 +2,7 @@
 title: Version Compatibility
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-10-26
 ---
 
 # Version Compatibility
@@ -27,6 +27,8 @@ Interfaces, error codes, and behavior follow the installed `fabot-sdk` type hint
 | PATCH | Bug fixes only, no behavior change | Fully compatible |
 
 Pre-release stages order as `dev` < `alpha` < `beta` < `rc` < final release.
+
+For what changed in each release, see the [Changelog](../changelog.md).
 
 ## Checking Both Versions
 

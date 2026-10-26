@@ -2,7 +2,7 @@
 title: fabot SDK Documentation
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-10-26
 ---
 
 # fabot SDK Documentation
@@ -36,6 +36,7 @@ No robot at hand? You can develop offline first: `Robot.mock()` provides a hardw
 | [Python Examples](examples/python/index.md) | Complete Python examples by capability | Application developers |
 | [Capability Interfaces Overview](reference/python/index.md) | Python interface reference for each capability module | Application developers |
 | [Troubleshooting](troubleshooting.md) | Cannot connect, `wait_ready`, Operation failure, recovering after e-stop | All readers |
+| [Changelog](changelog.md) | What changed in each release, plus compatibility notes | Read before upgrading |
 
 ## Version Compatibility
 

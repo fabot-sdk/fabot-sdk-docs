@@ -38,5 +38,10 @@
     "type": "file",
     "name": "troubleshooting",
     "label": "troubleshooting"
+  },
+  {
+    "type": "file",
+    "name": "changelog",
+    "label": "changelog"
   }
 ]

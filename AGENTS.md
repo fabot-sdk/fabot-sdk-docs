@@ -16,6 +16,7 @@
 | `docs/*/examples/python/` | Python 示例（按能力分页） |
 | `docs/*/reference/python/` | Python API 参考（Robot 入口 + 15 个能力模块，八段式：模块概述 → API 总览 → 方法 → 通道 → 事件 → 异常 → 状态 → 资源） |
 | `docs/*/troubleshooting.md` | 故障排除 |
+| `docs/*/changelog.md` | 更新日志（按版本倒序，随发版追加） |
 | `docs/*/_nav.json`、`_meta.json` | 顶栏与全局侧栏 |
 | `i18n.json` | 导航等共用文案 |
 | `theme/` | 顶栏版本切换器（读 `versions.json`） |
@@ -24,7 +25,7 @@
 | `git-commit.md` | Git 提交规范（不进站点） |
 | `git-branch.md` | Git 分支管理规范（不进站点） |
 
-示例与 API 在 `examples/python/`、`reference/python/`。概念页（`overview` / `install` / `usage` / `troubleshooting`）只写 Python。
+示例与 API 在 `examples/python/`、`reference/python/`。概念页（`overview` / `install` / `usage` / `troubleshooting` / `changelog`）只写 Python。
 
 ## 必须遵守
 
@@ -33,6 +34,7 @@
 - **以真实 API 为准**：类名、方法签名、槽位属性以 `fabot` 包 `.pyi` 与 `src/schemas/` 契约为准；禁止凭记忆杜撰接口。能力模块页可用 fabot_system 的 `fabot-sdk-docgen` skill 生成。
 - **发布文档用语**：`docs/` 与 `README.md` 的正文、TODO、注释不得出现契约 / Contract YAML、`schemas/` / `src/schemas/`、fabot_system、docgen、adapter 配置模板等内部概念。公开 API 名称（`adapter` / `has_adapter` / `as_adapter`、Slot、Command、Operation、Channel、Event）可以保留。本文件是仓库维护说明，继续写 fabot_system 作为事实来源。
 - **多版本**：`main` 为默认版（URL `/`），顶栏显示 `v<package.json 的 version>(最新)`（如 `v1.0.2(最新)`）；推进版本时先改 `package.json` 的 `version`。历史版用 `v1.0.0` 这类分支，发布到 `/v1.0.0/`。从已有切换器的 `main` 切分支并 `git push github v1.0.0` 后，CI 才会收录该版本。本地 `npm run build` 会写出 `versions.json`，顶栏始终显示版本选择；只有 `main` 时选项为 `v<version>(最新)`。
+- **更新日志**：发版时在 `docs/*/changelog.md` 顶部追加一节，格式为新版本号 + 发布日期 + `新增` / `变更` / `修复` / `兼容性`；只写 SDK 对外可见的变化，破坏性变更必须显式标注。历史版本分支上的更新日志只追加到该版本为止，不回填 `main` 的新版本内容。
 - **验证**：改动后运行 `npm run build` 确认无 ERROR 再提交。
 - **Git**：无用户明确要求时不要 commit / push。commit 信息（subject / body）用中文；`type` / `scope` 仍英文。见 [`git-commit.md`](git-commit.md)、[`git-branch.md`](git-branch.md)。
 

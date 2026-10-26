@@ -2,7 +2,7 @@
 title: Platform Services
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-10-26
 ---
 
 # Platform Services
@@ -16,8 +16,11 @@ Platform services on the robot (services, e.g. `fabot_ocs2`) expose only **7 pla
 | Attribute | service id | Handle type | Config type |
 |-----------|-----------|-------------|-------------|
 | `robot.services.ocs2` | `fabot_ocs2` | `FabotOcs2ServiceHandle` | `FabotOcs2ServiceConfig` |
+| `robot.services.orbbec_sdk_ros2` | `fabot_orbbec_sdk_ros2` | `FabotOrbbecSdkRos2ServiceHandle` | `FabotOrbbecSdkRos2ServiceConfig` |
 
 The `SERVICE_ID` / `CONFIG` class attributes on a handle give the service id and the config type.
+
+`orbbec_sdk_ros2` is the Orbbec ROS camera backend; it is **not started by default** in product deployments (`enabled: false`). Call `start()` explicitly when you need that backend.
 
 ## The 7 Platform Operations
 

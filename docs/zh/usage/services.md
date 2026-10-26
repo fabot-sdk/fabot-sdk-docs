@@ -2,7 +2,7 @@
 title: 平台服务管理
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-10-26
 ---
 
 # 平台服务管理
@@ -16,8 +16,11 @@ updated: 2026-09-04
 | 属性 | service id | 句柄类型 | 配置类型 |
 |------|-----------|----------|----------|
 | `robot.services.ocs2` | `fabot_ocs2` | `FabotOcs2ServiceHandle` | `FabotOcs2ServiceConfig` |
+| `robot.services.orbbec_sdk_ros2` | `fabot_orbbec_sdk_ros2` | `FabotOrbbecSdkRos2ServiceHandle` | `FabotOrbbecSdkRos2ServiceConfig` |
 
 句柄上的 `SERVICE_ID` / `CONFIG` 类属性分别给出服务 id 与配置类型。
+
+`orbbec_sdk_ros2` 是 Orbbec ROS 相机后端，产品部署中**默认不启动**（`enabled: false`），需要该后端时再显式 `start()`。
 
 ## 7 个平台操作
 

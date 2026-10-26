@@ -2,7 +2,7 @@
 title: 版本配套
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-10-26
 ---
 
 # 版本配套
@@ -27,6 +27,8 @@ fabot SDK 与机器人平台（机器人端运行的控制面软件）按**同�
 | PATCH | 仅缺陷修复，不改变既有行为 | 完全兼容 |
 
 预发布阶段的顺序为 `dev` < `alpha` < `beta` < `rc` < 正式版。
+
+各版本具体改了什么见 [更新日志](../changelog.md)。
 
 ## 查看两端版本
 

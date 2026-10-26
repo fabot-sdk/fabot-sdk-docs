@@ -31,6 +31,10 @@
     "zh": "故障排除",
     "en": "Troubleshooting"
   },
+  "changelog": {
+    "zh": "更新日志",
+    "en": "Changelog"
+  },
   "latest": {
     "zh": "最新",
     "en": "Latest"

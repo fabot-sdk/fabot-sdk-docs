@@ -2,7 +2,7 @@
 title: fabot SDK 文档
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-10-26
 ---
 
 # fabot SDK 文档
@@ -36,6 +36,7 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 | [Python 示例](examples/python/index.md) | 按能力的完整 Python 示例 | 应用开发 |
 | [能力接口概述](reference/python/index.md) | 每个能力模块的 Python 接口参考 | 应用开发 |
 | [故障排除](troubleshooting.md) | 连不上、`wait_ready`、Operation 失败、急停后恢复 | 所有读者 |
+| [更新日志](changelog.md) | 各版本新增、修复与兼容性说明 | 升级前查阅 |
 
 ## 版本配套
 

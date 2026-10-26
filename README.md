@@ -16,7 +16,8 @@ docs/
 │   ├── tutorials/          # 入门教程（python.md）
 │   ├── examples/python/    # 使用示例（index + 按能力的完整示例）
 │   ├── reference/python/   # 接口参考（Robot 入口 + 15 个能力模块）
-│   └── troubleshooting.md  # 故障排除
+│   ├── troubleshooting.md  # 故障排除
+│   └── changelog.md        # 更新日志（按版本倒序）
 └── en/                     # 英文（URL 前缀 /en/），页面路径与 zh 一一对应
 ```
 
