@@ -1,5 +1,9 @@
 name: Deploy GitHub Pages
 
+# main = 当前默认版，v* = 冻结的历史版分支。
+# github-pages 环境的部署分支规则只允许默认分支发布，因此：
+#   - main 的运行负责构建全部版本并部署；
+#   - 推送 v* 时不直接部署（会被环境规则拒绝），而是调度一次 main 的运行来完成重建与发布。
 on:
   push:
     branches: [main, 'v*']
@@ -16,31 +20,50 @@ concurrency:
 
 jobs:
   build:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - run: |
+      - name: Fetch version branches
+        run: |
           git fetch origin '+refs/heads/main:refs/remotes/origin/main'
           git fetch origin '+refs/heads/v*:refs/remotes/origin/v*' || true
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
       - run: node scripts/build-all-versions.mjs
         env:
           RSPRESS_SITE_ROOT: /fabot-sdk-docs
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
+          # v4+ 默认丢弃点开头的文件，dist/.nojekyll 需要显式保留
+          include-hidden-files: true
 
   deploy:
     needs: build
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
+
+  refresh-from-main:
+    # v* 分支只承载该版本的冻结内容，发布统一由 main 的运行完成
+    if: github.ref_type == 'branch' && github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Dispatch main run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run pages.yml --ref main
