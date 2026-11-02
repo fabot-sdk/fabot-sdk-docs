@@ -77,7 +77,7 @@ git branch v1.0.0
 git push github v1.0.0
 ```
 
-推送 `main` 或任意 `v*` 时会重建**全部**版本再部署。本地 `npm run build` / `npm run preview` 会写出 `versions.json`，顶栏列出 `v<version>(最新)` 以及每个 `v*` 分支（例如 `v1.0.2(最新)`、`v1.0.0`）。单版本构建没有历史版目录，点选时提示「该版本文档尚未发布」。
+推送 `main` 时会重建**全部**版本再部署；推送 `v*` 会触发一次 `main` 的重建，把新版本编进站点后统一发布（`main` 与 `v*` 都发布在同一个 Pages 站点，部署只从 `main` 发起）。本地 `npm run build` / `npm run preview` 会写出 `versions.json`，顶栏列出 `v<version>(最新)` 以及每个 `v*` 分支（例如 `v1.0.2(最新)`、`v1.0.0`）。单版本构建没有历史版目录，点选时提示「该版本文档尚未发布」。
 
 要在本地预览全部版本与版本切换，用多版本汇总构建：
 
