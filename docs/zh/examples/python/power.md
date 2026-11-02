@@ -2,7 +2,7 @@
 title: 电源
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-11-02
 ---
 
 # 电源
@@ -19,65 +19,47 @@ from fabot import Robot
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready(["power_1", "power_2"])
 
-    for slot in (robot.power_1, robot.power_2):
-        st = slot.status()
-        print(
-            slot.slot_id,
-            "电量:", st.energy,
-            "电压:", st.voltage,
-            "电流:", st.current,
-            "温度:", st.temperature,
-            "充电中:", st.is_charging,
-        )
-        if st.energy < 20 and not st.is_charging:
-            print(slot.slot_id, "电量过低，请尽快充电")
+    for rail in (robot.power_1, robot.power_2):
+        st = rail.status()
+        print(rail.id, st.energy, st.voltage, st.current, st.temperature, st.is_charging)
 ```
 
-注意：
+## 从整机状态袋一次读两路
 
-- `status()` 无参数、即时返回当前快照；需要持续监控时自行轮询，电源没有数据通道。
-- 两路电源互不影响，`power_1` 低电不代表 `power_2` 低电，请分别判断。
-
-## 查询健康度与故障
-
-`health()` / `lifecycle()` 是公共只读查询；`faults()` 返回 `Faults`，电源当前没有已命名故障，只有 `revision` 修订号。
+`robot.status()` 聚合了所有提供 `status()` 的能力，一次拿全：
 
 ```python
-snap = robot.power_1.lifecycle()
-print("生命周期:", snap.lifecycle, "健康度:", snap.health)
-
-faults = robot.power_1.faults()
-print("故障修订号:", faults.revision)
+agg = robot.status()
+print(agg.generation, agg.revision)
+print(agg.power_1.energy, agg.power_2.energy)
+print(agg.head_camera.state, agg.screen.activity)
 ```
 
-## 订阅故障与生命周期事件
+## 监控低电量
 
-`fault_changed` 在故障集合变化时推送，`lifecycle_changed` 在生命周期或健康度变化时推送。回调在 SDK I/O 线程执行，须保持轻量、禁止调用阻塞 API。
+电源没有事件流，需要自己轮询。把轮询放在自己的线程或定时器里，不要在事件回调中做：
 
 ```python
-from fabot import Robot
-from fabot.core.event_types import LifecycleChangedEvent
-from fabot.capabilities.power import FaultChangedEvent
+import threading
+import time
 
-with Robot.connect("192.168.1.10", 7557) as robot:
-    robot.wait_ready(["power_1"])
+def watch(robot, threshold=20, interval=5.0):
+    while True:
+        if robot.power_1.status().energy < threshold:
+            robot.logs.warn("battery low", component="app", slot="power_1")
+        time.sleep(interval)
 
-    def on_fault(event: FaultChangedEvent):
-        print(event.header.slot_id, "故障变化, revision =", event.faults.revision)
-
-    def on_lifecycle(event: LifecycleChangedEvent):
-        snap = event.lifecycle
-        print(event.header.slot_id, "lifecycle =", snap.lifecycle, "health =", snap.health)
-
-    robot.power_1.events.fault_changed.subscribe(on_fault)
-    robot.power_1.events.lifecycle_changed.subscribe(on_lifecycle)
-    input("按回车退出...\n")
+threading.Thread(target=watch, args=(robot,), daemon=True).start()
 ```
 
-`with` 退出时 `robot.close()` 会统一关闭全部订阅，无需逐个 `token.close()`。
+`robot.logs.warn(...)` 的自定义日志会进入同一套日志流，见 [日志、指标与可观测性](../../usage/observability.md)。
 
-## 相关链接
+## 订阅故障与生命周期
 
-- [事件与数据通道](../../usage/events-channels.md)
-- [状态、故障与生命周期](../../usage/status-faults.md)
-- [电源 API 参考](../../reference/python/power.md)
+```python
+def on_lifecycle(event):
+    snap = event.lifecycle
+    print(event.header.slot_id, snap.lifecycle, snap.health, snap.pbit_completed)
+
+token = robot.power_1.events.lifecycle_changed.subscribe(on_lifecycle)
+```

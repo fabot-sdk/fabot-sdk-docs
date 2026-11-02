@@ -2,7 +2,7 @@
 title: 夹爪 Gripper
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-11-02
 ---
 
 # 夹爪 Gripper
@@ -10,288 +10,307 @@ updated: 2026-09-03
 ## 模块概述
 
 - 能力 id：`gripper`；槽位：`robot.left_gripper` / `robot.right_gripper`
-- 单夹爪开合度运动与速度 / 力矩控制。左右夹爪是同一套 API、各自独立的槽位。
+- 能力域：`motion`；能力版本：`1.1.0`
+- 单自由度二指自适应夹爪：归一化开合度、速度与力上限、伺服与长时开合运动。
+- 开合度取值范围 [0, 1]，0 全闭、1 全开；`0` 是合法目标，不是缺省值。
+
+`opening` 与 `joint[0]` 在当前执行器上恒等映射，反馈都来自同一关节位置。
 
 ## API 总览
 
-| 方法 | 请求 | 响应 | 类型 |
+| 方法 | 请求 | 响应 | 默认超时 |
 |------|------|------|------|
-| `get_joints` | — | `list[float]` | Command |
-| `get_velocity` | — | `float` | Command |
-| `set_velocity` | `velocity` | `ToolSpeedAppliedT` | Command |
-| `get_torque` | — | `float` | Command |
-| `set_torque` | `torque` | `TorqueAppliedT` | Command |
-| `move_joints` | `positions`, `duration_s`, `position_threshold` | `MoveJointsOperation` | Operation |
+| `get_opening` | `Empty` | `Float64` | 1000 ms |
+| `get_joint` | `Empty` | `JointState` | 1000 ms |
+| `get_velocity_limit` | `Empty` | `Float64` | 8000 ms |
+| `set_velocity_limit` | `Float64` | `Float64` | 8000 ms |
+| `get_force_limit` | `Empty` | `Float64` | 8000 ms |
+| `set_force_limit` | `Float64` | `Float64` | 8000 ms |
+| `servo_opening` | `Float64` | `Float64` | 1000 ms |
+| `servo_joint` | `Doubles` | `JointPositions` | 1000 ms |
 
-Command 默认 `timeout_ms`：`get_joints` 为 1000，其余 Command 为 2000（均可覆盖）。参数均为关键字参数。
+以上均为 Command（同步请求-响应），`timeout_ms` 可逐次覆盖。
+
+| 方法 | 请求 | 类型 | 资源 | 默认时限 |
+|------|------|------|------|------|
+| `move_opening` | `OpeningMove` | Operation | gripper | — |
+| `move_joint` | `JointMove` | Operation | gripper | — |
+
+Operation 立即返回句柄，进度与结果通过快照获取；通用用法见 [命令与长时操作](../../usage/commands-operations.md)。
 
 | 通道 | 内容 |
 |------|------|
-| `joints()` | 夹爪开合度流（`JointPositionsT`） |
+| `opening()` | `Float64` |
+| `joint()` | `JointState` |
 
 ## 方法
 
-以下均为关键字参数。Command 超时与 Operation 轮询、取消见 [命令与长时操作](../../usage/commands-operations.md)，各节不重复展开。
+参数名与默认值以本节签名块为准；未标 `*` 的参数可按位置或关键字传入，`*` 之后的只能按关键字传入。字段名用小写下划线写法（如 `frame_id`），生成类型同时接受原样的驼峰别名。
 
-### get_joints
+### get_opening
 
 读取当前开合度。
 
 ```python
-get_joints(*, timeout_ms: int = 1000) -> list[float]
+get_opening(*, timeout_ms: int = 1000) -> float
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
+| `timeout_ms` | `int` | `1000` | 调用超时（毫秒） |
 
-**返回**
+**返回** `float`
 
-`list[float]`：各关节开合度；长度依末端载具定义，常见单自由度夹爪长度为 1。
+`Float64` 在代理层被解包成 `float`。
 
-### get_velocity
+### get_joint
 
-读取当前持久速度标量。
+读取当前关节采样：位置、速度、力矩与时间戳。
 
 ```python
-get_velocity(*, timeout_ms: int = 2000) -> float
+get_joint(*, timeout_ms: int = 1000) -> JointState
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `timeout_ms` | `int` | `2000` | Command 超时（毫秒） |
+| `timeout_ms` | `int` | `1000` | 调用超时（毫秒） |
 
-**返回**
-
-`float`：当前生效的速度标量。
-
-### set_velocity
-
-设置持久速度标量，对后续 `move_joints` 生效。
-
-```python
-set_velocity(*, velocity: float, timeout_ms: int = 2000) -> ToolSpeedAppliedT
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `velocity` | `float` | （必填） | 无符号速度标量，须为正有限值 |
-| `timeout_ms` | `int` | `2000` | Command 超时（毫秒） |
-
-**返回**
-
-`ToolSpeedAppliedT`：
+**返回** `JointState`
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `outcome` | `OutcomeT` | `success` / `statusMessage` |
-| `appliedVelocity` | `float` | 实际生效的速度标量 |
+| `positions` | `list[float]` | 位置数组；点云按 X/Y/Z 依次展开 |
+| `velocities` | `list[float]` | 关节速度数组 |
+| `efforts` | `list[float]` | 关节力矩数组 |
+| `stamp_ns` | `int` | 机器人时基上的时间戳（纳秒）；0 表示最新 |
+
+### get_velocity_limit
+
+读取速度上限。
 
 ```python
-applied = robot.left_gripper.set_velocity(velocity=0.5)
-print(applied.outcome.success, applied.appliedVelocity)
-```
-
-### get_torque
-
-读取当前持久力矩标量。
-
-```python
-get_torque(*, timeout_ms: int = 2000) -> float
+get_velocity_limit(*, timeout_ms: int = 8000) -> float
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `timeout_ms` | `int` | `2000` | Command 超时（毫秒） |
+| `timeout_ms` | `int` | `8000` | 调用超时（毫秒） |
 
-**返回**
+**返回** `float`
 
-`float`：当前生效的力矩标量。
+`Float64` 在代理层被解包成 `float`。
 
-### set_torque
+### set_velocity_limit
 
-设置持久力矩标量，对后续 `move_joints` 生效。
+设置速度上限，返回生效值。
 
 ```python
-set_torque(*, torque: float, timeout_ms: int = 2000) -> TorqueAppliedT
+set_velocity_limit(value: float, *, timeout_ms: int = 8000) -> float
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `torque` | `float` | （必填） | 无符号力矩标量，须为非负有限值 |
-| `timeout_ms` | `int` | `2000` | Command 超时（毫秒） |
+| `value` | `float` | （必填） | 速度上限 |
+| `timeout_ms` | `int` | `8000` | 调用超时（毫秒） |
 
-**返回**
+**返回** `float`
 
-`TorqueAppliedT`：
+`Float64` 在代理层被解包成 `float`。
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `outcome` | `OutcomeT` | `success` / `statusMessage` |
-| `appliedTorque` | `float` | 实际生效的力矩标量 |
+### get_force_limit
 
-```python
-applied = robot.right_gripper.set_torque(torque=0.3)
-print(applied.outcome.success, applied.appliedTorque)
-```
-
-### move_joints
-
-执行开合运动，返回可轮询、可取消的 Operation。速度与力矩不随本方法携带，须先经 `set_velocity` / `set_torque` 设置。
+读取力上限。
 
 ```python
-move_joints(*, positions: list[float], duration_s: float, position_threshold: float) -> MoveJointsOperation
+get_force_limit(*, timeout_ms: int = 8000) -> float
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `positions` | `list[float]` | （必填） | 目标开合度；长度依末端载具定义，常见单自由度夹爪长度为 1 |
-| `duration_s` | `float` | （必填） | 当次到位超时（秒）；大于 0 时覆盖默认值 5，传 `0.0` 使用默认 |
-| `position_threshold` | `float` | （必填） | 到位阈值，与 `positions` 同单位；大于 0 时覆盖默认值 0.01，传 `0.0` 使用默认 |
+| `timeout_ms` | `int` | `8000` | 调用超时（毫秒） |
 
-**返回**
+**返回** `float`
 
-`MoveJointsOperation`。通过 `get()` / `events()` 取快照，也可 `cancel()`。快照字段：
+`Float64` 在代理层被解包成 `float`。
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `state` | `OperationState` | 任务状态 |
-| `terminal` | `bool` | 是否终态 |
-| `feedback` | `ProgressT` \| `None` | `progress`（`float`）、`statusMessage`（`str`） |
-| `result` | `OutcomeT` \| `None` | `success` / `statusMessage` |
-| `error` | `FabotError` \| `None` | 失败原因 |
+### set_force_limit
+
+设置力上限，返回生效值。
 
 ```python
-robot.left_gripper.set_velocity(velocity=0.5)
-robot.left_gripper.set_torque(torque=0.3)
-op = robot.left_gripper.move_joints(positions=[0.8], duration_s=0.0, position_threshold=0.0)
-for snap in op.events(poll_timeout_ms=200, timeout_ms=10000):
-    print(snap.state, snap.feedback)
-    if snap.terminal:
-        break
+set_force_limit(value: float, *, timeout_ms: int = 8000) -> float
 ```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `value` | `float` | （必填） | 力上限 |
+| `timeout_ms` | `int` | `8000` | 调用超时（毫秒） |
+
+**返回** `float`
+
+`Float64` 在代理层被解包成 `float`。
+
+### servo_opening
+
+下发一次开合度伺服目标，返回生效值。
+
+```python
+servo_opening(value: float, *, timeout_ms: int = 1000) -> float
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `value` | `float` | （必填） | 目标开合度 |
+| `timeout_ms` | `int` | `1000` | 调用超时（毫秒） |
+
+**返回** `float`
+
+`Float64` 在代理层被解包成 `float`。
+
+### servo_joint
+
+关节伺服，返回生效值。
+
+```python
+servo_joint(values: list[float], *, timeout_ms: int = 1000) -> list[float]
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `values` | `list[float]` | （必填） | 数值数组 |
+| `timeout_ms` | `int` | `1000` | 调用超时（毫秒） |
+
+**返回** `list[float]`
+
+`JointPositions` 在代理层被解包成 `list[float]`。
+
+### move_opening
+
+归一化开合度运动。`tolerance` / `duration` 取 0 表示沿用适配器缺省；`duration` 是等待预算而不是轨迹时长。
+
+```python
+move_opening(target: float, *, tolerance: float = 0.0, duration: float = 0.0) -> MoveOpeningOperation
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `target` | `float` | （必填） | 目标值 |
+| `tolerance` | `float` | `0.0` | 到位容差；0 表示沿用槽位缺省 |
+| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+
+返回 `MoveOpeningOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
+
+```python
+op = robot.left_gripper.move_opening(0.0, duration=1.0)   # 全闭
+op.wait(timeout=5.0)
+print(robot.left_gripper.get_opening())
+```
+
+### move_joint
+
+物理行程运动。`target.values` 长度必须为 1；只有百分比执行器时与开合度恒等，同样限制在 [0, 1]。
+
+```python
+move_joint(target: Doubles, *, tolerance: float = 0.0, duration: float = 0.0) -> MoveJointOperation
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `target` | `Doubles` | （必填） | 目标值 |
+| `tolerance` | `float` | `0.0` | 到位容差；0 表示沿用槽位缺省 |
+| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+
+返回 `MoveJointOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
 
 ## 通道
 
-打开参数与帧约定如下；通用用法见 [事件与数据通道](../../usage/events-channels.md)。
+打开即建立租约并返回 Channel 句柄；用 `frames()` 迭代，`next()` 取一帧，`renew()` 续租，`close()` 释放。通用用法见 [事件与数据通道](../../usage/events-channels.md)。
 
-### joints()
+### opening()
 
-订阅夹爪开合度流。
+开合度流。
 
 ```python
-joints(qos_profile: str = "latest") -> JointsChannel
+opening(qos_profile: str = "latest") -> Channel
 ```
 
-**打开参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `qos_profile` | `str` | `"latest"` | `"latest"` / `"realtime"` / `"reliable"` |
-
-**帧**（`JointsChannelFrame`）
+帧 payload 为 `Float64`：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `channel_id` | `str` | 通道 id |
-| `sequence` | `int` | 帧序号 |
-| `timestamp_us` | `int` | 时间戳（微秒） |
-| `payload` | `JointPositionsT` | `payload.positions`：`list[float]`，各关节开合度 |
+| `value` | `float` | 数值 |
 
-用 `frames(poll_timeout_ms=..., timeout_ms=...)` 迭代帧。
+### joint()
+
+关节位置流。
 
 ```python
-ch = robot.left_gripper.joints(qos_profile="latest")
-for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-    print(frame.channel_id, frame.sequence, frame.payload.positions)
+joint(qos_profile: str = "latest") -> Channel
 ```
+
+帧 payload 为 `JointState`：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `positions` | `list[float]` | 位置数组；点云按 X/Y/Z 依次展开 |
+| `velocities` | `list[float]` | 关节速度数组 |
+| `efforts` | `list[float]` | 关节力矩数组 |
+| `stamp_ns` | `int` | 机器人时基上的时间戳（纳秒）；0 表示最新 |
 
 ## 事件
 
-经 `robot.left_gripper.events` / `robot.right_gripper.events` 订阅。回调在 SDK I/O 线程执行，须保持轻量、禁止调用阻塞 API，见 [事件与数据通道](../../usage/events-channels.md)。
+经 `robot.<slot>.events` 订阅；回调在 SDK I/O 线程执行，须保持轻量、禁止调用阻塞 API。事件均带 `EventHeader`（`name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`）。
 
-事件均带 `EventHeader`：`name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`。
-
-### fault_changed
-
-该槽位故障集合变化时推送。
-
-订阅：`robot.left_gripper.events.fault_changed.subscribe(callback)`（右夹爪同理）。
-
-**payload**
-
-`FaultChangedEvent.faults`：`Faults`。当前 `Faults` 只有 `revision`，本模块尚无已命名故障，见 [异常](#_5)。
-
-```python
-def on_fault(event):
-    print(event.header.slot_id, event.faults.revision)
-
-token = robot.left_gripper.events.fault_changed.subscribe(on_fault)
-```
-
-### lifecycle_changed
-
-该槽位生命周期或健康度变化时推送。
-
-订阅：`robot.left_gripper.events.lifecycle_changed.subscribe(callback)`（右夹爪同理）。
-
-**payload**
-
-`LifecycleChangedEvent.lifecycle`：`CapabilityLifecycleSnapshot`：
-
-| 字段 | 类型 | 说明 |
+| 入口 | 事件类型 | payload |
 |------|------|------|
-| `lifecycle` | `LifecycleState` | 生命周期阶段 |
-| `health` | `HealthState` | 健康度 |
-| `source_instance_id` | `str` | 来源实例 id |
-
-```python
-def on_lifecycle(event):
-    snap = event.lifecycle
-    print(event.header.slot_id, snap.lifecycle, snap.health)
-
-token = robot.right_gripper.events.lifecycle_changed.subscribe(on_lifecycle)
-```
+| `robot.<slot>.events.fault_changed` | `FaultChangedEvent` | `FaultChangedEvent.faults`：`Faults` |
+| `robot.<slot>.events.lifecycle_changed` | `LifecycleChangedEvent` | `LifecycleChangedEvent.lifecycle`：`CapabilityLifecycleSnapshot` |
 
 ## 异常
 
-查询入口：`robot.left_gripper.faults()` / `robot.right_gripper.faults()`，返回 `Faults`。
-
-本模块尚无已命名故障：当前 `Faults` 只有 `revision`。变化通过 `fault_changed` 推送。通用约定见 [状态、故障与生命周期](../../usage/status-faults.md)。
-
-若日后出现已命名故障，每条为 `FaultState`：
+查询入口 `robot.<slot>.faults()`，返回 `Faults`（`revision` + `records: list[FaultState]`）。单条 `FaultState`：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `active` | `bool` | 是否仍在生效 |
-| `catalog_id` | `str` | 目录 id |
-| `fault_class` | `CapabilityStateClass` | 故障等级 |
-| `first_seen_us` / `last_seen_us` | `int` | 首次 / 最近见到的时间戳（微秒） |
-| `count` | `int` | 累计次数 |
+| `code` | `int` | 诊断码；`0` 表示无故障 |
+| `source` | `str` | 故障来源标识 |
+| `state` | `int` | 故障状态位 |
+| `severity` | `int` | 严重度，与 `HealthState` 对齐 |
+| `timestamp_us` | `int` | 最近一次时间戳（微秒） |
+
+展示给人看的故障文本用 `Catalogs.format_fault(record, capability_id="...")`，见 [文本目录 Catalogs](../../usage/catalogs.md)。
 
 ## 状态
 
 本模块没有 `status()`；整机聚合状态见 `robot.status()`。
 
-公共查询：
+公共只读查询：
 
-- `health()`：当前健康度
-- `lifecycle()`：`CapabilityLifecycleSnapshot`（`lifecycle` / `health` / `source_instance_id`）
+- `health()`：`SlotHealth`（`is_usable` / `lifecycle` / `health` / `standing_faults` / `pbit_completed` / `source_instance_id`）
+- `lifecycle()`：`CapabilityLifecycleSnapshot`（`lifecycle` / `health` / `pbit_completed` / `source_instance_id`）
 
-变化走 `lifecycle_changed`，见 [状态、故障与生命周期](../../usage/status-faults.md)。
+变化走 `lifecycle_changed` 事件，见 [状态、故障与生命周期](../../usage/status-faults.md)。
 
 ## 资源
 
-同一只夹爪上的 `move_joints` 任务共享同一运动资源，新任务排队执行；`get_*` / `set_*` 等 Command 不占用该资源。
+`move_opening` / `move_joint` 共用资源 `gripper`，策略 `queue`。

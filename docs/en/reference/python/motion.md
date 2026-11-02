@@ -2,307 +2,419 @@
 title: Motion
 status: draft
 owner: fabot-core
-updated: 2026-09-09
+updated: 2026-11-02
 ---
 
 # Motion
 
 ## Module Overview
 
-- Capability id: `motion`; slot: `robot.motion`
-- Whole-body motion planning and execution control: read robot-wide joint angles, drive the motion-control state machine (FSM), stop and reset.
+- Capability id: `motion`; slots: `robot.motion`
+- Domain: `motion`; capability version: `1.1.0`
+- Whole-body motion control: motion regime, whole-body joint / pose goals, homing and presets, plus the whole-body control state and center-of-mass margin.
+- `MotionMode` is the control regime (`HOLD` / `OCS2` / `MOVEJ`), not the same thing as the run state from `robot.state()`.
+
+All motion Operations share the `motion_controller` resource with policy `queue` and a 60-second default budget.
+`set_mode(COMPLIANCE)` is rejected: the current stack has no reachable compliance state.
 
 ## API Overview
 
-| Method | Request | Response | Type |
-|--------|---------|----------|------|
-| `get_joints` | — | `list[JointPositionT]` | Command |
-| `stop` | — | `OutcomeT` | Command |
-| `get_fsm_state` | — | `FsmState` | Command |
-| `set_fsm_state` | `state` | `FsmAppliedT` | Command |
-| `reset_fsm` | — | `OutcomeT` | Command |
-| `set_body_mode` | `mode` | `OutcomeT` | Command |
+| Method | Request | Response | Default timeout |
+|------|------|------|------|
+| `get_joint` | `Empty` | `WholeBodyJointState` | 1000 ms |
+| `get_wbc_state` | `Empty` | `WbcState` | 1000 ms |
+| `get_center_of_mass` | `Empty` | `CenterOfMass` | 1000 ms |
+| `get_mode` | `Empty` | `Mode` | 1000 ms |
+| `set_mode` | `Mode` | `Mode` | 7000 ms |
+| `servo_pose` | `WholeBodyPoseTarget` | `WholeBodyPoseTarget` | 1000 ms |
 
-Command default `timeout_ms`: 1000 for `get_joints` / `stop` / `get_fsm_state`, 3000 for `set_fsm_state` / `set_body_mode`, 30000 for `reset_fsm` (all overridable). All parameters are keyword-only.
+All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
+
+| Method | Request | Kind | Resources | Default budget |
+|------|------|------|------|------|
+| `move_home` | `Home` | Operation | motion_controller | 60000 ms |
+| `move_preset` | `Preset` | Operation | motion_controller | 60000 ms |
+| `move_joint` | `JointMove` | Operation | motion_controller | 60000 ms |
+| `move_joint_path` | `JointPath` | Operation | motion_controller | 60000 ms |
+| `move_pose` | `PoseMove` | Operation | motion_controller | 60000 ms |
+
+Operations return a handle immediately; progress and results come from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
 
 | Channel | Content |
-|---------|---------|
-| `joints()` | Robot-wide joint-position stream (`NamedJointsT`) |
+|------|------|
+| `joint()` | `WholeBodyJointState` |
+| `wbc_state()` | `WbcState` |
+| `center_of_mass()` | `CenterOfMass` |
+
+Enums used on this page:
+
+**`MotionMode` enum**
+
+| Value | Description |
+|-------|-------------|
+| `HOLD` | Hold the current configuration |
+| `OCS2` | OCS2 whole-body control |
+| `MOVEJ` | MoveJ joint servo mode |
+| `COMPLIANCE` | Compliance mode; not implemented by the current stack and rejected by `set_mode` |
+
+**`HomePose` enum**
+
+| Value | Description |
+|-------|-------------|
+| `PRIMARY` | Primary home |
+| `SECONDARY` | Secondary home |
+| `TERTIARY` | Tertiary home |
 
 ## Methods
 
-All method parameters are keyword-only. Command timeouts are documented in [Commands & Operations](../../usage/commands-operations.md); they are not repeated in each section.
+Signatures below are authoritative for names and defaults. Parameters before `*` accept positional or keyword form; those after `*` are keyword-only. Fields use snake_case (`frame_id`); the generated types also accept the camelCase alias.
 
-### get_joints
+### get_joint
 
-Read the current robot-wide joint angles.
+Read the whole-body joint sample (body / left arm / right arm / head).
 
 ```python
-get_joints(*, timeout_ms: int = 1000) -> list[JointPositionT]
+get_joint(*, timeout_ms: int = 1000) -> WholeBodyJointState
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
-
-`list[JointPositionT]`, each item:
+**Returns** `WholeBodyJointState`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `name` | `str` | Joint name |
-| `position` | `float` | Joint angle in radians |
+|------|------|------|
+| `body` | `JointState` | Body data |
+| `left_arm` | `JointState` | Left-arm data |
+| `right_arm` | `JointState` | Right-arm data |
+| `head` | `JointState` | Head data |
+
+### get_wbc_state
+
+Read the whole-body control state: per-part modes, arm enables and chassis lock.
 
 ```python
-for joint in robot.motion.get_joints():
-    print(joint.name, joint.position)
-```
-
-### stop
-
-Stop the current motion.
-
-```python
-stop(*, timeout_ms: int = 1000) -> OutcomeT
+get_wbc_state(*, timeout_ms: int = 1000) -> WbcState
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
-
-`OutcomeT`:
+**Returns** `WbcState`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `success` | `bool` | Whether the command succeeded |
-| `statusMessage` | `str` | Status text |
+|------|------|------|
+| `body_mode` | `BodyMode` | Body constraint mode (`BodyMode`) |
+| `head_mode` | `HeadMode` | Head constraint mode (`HeadMode`) |
+| `arms_mode` | `ArmsMode` | Arm coupling mode (`ArmsMode`) |
+| `left_arm_enabled` | `bool` | Whether the left arm is enabled |
+| `right_arm_enabled` | `bool` | Whether the right arm is enabled |
+| `chassis_locked` | `bool` | Whether the chassis is locked |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+
+### get_center_of_mass
+
+Read the center of mass and its margin to the support polygon.
 
 ```python
-outcome = robot.motion.stop()
-print(outcome.success, outcome.statusMessage)
-```
-
-### get_fsm_state
-
-Query the current state of the motion-control state machine.
-
-```python
-get_fsm_state(*, timeout_ms: int = 1000) -> FsmState
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
-
-**Returns**
-
-`FsmState` enum: `FsmState.Home` / `FsmState.Hold` / `FsmState.Ocs2` / `FsmState.MoveJ`.
-
-```python
-from fabot.capabilities.motion import FsmState
-
-state = robot.motion.get_fsm_state()
-if state == FsmState.Hold:
-    print("motion control is in Hold")
-```
-
-### set_fsm_state
-
-Switch the motion-control state machine. Returns the result that was actually applied.
-
-```python
-set_fsm_state(*, state: FsmState, timeout_ms: int = 3000) -> FsmAppliedT
+get_center_of_mass(*, timeout_ms: int = 1000) -> CenterOfMass
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `state` | `FsmState` | (required) | Target state: `FsmState.Home` / `FsmState.Hold` / `FsmState.Ocs2` / `FsmState.MoveJ` |
-| `timeout_ms` | `int` | `3000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
-
-`FsmAppliedT`:
+**Returns** `CenterOfMass`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `appliedState` | `int` | The state actually applied, corresponding to a `FsmState` value |
-| `outcome` | `OutcomeT` \| `None` | `success` / `statusMessage` |
+|------|------|------|
+| `position` | `Vector3d` | Position vector |
+| `status` | `SupportStatus` | Status snapshot |
+| `min_safe_margin` | `float` | Minimum margin to the support polygon in meters |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+
+### get_mode
+
+Read the current mode.
 
 ```python
-from fabot.capabilities.motion import FsmState
-
-applied = robot.motion.set_fsm_state(state=FsmState.Hold)
-print(applied.appliedState, applied.outcome)
-```
-
-### reset_fsm
-
-Reset the motion-control state machine. This can take a while; the default timeout is 30 seconds.
-
-```python
-reset_fsm(*, timeout_ms: int = 30000) -> OutcomeT
+get_mode(*, timeout_ms: int = 1000) -> MotionMode
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `30000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `MotionMode`
 
-`OutcomeT`: `success` / `statusMessage`.
+The proxy unwraps `Mode` into `MotionMode`.
+
+**`MotionMode` enum**
+
+| Value | Description |
+|-------|-------------|
+| `HOLD` | Hold the current configuration |
+| `OCS2` | OCS2 whole-body control |
+| `MOVEJ` | MoveJ joint servo mode |
+| `COMPLIANCE` | Compliance mode; not implemented by the current stack and rejected by `set_mode` |
+
+### set_mode
+
+Switch the motion regime and return the applied one.
 
 ```python
-outcome = robot.motion.reset_fsm()
-print(outcome.success, outcome.statusMessage)
-```
-
-### set_body_mode
-
-Set the whole-body constraint mode.
-
-```python
-set_body_mode(*, mode: str, timeout_ms: int = 3000) -> OutcomeT
+set_mode(mode: MotionMode, *, timeout_ms: int = 7000) -> MotionMode
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `mode` | `str` | (required) | Mode name (case-sensitive): `BODY_FREE` / `BODY_RELATIVE` / `BODY_TRACKING` / `BODY_LOCK` / `BODY_HEAD_COUPLED` / `BODY_CUSTOM_LOCK` / `BODY_UNLOCK`; `BODY_VERTICAL` is a legacy alias for `BODY_RELATIVE` |
-| `timeout_ms` | `int` | `3000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `mode` | `MotionMode` | (required) | Mode value |
+| `timeout_ms` | `int` | `7000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `MotionMode`
 
-`OutcomeT`: `success` / `statusMessage`.
+The proxy unwraps `Mode` into `MotionMode`.
 
 ```python
-outcome = robot.motion.set_body_mode(mode="BODY_RELATIVE")
-print(outcome.success, outcome.statusMessage)
+from fabot.capabilities.motion import MotionMode
+
+applied = robot.motion.set_mode(MotionMode.OCS2)
+print(applied)
+print(robot.motion.get_wbc_state().body_mode)
 ```
+
+### servo_pose
+
+Whole-body pose servo: supply goals for all three parts and get the applied values.
+
+```python
+servo_pose(*, left_arm: Pose3d, right_arm: Pose3d, body: Pose3d, timeout_ms: int = 1000) -> WholeBodyPoseTarget
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `left_arm` | `Pose3d` | (required) | Left-arm goal pose |
+| `right_arm` | `Pose3d` | (required) | Right-arm goal pose |
+| `body` | `Pose3d` | (required) | Body goal pose |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `WholeBodyPoseTarget`
+
+| Field | Type | Description |
+|------|------|------|
+| `left_arm` | `Pose3d` | Left-arm data |
+| `right_arm` | `Pose3d` | Right-arm data |
+| `body` | `Pose3d` | Body data |
+
+### move_home
+
+Move to a preset home pose; `HomePose.PRIMARY` is the default.
+
+```python
+move_home(target: HomePose = HomePose.PRIMARY, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveHomeOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `target` | `HomePose` | `HomePose.PRIMARY` | Goal value |
+| `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+
+Returns a `MoveHomeOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
+
+```python
+from fabot.capabilities.motion import HomePose
+
+robot.motion.move_home(HomePose.PRIMARY, duration=5.0).wait(timeout=30.0)
+```
+
+### move_preset
+
+Move to a named preset configuration.
+
+```python
+move_preset(target: str, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MovePresetOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `target` | `str` | (required) | Goal value |
+| `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+
+Returns a `MovePresetOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
+
+### move_joint
+
+Joint-space motion. `tolerance` is the arrival tolerance, `duration` the requested time, `wait_timeout` the extra arrival wait; 0 uses the defaults.
+
+```python
+move_joint(target: WholeBodyJointTarget, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveJointOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `target` | `WholeBodyJointTarget` | (required) | Goal value |
+| `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+
+Returns a `MoveJointOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
+
+### move_joint_path
+
+Follow a joint waypoint sequence; at least two waypoints, the first reached from the current joints.
+
+```python
+move_joint_path(waypoints: list[WholeBodyJointTarget], *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveJointPathOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `waypoints` | `list[WholeBodyJointTarget]` | (required) | Waypoints, at least two |
+| `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+
+Returns a `MoveJointPathOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
+
+### move_pose
+
+Absolute end-effector motion. The reference frame comes from `target.frame_id` (empty uses the slot base); `end_frame` empty uses the active TCP or flange.
+
+```python
+move_pose(target: WholeBodyPoseTarget, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MovePoseOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `target` | `WholeBodyPoseTarget` | (required) | Goal value |
+| `end_frame` | `str` | `""` | Controlled end frame; empty means the active tool TCP, or the flange without a tool |
+| `position_tolerance` | `float` | `0.0` | Position tolerance in meters; 0 uses the slot default |
+| `orientation_tolerance` | `float` | `0.0` | Orientation tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+
+Returns a `MovePoseOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
 ## Channels
 
-Open parameters and frame fields are below; see [Events & Data Channels](../../usage/events-channels.md) for shared usage.
+Opening a channel takes a lease and returns a handle: iterate with `frames()`, take one sample with `next()`, renew with `renew()`, release with `close()`. See [Events & Data Channels](../../usage/events-channels.md).
 
-### joints()
+### joint()
 
-Subscribe to the robot-wide joint-position stream.
+Whole-body joint-state stream.
 
 ```python
-joints(qos_profile: str = "latest") -> JointsChannel
+joint(qos_profile: str = "latest") -> Channel
 ```
 
-**Open parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `qos_profile` | `str` | `"latest"` | `"latest"` / `"realtime"` / `"reliable"` |
-
-**Frame** (`JointsChannelFrame`)
+Frame payload is `WholeBodyJointState`:
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `channel_id` | `str` | Channel id |
-| `sequence` | `int` | Frame sequence |
-| `timestamp_us` | `int` | Timestamp (microseconds) |
-| `payload` | `NamedJointsT` | `payload.positions`: `list[JointPositionT]`, each with `name` (joint name) / `position` (radians) |
+|------|------|------|
+| `body` | `JointState` | Body data |
+| `left_arm` | `JointState` | Left-arm data |
+| `right_arm` | `JointState` | Right-arm data |
+| `head` | `JointState` | Head data |
 
-Iterate frames with `frames(poll_timeout_ms=..., timeout_ms=...)`.
+### wbc_state()
+
+Whole-body control state stream.
 
 ```python
-ch = robot.motion.joints(qos_profile="latest")
-for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-    for joint in frame.payload.positions:
-        print(frame.sequence, joint.name, joint.position)
+wbc_state(qos_profile: str = "latest") -> Channel
 ```
+
+Frame payload is `WbcState`:
+
+| Field | Type | Description |
+|------|------|------|
+| `body_mode` | `BodyMode` | Body constraint mode (`BodyMode`) |
+| `head_mode` | `HeadMode` | Head constraint mode (`HeadMode`) |
+| `arms_mode` | `ArmsMode` | Arm coupling mode (`ArmsMode`) |
+| `left_arm_enabled` | `bool` | Whether the left arm is enabled |
+| `right_arm_enabled` | `bool` | Whether the right arm is enabled |
+| `chassis_locked` | `bool` | Whether the chassis is locked |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+
+### center_of_mass()
+
+Center-of-mass and margin stream.
+
+```python
+center_of_mass(qos_profile: str = "latest") -> Channel
+```
+
+Frame payload is `CenterOfMass`:
+
+| Field | Type | Description |
+|------|------|------|
+| `position` | `Vector3d` | Position vector |
+| `status` | `SupportStatus` | Status snapshot |
+| `min_safe_margin` | `float` | Minimum margin to the support polygon in meters |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
 
 ## Events
 
-Subscribe via `robot.motion.events`. Callbacks run on the SDK I/O thread: keep them light and do not call blocking APIs; see [Events & Data Channels](../../usage/events-channels.md).
+Subscribe through `robot.<slot>.events`. Callbacks run on the SDK I/O thread: keep them short and never call blocking APIs. Every event carries an `EventHeader` (`name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`).
 
-Every event includes an `EventHeader`: `name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`.
-
-### fault_changed
-
-Pushed when this slot's fault set changes.
-
-Subscribe with `robot.motion.events.fault_changed.subscribe(callback)`.
-
-**Payload**
-
-`FaultChangedEvent.faults`: `Faults`. Today `Faults` only has `revision`; this module has no named faults yet. See [Faults](#faults).
-
-```python
-def on_fault(event):
-    print(event.header.slot_id, event.faults.revision)
-
-token = robot.motion.events.fault_changed.subscribe(on_fault)
-```
-
-### lifecycle_changed
-
-Pushed when this slot's lifecycle or health changes.
-
-Subscribe with `robot.motion.events.lifecycle_changed.subscribe(callback)`.
-
-**Payload**
-
-`LifecycleChangedEvent.lifecycle`: `CapabilityLifecycleSnapshot`:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `lifecycle` | `LifecycleState` | Lifecycle stage |
-| `health` | `HealthState` | Health |
-| `source_instance_id` | `str` | Source instance id |
-
-```python
-def on_lifecycle(event):
-    snap = event.lifecycle
-    print(event.header.slot_id, snap.lifecycle, snap.health)
-
-token = robot.motion.events.lifecycle_changed.subscribe(on_lifecycle)
-```
+| Entry | Event type | payload |
+|------|------|------|
+| `robot.<slot>.events.fault_changed` | `FaultChangedEvent` | `FaultChangedEvent.faults`: `Faults` |
+| `robot.<slot>.events.lifecycle_changed` | `LifecycleChangedEvent` | `LifecycleChangedEvent.lifecycle`: `CapabilityLifecycleSnapshot` |
 
 ## Faults
 
-Query with `robot.motion.faults()`, which returns `Faults`.
-
-This module has no named faults yet: `Faults` currently only exposes `revision`. Changes are pushed on `fault_changed`. See [Status, Faults & Lifecycle](../../usage/status-faults.md) for the shared model.
-
-If named faults appear later, each one is a `FaultState`:
+Query with `robot.<slot>.faults()`, which returns `Faults` (`revision` plus `records: list[FaultState]`). Each `FaultState`: 
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `active` | `bool` | Whether the fault is still standing |
-| `catalog_id` | `str` | Catalog id |
-| `fault_class` | `CapabilityStateClass` | Fault class |
-| `first_seen_us` / `last_seen_us` | `int` | First / last seen timestamp (microseconds) |
-| `count` | `int` | Occurrence count |
+|------|------|------|
+| `code` | `int` | Diagnostic code; `0` means no fault |
+| `source` | `str` | Fault source id |
+| `state` | `int` | Fault state bits |
+| `severity` | `int` | Severity, aligned with `HealthState` |
+| `timestamp_us` | `int` | Latest timestamp in microseconds |
+
+For human-readable fault text use `Catalogs.format_fault(record, capability_id="...")`; see [Catalogs](../../usage/catalogs.md).
 
 ## Status
 
-This module has no `status()`. For aggregated robot status see `robot.status()`.
+This module has no `status()`; see `robot.status()` for the aggregated view.
 
-Shared queries:
+Shared read-only queries:
 
-- `health()`: current health
-- `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `source_instance_id`)
+- `health()`: `SlotHealth` (`is_usable` / `lifecycle` / `health` / `standing_faults` / `pbit_completed` / `source_instance_id`)
+- `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `pbit_completed` / `source_instance_id`)
 
-Changes arrive on `lifecycle_changed`. See [Status, Faults & Lifecycle](../../usage/status-faults.md).
+Changes arrive through `lifecycle_changed`; see [Status, Faults & Lifecycle](../../usage/status-faults.md).
 
 ## Resources
 
-`set_fsm_state` and `reset_fsm` hold the whole-body motion-control resource: while one of them is running, another call on the same resource is rejected outright instead of queued. `get_joints` / `stop` / `get_fsm_state` / `set_body_mode` do not hold this resource and can be called at any time.
+`move_home` / `move_preset` / `move_joint` / `move_joint_path` / `move_pose` share the `motion_controller` resource with policy `queue` and a 60-second default budget.

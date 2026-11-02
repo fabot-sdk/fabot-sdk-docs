@@ -2,7 +2,7 @@
 title: Hand
 status: draft
 owner: fabot-core
-updated: 2026-09-09
+updated: 2026-11-02
 ---
 
 # Hand
@@ -10,296 +10,417 @@ updated: 2026-09-09
 ## Module Overview
 
 - Capability id: `hand`; slots: `robot.left_hand` / `robot.right_hand`
-- Single-hand multi-finger joint aperture control, with speed and torque settings. Left and right hands share the same API on independent slots.
+- Domain: `motion`; capability version: `1.1.0`
+- Dexterous hand: per-joint opening, velocity / force limits, five-finger tactile arrays and long-running joint / opening motion.
+- Both opening and joint angles are arrays ordered like the hand controller `joints`; `move_opening` interpolates between the open and closed configuration per joint.
+
+All motion Operations share the `hand` resource with policy `queue`.
 
 ## API Overview
 
-| Method | Request | Response | Type |
-|--------|---------|----------|------|
-| `get_joints` | — | `list[float]` | Command |
-| `get_velocity` | — | `float` | Command |
-| `set_velocity` | `velocity` | `ToolSpeedAppliedT` | Command |
-| `get_torque` | — | `float` | Command |
-| `set_torque` | `torque` | `TorqueAppliedT` | Command |
-| `move_joints` | `positions`, `duration_s`, `position_threshold` | `MoveJointsOperation` | Operation |
+| Method | Request | Response | Default timeout |
+|------|------|------|------|
+| `get_opening` | `Empty` | `Doubles` | 1000 ms |
+| `get_joint` | `Empty` | `JointState` | 1000 ms |
+| `get_tactile` | `Empty` | `HandTactile` | 1000 ms |
+| `get_velocity_limit` | `Empty` | `Doubles` | 1000 ms |
+| `set_velocity_limit` | `Doubles` | `Doubles` | 8000 ms |
+| `get_force_limit` | `Empty` | `Doubles` | 1000 ms |
+| `set_force_limit` | `Doubles` | `Doubles` | 8000 ms |
+| `servo_opening` | `Doubles` | `Doubles` | 1000 ms |
+| `servo_joint` | `JointPositions` | `JointPositions` | 1000 ms |
+| `get_arrival_thresholds` | `Empty` | `ArrivalThresholds` | 1000 ms |
+| `set_arrival_thresholds` | `ArrivalThresholds` | `ArrivalThresholdsApplied` | 1000 ms |
 
-Command default `timeout_ms`: 1000 for `get_joints`, 2000 for `get_velocity` / `set_velocity` / `get_torque` / `set_torque` (all overridable). All parameters are keyword-only.
+All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
+
+| Method | Request | Kind | Resources | Default budget |
+|------|------|------|------|------|
+| `move_opening` | `OpeningMove` | Operation | hand | — |
+| `move_joint` | `JointMove` | Operation | hand | — |
+| `move_joint_path` | `JointPath` | Operation | hand | — |
+
+Operations return a handle immediately; progress and results come from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
 
 | Channel | Content |
-|---------|---------|
-| `joints()` | Joint-aperture stream (`JointPositionsT`) |
+|------|------|
+| `opening()` | `Doubles` |
+| `joint()` | `JointState` |
+| `tactile()` | `HandTactile` |
 
 ## Methods
 
-All method parameters are keyword-only. Command timeouts and Operation polling / cancel are documented in [Commands & Operations](../../usage/commands-operations.md); they are not repeated in each section.
+Signatures below are authoritative for names and defaults. Parameters before `*` accept positional or keyword form; those after `*` are keyword-only. Fields use snake_case (`frame_id`); the generated types also accept the camelCase alias.
 
-Joint apertures are recommended to be normalized to 0~1: 0 means flexed/closed, 1 means extended/open; the list length depends on the hand model.
+### get_opening
 
-### get_joints
-
-Read the current joint apertures.
+Read the per-joint opening.
 
 ```python
-get_joints(*, timeout_ms: int = 1000) -> list[float]
+get_opening(*, timeout_ms: int = 1000) -> list[float]
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `list[float]`
 
-`list[float]`: joint apertures, recommended normalized 0~1.
+The proxy unwraps `Doubles` into `list[float]`.
 
-```python
-positions = robot.left_hand.get_joints()
-print(positions)
-```
+### get_joint
 
-### get_velocity
-
-Read the current persistent speed scalar.
+Read the current joint sample: positions, velocities, efforts and timestamp.
 
 ```python
-get_velocity(*, timeout_ms: int = 2000) -> float
+get_joint(*, timeout_ms: int = 1000) -> JointState
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `2000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
-
-`float`: the current speed scalar.
-
-### set_velocity
-
-Set the persistent speed scalar; affects subsequent `move_joints` calls.
-
-```python
-set_velocity(*, velocity: float, timeout_ms: int = 2000) -> ToolSpeedAppliedT
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `velocity` | `float` | (required) | Unsigned speed scalar; must be a positive finite value |
-| `timeout_ms` | `int` | `2000` | Command timeout (milliseconds) |
-
-**Returns**
-
-`ToolSpeedAppliedT`:
+**Returns** `JointState`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `outcome` | `OutcomeT` | `success` / `statusMessage` |
-| `appliedVelocity` | `float` | The speed scalar actually applied |
+|------|------|------|
+| `positions` | `list[float]` | Position list; point clouds store X/Y/Z interleaved |
+| `velocities` | `list[float]` | Joint velocity array |
+| `efforts` | `list[float]` | Joint effort array |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+
+### get_tactile
+
+Read the five-finger tactile arrays and total contact force.
 
 ```python
-applied = robot.left_hand.set_velocity(velocity=0.5)
-print(applied.outcome.success, applied.appliedVelocity)
-```
-
-### get_torque
-
-Read the current persistent torque scalar.
-
-```python
-get_torque(*, timeout_ms: int = 2000) -> float
+get_tactile(*, timeout_ms: int = 1000) -> HandTactile
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `2000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
-
-`float`: the current torque scalar.
-
-### set_torque
-
-Set the persistent torque scalar; affects subsequent `move_joints` calls.
-
-```python
-set_torque(*, torque: float, timeout_ms: int = 2000) -> TorqueAppliedT
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `torque` | `float` | (required) | Unsigned torque scalar; must be a non-negative finite value |
-| `timeout_ms` | `int` | `2000` | Command timeout (milliseconds) |
-
-**Returns**
-
-`TorqueAppliedT`:
+**Returns** `HandTactile`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `outcome` | `OutcomeT` | `success` / `statusMessage` |
-| `appliedTorque` | `float` | The torque scalar actually applied |
+|------|------|------|
+| `thumb` | `FingerTactile` | Thumb tactile array |
+| `index` | `FingerTactile` | Index tactile array |
+| `middle` | `FingerTactile` | Middle tactile array |
+| `ring` | `FingerTactile` | Ring tactile array |
+| `pinky` | `FingerTactile` | Pinky tactile array |
+| `timestamp_us` | `int` | Sample timestamp in microseconds |
 
 ```python
-applied = robot.left_hand.set_torque(torque=0.3)
-print(applied.outcome.success, applied.appliedTorque)
+tactile = robot.right_hand.get_tactile()
+print(tactile.thumb.total_force, tactile.index.total_force)
 ```
 
-### move_joints
+### get_velocity_limit
 
-Run a long-running move toward target apertures. Returns a pollable, cancelable Operation. Speed and torque are not carried by this method; set them first with `set_velocity` / `set_torque`.
+Read the velocity limit.
 
 ```python
-move_joints(*, positions: list[float], duration_s: float, position_threshold: float) -> MoveJointsOperation
+get_velocity_limit(*, timeout_ms: int = 1000) -> list[float]
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `positions` | `list[float]` | (required) | Target apertures, recommended normalized 0~1 |
-| `duration_s` | `float` | (required) | Arrival timeout for this move (seconds); a value greater than 0 overrides the default 10, pass `0.0` to use the default |
-| `position_threshold` | `float` | (required) | Arrival threshold for this move, same unit as `positions`; a value greater than 0 overrides the default 0.02, pass `0.0` to use the default |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `list[float]`
 
-`MoveJointsOperation`. Use `get()` / `events()` for snapshots, or `cancel()`. Snapshot fields:
+The proxy unwraps `Doubles` into `list[float]`.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `state` | `OperationState` | Task state |
-| `terminal` | `bool` | Whether the snapshot is terminal |
-| `feedback` | `ProgressT` \| `None` | `progress` (`float`), `statusMessage` (`str`) |
-| `result` | `OutcomeT` \| `None` | `success` / `statusMessage` |
-| `error` | `FabotError` \| `None` | Failure reason |
+### set_velocity_limit
+
+Set the velocity limit and return the applied value.
 
 ```python
-robot.left_hand.set_velocity(velocity=0.5)
-op = robot.left_hand.move_joints(
-    positions=[0.0, 0.0, 0.0, 0.0, 0.0], duration_s=5.0, position_threshold=0.02,
-)
-for snap in op.events(poll_timeout_ms=200, timeout_ms=30000):
-    print(snap.state, snap.feedback)
-    if snap.terminal:
-        break
+set_velocity_limit(values: list[float], *, timeout_ms: int = 8000) -> list[float]
 ```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `values` | `list[float]` | (required) | Value list |
+| `timeout_ms` | `int` | `8000` | Timeout in milliseconds |
+
+**Returns** `list[float]`
+
+The proxy unwraps `Doubles` into `list[float]`.
+
+### get_force_limit
+
+Read the force limit.
+
+```python
+get_force_limit(*, timeout_ms: int = 1000) -> list[float]
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `list[float]`
+
+The proxy unwraps `Doubles` into `list[float]`.
+
+### set_force_limit
+
+Set the force limit and return the applied value.
+
+```python
+set_force_limit(values: list[float], *, timeout_ms: int = 8000) -> list[float]
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `values` | `list[float]` | (required) | Value list |
+| `timeout_ms` | `int` | `8000` | Timeout in milliseconds |
+
+**Returns** `list[float]`
+
+The proxy unwraps `Doubles` into `list[float]`.
+
+### servo_opening
+
+Send one opening servo target and return the applied value.
+
+```python
+servo_opening(values: list[float], *, timeout_ms: int = 1000) -> list[float]
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `values` | `list[float]` | (required) | Value list |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `list[float]`
+
+The proxy unwraps `Doubles` into `list[float]`.
+
+### servo_joint
+
+Send one joint servo target.
+
+```python
+servo_joint(positions: list[float], *, timeout_ms: int = 1000) -> list[float]
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `positions` | `list[float]` | (required) |  |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `list[float]`
+
+The proxy unwraps `JointPositions` into `list[float]`.
+
+### get_arrival_thresholds
+
+Read the arrival thresholds for this slot.
+
+```python
+get_arrival_thresholds(*, timeout_ms: int = 1000) -> ArrivalThresholds
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `ArrivalThresholds`
+
+| Field | Type | Description |
+|------|------|------|
+| `joint_tolerance` | `float` | Joint arrival tolerance in radians; must be finite and positive |
+| `max_timeout_s` | `float` | Extra arrival budget in seconds added to the motion duration |
+
+### set_arrival_thresholds
+
+Replace the arrival thresholds for this slot. The change is in-memory only and applies to later motions.
+
+```python
+set_arrival_thresholds(*, joint_tolerance: float = 0.02, max_timeout_s: float = 10.0, timeout_ms: int = 1000) -> ArrivalThresholdsApplied
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `joint_tolerance` | `float` | `0.02` | Joint arrival tolerance in radians |
+| `max_timeout_s` | `float` | `10.0` | Extra arrival budget in seconds |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `ArrivalThresholdsApplied`
+
+| Field | Type | Description |
+|------|------|------|
+| `outcome` | `Outcome` | Call result |
+| `applied` | `ArrivalThresholds` | Applied configuration |
+
+### move_opening
+
+Opening motion. `tolerance` is in opening units; a `duration` of 0 uses the slot `max_timeout_s`.
+
+```python
+move_opening(target: list[float], *, tolerance: float = 0.0, duration: float = 0.0) -> MoveOpeningOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `target` | `list[float]` | (required) | Goal value |
+| `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+
+Returns a `MoveOpeningOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
+
+### move_joint
+
+Joint motion in radians. `tolerance` is in radians; a `duration` of 0 uses the slot `max_timeout_s`.
+
+```python
+move_joint(target: list[float], *, tolerance: float = 0.0, duration: float = 0.0) -> MoveJointOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `target` | `list[float]` | (required) | Goal value |
+| `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+
+Returns a `MoveJointOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
+
+### move_joint_path
+
+Follow a joint waypoint sequence; at least two waypoints, the first reached from the current joints.
+
+```python
+move_joint_path(waypoints: list[JointPositions], *, tolerance: float = 0.0, duration: float = 0.0) -> MoveJointPathOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `waypoints` | `list[JointPositions]` | (required) | Waypoints, at least two |
+| `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+
+Returns a `MoveJointPathOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
 ## Channels
 
-Open parameters and frame fields are below; see [Events & Data Channels](../../usage/events-channels.md) for shared usage.
+Opening a channel takes a lease and returns a handle: iterate with `frames()`, take one sample with `next()`, renew with `renew()`, release with `close()`. See [Events & Data Channels](../../usage/events-channels.md).
 
-### joints()
+### opening()
 
-Subscribe to the joint-aperture stream.
+Opening stream.
 
 ```python
-joints(qos_profile: str = "latest") -> JointsChannel
+opening(qos_profile: str = "latest") -> Channel
 ```
 
-**Open parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `qos_profile` | `str` | `"latest"` | `"latest"` / `"realtime"` / `"reliable"` |
-
-**Frame** (`JointsChannelFrame`)
+Frame payload is `Doubles`:
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `channel_id` | `str` | Channel id |
-| `sequence` | `int` | Frame sequence |
-| `timestamp_us` | `int` | Timestamp (microseconds) |
-| `payload` | `JointPositionsT` | `payload.positions`: `list[float]`, joint apertures |
+|------|------|------|
+| `values` | `list[float]` | Value list |
 
-Iterate frames with `frames(poll_timeout_ms=..., timeout_ms=...)`.
+### joint()
+
+Joint position stream.
 
 ```python
-ch = robot.right_hand.joints(qos_profile="latest")
-for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-    print(frame.channel_id, frame.sequence, frame.payload.positions)
+joint(qos_profile: str = "latest") -> Channel
 ```
+
+Frame payload is `JointState`:
+
+| Field | Type | Description |
+|------|------|------|
+| `positions` | `list[float]` | Position list; point clouds store X/Y/Z interleaved |
+| `velocities` | `list[float]` | Joint velocity array |
+| `efforts` | `list[float]` | Joint effort array |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+
+### tactile()
+
+Tactile array stream.
+
+```python
+tactile(qos_profile: str = "latest") -> Channel
+```
+
+Frame payload is `HandTactile`:
+
+| Field | Type | Description |
+|------|------|------|
+| `thumb` | `FingerTactile` | Thumb tactile array |
+| `index` | `FingerTactile` | Index tactile array |
+| `middle` | `FingerTactile` | Middle tactile array |
+| `ring` | `FingerTactile` | Ring tactile array |
+| `pinky` | `FingerTactile` | Pinky tactile array |
+| `timestamp_us` | `int` | Sample timestamp in microseconds |
 
 ## Events
 
-Subscribe via `robot.left_hand.events` / `robot.right_hand.events`. Callbacks run on the SDK I/O thread: keep them light and do not call blocking APIs; see [Events & Data Channels](../../usage/events-channels.md).
+Subscribe through `robot.<slot>.events`. Callbacks run on the SDK I/O thread: keep them short and never call blocking APIs. Every event carries an `EventHeader` (`name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`).
 
-Every event includes an `EventHeader`: `name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`.
-
-### fault_changed
-
-Pushed when this slot's fault set changes.
-
-Subscribe with `robot.left_hand.events.fault_changed.subscribe(callback)` (same on the right hand).
-
-**Payload**
-
-`FaultChangedEvent.faults`: `Faults`. Today `Faults` only has `revision`; this module has no named faults yet. See [Faults](#faults).
-
-```python
-def on_fault(event):
-    print(event.header.slot_id, event.faults.revision)
-
-token = robot.left_hand.events.fault_changed.subscribe(on_fault)
-```
-
-### lifecycle_changed
-
-Pushed when this slot's lifecycle or health changes.
-
-Subscribe with `robot.left_hand.events.lifecycle_changed.subscribe(callback)` (same on the right hand).
-
-**Payload**
-
-`LifecycleChangedEvent.lifecycle`: `CapabilityLifecycleSnapshot`:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `lifecycle` | `LifecycleState` | Lifecycle stage |
-| `health` | `HealthState` | Health |
-| `source_instance_id` | `str` | Source instance id |
-
-```python
-def on_lifecycle(event):
-    snap = event.lifecycle
-    print(event.header.slot_id, snap.lifecycle, snap.health)
-
-token = robot.right_hand.events.lifecycle_changed.subscribe(on_lifecycle)
-```
+| Entry | Event type | payload |
+|------|------|------|
+| `robot.<slot>.events.fault_changed` | `FaultChangedEvent` | `FaultChangedEvent.faults`: `Faults` |
+| `robot.<slot>.events.lifecycle_changed` | `LifecycleChangedEvent` | `LifecycleChangedEvent.lifecycle`: `CapabilityLifecycleSnapshot` |
 
 ## Faults
 
-Query with `robot.left_hand.faults()` / `robot.right_hand.faults()`, which return `Faults`.
-
-This module has no named faults yet: `Faults` currently only exposes `revision`. Changes are pushed on `fault_changed`. See [Status, Faults & Lifecycle](../../usage/status-faults.md) for the shared model.
-
-If named faults appear later, each one is a `FaultState`:
+Query with `robot.<slot>.faults()`, which returns `Faults` (`revision` plus `records: list[FaultState]`). Each `FaultState`: 
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `active` | `bool` | Whether the fault is still standing |
-| `catalog_id` | `str` | Catalog id |
-| `fault_class` | `CapabilityStateClass` | Fault class |
-| `first_seen_us` / `last_seen_us` | `int` | First / last seen timestamp (microseconds) |
-| `count` | `int` | Occurrence count |
+|------|------|------|
+| `code` | `int` | Diagnostic code; `0` means no fault |
+| `source` | `str` | Fault source id |
+| `state` | `int` | Fault state bits |
+| `severity` | `int` | Severity, aligned with `HealthState` |
+| `timestamp_us` | `int` | Latest timestamp in microseconds |
+
+For human-readable fault text use `Catalogs.format_fault(record, capability_id="...")`; see [Catalogs](../../usage/catalogs.md).
 
 ## Status
 
-This module has no `status()`. For aggregated robot status see `robot.status()`.
+This module has no `status()`; see `robot.status()` for the aggregated view.
 
-Shared queries:
+Shared read-only queries:
 
-- `health()`: current health
-- `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `source_instance_id`)
+- `health()`: `SlotHealth` (`is_usable` / `lifecycle` / `health` / `standing_faults` / `pbit_completed` / `source_instance_id`)
+- `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `pbit_completed` / `source_instance_id`)
 
-Changes arrive on `lifecycle_changed`. See [Status, Faults & Lifecycle](../../usage/status-faults.md).
+Changes arrive through `lifecycle_changed`; see [Status, Faults & Lifecycle](../../usage/status-faults.md).
 
 ## Resources
 
-On a given hand, `move_joints` holds that hand's resource exclusively; new tasks queue.
+`move_opening` / `move_joint` / `move_joint_path` share the `hand` resource with policy `queue`.

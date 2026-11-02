@@ -2,54 +2,56 @@
 title: Teleop
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-11-02
 ---
 
 # Teleop
 
-Start and stop joystick teleoperation sessions. See [Commands & Operations](../../usage/commands-operations.md) for the long-running task model and [Teleop](../../reference/python/teleop.md) for the API.
+Start and stop joystick teleop sessions. The long-running task model is in [Commands & Operations](../../usage/commands-operations.md), the API in [Teleop](../../reference/python/teleop.md).
 
-## Start a Joystick Control Session
+## Start a joystick session
 
-`start_joystick_control` returns a long-running Operation: while the session is active it keeps receiving remote control data. Poll progress snapshots via `events()` and read the result once a terminal state is reached. Cancelling the Operation is equivalent to ending the session.
+`start_joystick_control` returns a long-running Operation: the session keeps receiving remote control data, progress snapshots come from `events()`, and the result is readable once terminal. Cancelling the Operation is equivalent to ending the session.
 
 ```python
 from fabot import Robot
-from fabot.core.types import OperationState
+from fabot.core import OperationState
 
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready(["teleop"])
 
     op = robot.teleop.start_joystick_control()
+    print("session id:", op.id)
+
     for snap in op.events(poll_timeout_ms=500, timeout_ms=60000):
-        if snap.feedback is not None:
-            print("progress:", snap.feedback.progress, snap.feedback.statusMessage)
+        print(snap.state, snap.feedback)
         if snap.terminal:
             break
 
-    if snap.state == OperationState.Succeeded:
-        print("Session ended normally:", snap.result.statusMessage)
-    else:
-        print("Session ended abnormally:", snap.error)
+    print(snap.state is OperationState.Succeeded, snap.result)
 ```
 
 Notes:
 
-- The snapshot's `feedback` is a `ProgressT` (`progress` / `statusMessage`) and may be `None` right after the session starts.
-- The terminal snapshot's `result` is an `OutcomeT` (`success` / `statusMessage`); read `error` for the failure reason — see [Error Handling](../../usage/errors.md).
-- Sessions have a default time limit and reach a terminal state automatically when it expires. Teleop is an exclusive resource: only one session is allowed at a time — see [Teleop](../../reference/python/teleop.md).
+- The session has a 45-second default budget and ends automatically when it expires.
+- The `joystick_control` resource uses policy `reject`: calling `start_joystick_control()` during a session is refused immediately (`ResourceConflict`) rather than queued.
 
-## Stop the Teleop Session
+## Cancel a session
 
-To end the session actively, call `stop_joystick_control`. It is a Command that returns the outcome directly:
+```python
+op = robot.teleop.start_joystick_control()
+# ... joystick operation ...
+snap = op.cancel()
+print(snap.state)          # OperationState.Canceled
+```
+
+`cancel()` is best effort: if the session already ended naturally, the returned snapshot is `Succeeded` or another terminal state.
+
+## Stop explicitly
+
+`stop_joystick_control()` is a short command returning an `Outcome`:
 
 ```python
 outcome = robot.teleop.stop_joystick_control()
-print(outcome.success, outcome.statusMessage)
+print(outcome.success, outcome.status_message)
 ```
-
-Notes:
-
-- Calling `start_joystick_control` again while a session is active is rejected outright (no queuing); call `stop_joystick_control` first or wait for the session to end.
-- If you hold the Operation handle, `op.cancel()` also ends the session; the returned terminal snapshot has `state == OperationState.Canceled`.
-- This module has no data channels; subscribe to `robot.teleop.events.lifecycle_changed` for lifecycle changes — see [Events & Channels](../../usage/events-channels.md).

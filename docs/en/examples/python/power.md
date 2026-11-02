@@ -2,16 +2,16 @@
 title: Power
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-11-02
 ---
 
 # Power
 
-Read battery level and charging state from both power slots, and subscribe to fault and lifecycle events. The power capability has no Commands / Operations and no data channels — only read-only queries and events; see [Events & Channels](../../usage/events-channels.md) for the event model, [Status, Faults & Lifecycle](../../usage/status-faults.md) for faults and lifecycle, and [Power](../../reference/python/power.md) for the API and fields.
+Read energy and charging state from both power rails, and subscribe to fault and lifecycle events. Power has no Commands, Operations or data channels, only read-only queries and events; the event model is in [Events & Data Channels](../../usage/events-channels.md), faults and lifecycle in [Status, Faults & Lifecycle](../../usage/status-faults.md), and the API in [Power](../../reference/python/power.md).
 
-## Read Battery and Charging State
+## Read energy and charging state
 
-`robot.power_1` / `robot.power_2` are two independent power slots. `status()` returns a `Status` snapshot: `energy` (battery level) / `voltage` / `current` / `temperature` / `is_charging`.
+`robot.power_1` / `robot.power_2` are two independent power slots. `status()` returns a `Status` snapshot: `energy` / `voltage` / `current` / `temperature` / `is_charging`.
 
 ```python
 from fabot import Robot
@@ -19,65 +19,47 @@ from fabot import Robot
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready(["power_1", "power_2"])
 
-    for slot in (robot.power_1, robot.power_2):
-        st = slot.status()
-        print(
-            slot.slot_id,
-            "energy:", st.energy,
-            "voltage:", st.voltage,
-            "current:", st.current,
-            "temperature:", st.temperature,
-            "charging:", st.is_charging,
-        )
-        if st.energy < 20 and not st.is_charging:
-            print(slot.slot_id, "battery low, please charge soon")
+    for rail in (robot.power_1, robot.power_2):
+        st = rail.status()
+        print(rail.id, st.energy, st.voltage, st.current, st.temperature, st.is_charging)
 ```
 
-Notes:
+## Read both rails from the robot-wide bags
 
-- `status()` takes no arguments and returns the current snapshot immediately; poll it yourself for continuous monitoring — power has no data channel.
-- The two slots are independent: a low `power_1` says nothing about `power_2`; check them separately.
-
-## Query Health and Faults
-
-`health()` / `lifecycle()` are common read-only queries; `faults()` returns `Faults`. Power currently has no named faults, only the `revision` counter.
+`robot.status()` aggregates every capability that provides `status()`:
 
 ```python
-snap = robot.power_1.lifecycle()
-print("lifecycle:", snap.lifecycle, "health:", snap.health)
-
-faults = robot.power_1.faults()
-print("fault revision:", faults.revision)
+agg = robot.status()
+print(agg.generation, agg.revision)
+print(agg.power_1.energy, agg.power_2.energy)
+print(agg.head_camera.state, agg.screen.activity)
 ```
 
-## Subscribe to Fault and Lifecycle Events
+## Watch for low battery
 
-`fault_changed` fires when the fault set changes, `lifecycle_changed` when lifecycle or health changes. Callbacks run on the SDK I/O thread: keep them lightweight and never call blocking APIs from them.
+Power has no event stream, so poll it yourself — from your own thread or timer, never inside a callback:
 
 ```python
-from fabot import Robot
-from fabot.core.event_types import LifecycleChangedEvent
-from fabot.capabilities.power import FaultChangedEvent
+import threading
+import time
 
-with Robot.connect("192.168.1.10", 7557) as robot:
-    robot.wait_ready(["power_1"])
+def watch(robot, threshold=20, interval=5.0):
+    while True:
+        if robot.power_1.status().energy < threshold:
+            robot.logs.warn("battery low", component="app", slot="power_1")
+        time.sleep(interval)
 
-    def on_fault(event: FaultChangedEvent):
-        print(event.header.slot_id, "fault changed, revision =", event.faults.revision)
-
-    def on_lifecycle(event: LifecycleChangedEvent):
-        snap = event.lifecycle
-        print(event.header.slot_id, "lifecycle =", snap.lifecycle, "health =", snap.health)
-
-    robot.power_1.events.fault_changed.subscribe(on_fault)
-    robot.power_1.events.lifecycle_changed.subscribe(on_lifecycle)
-    input("press Enter to exit...\n")
+threading.Thread(target=watch, args=(robot,), daemon=True).start()
 ```
 
-When the `with` block exits, `robot.close()` closes all subscriptions at once — no per-`token.close()` calls needed.
+Custom logs from `robot.logs.warn(...)` join the same log stream, see [Logs, Metrics & Observability](../../usage/observability.md).
 
-## See Also
+## Subscribe to faults and lifecycle
 
-- [Events & Channels](../../usage/events-channels.md)
-- [Status, Faults & Lifecycle](../../usage/status-faults.md)
-- [Power API Reference](../../reference/python/power.md)
+```python
+def on_lifecycle(event):
+    snap = event.lifecycle
+    print(event.header.slot_id, snap.lifecycle, snap.health, snap.pbit_completed)
+
+token = robot.power_1.events.lifecycle_changed.subscribe(on_lifecycle)
+```

@@ -2,16 +2,16 @@
 title: 面屏
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-11-02
 ---
 
 # 面屏
 
-控制机器人面屏：叠加文本、图片、视频背景与底部电量条。写操作模型见 [命令与长时操作](../../usage/commands-operations.md)，接口见 [面屏](../../reference/python/screen.md)。
+控制机器人面屏：叠加文本、图片、视频与底部电量。写操作模型见 [命令与长时操作](../../usage/commands-operations.md)，接口见 [面屏](../../reference/python/screen.md)。
 
 ## 显示叠加文本与图片
 
-背景图片与叠加文本相互独立：`show_image` 设置背景，`show_text` 在其上叠加一层文本，不打断背景。所有写操作返回 `ScreenStatusAppliedT`，`outcome.success` 是执行结果，`status` 是应用后的屏幕快照。
+背景图片与叠加文本相互独立：`show_image` 设置背景，`show_text` 在其上叠加一层文本，不打断背景。所有写操作返回 `ScreenStatusApplied`，`outcome.success` 是执行结果，`status` 是应用后的屏幕快照。
 
 ```python
 from fabot import Robot
@@ -19,46 +19,34 @@ from fabot import Robot
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready(["screen"])
 
-    applied = robot.screen.show_image(uri="file:///usr/share/fabot/media/logo.png")
-    print(applied.outcome.success, applied.status.content)   # 2 (IMAGE)
+    robot.screen.show_image("https://example.com/idle.png")
+    applied = robot.screen.show_text("正在前往 3 号工位")
+    print(applied.outcome.success, applied.status.overlay_text, applied.status.content)
 
-    applied = robot.screen.show_text(text="任务执行中")
-    print(applied.outcome.success, applied.status.overlayText)
-
-    # 空字符串关闭叠加层，背景图片保持
-    robot.screen.show_text(text="")
+    robot.screen.set_battery(76)          # 同步底部电量
 ```
 
-注意：
+`status.content` 是 `ScreenContent` 枚举（`IDLE` / `IMAGE` / `VIDEO`）。
 
-- `content` 取值为 `ScreenContent`：`IDLE`（1）/ `IMAGE`（2）/ `VIDEO`（3），可 `from fabot.capabilities.screen import ScreenContent` 后比较。
-- 面屏的写操作共享同一显示资源，新命令排队执行；`get_status` 是只读查询，不排队，见 [面屏](../../reference/python/screen.md)。
-
-## 循环播放视频与电量条
-
-`play_video` 立即返回；`loop=True` 循环播放，直到被新内容替换或调用 `stop()`。电量条与画面内容独立，`percent` 取 0–100 显示，负数隐藏。
+## 播放视频并停止
 
 ```python
-from fabot import Robot
-from fabot.capabilities.screen import ScreenContent
+applied = robot.screen.play_video("https://example.com/loop.mp4", loop=True)
+print(applied.status.content, applied.status.playing)
 
-with Robot.connect("192.168.1.10", 7557) as robot:
-    robot.wait_ready(["screen"])
-
-    applied = robot.screen.play_video(
-        uri="file:///usr/share/fabot/media/intro.mp4", loop=True,
-    )
-    print(applied.outcome.success, applied.status.playing)
-
-    robot.screen.set_battery(percent=80)
-
-    # 读取当前屏幕快照
-    st = robot.screen.get_status().status
-    print(st.content == ScreenContent.VIDEO, st.uri, st.playing, st.batteryPercent)
-
-    # 停止播放并隐藏电量条
-    robot.screen.stop()
-    robot.screen.set_battery(percent=-1)
+robot.screen.stop()
+print(robot.screen.get_status().status.content)     # 回到 IDLE
 ```
 
-`loop=False` 播完一次后画面表现不作保证（可能停在末帧或黑屏），命令仍立即返回，见 [面屏 play_video](../../reference/python/screen.md#play_video)。
+## 读取状态
+
+`status()` 给出能力级状态袋（`activity`：`idle` / `image` / `video`），`get_status()` 给出完整的屏幕快照：
+
+```python
+print(robot.screen.status().activity)       # Activity 是 StrEnum，可与字符串比较
+
+snapshot = robot.screen.get_status().status
+print(snapshot.content, snapshot.uri, snapshot.overlay_text, snapshot.battery_percent)
+```
+
+写命令共享资源 `display`，策略 `queue`：连发多条写命令会按顺序执行，`get_status()` 不占资源。

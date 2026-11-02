@@ -2,332 +2,715 @@
 title: Body
 status: draft
 owner: fabot-core
-updated: 2026-09-10
+updated: 2026-11-02
 ---
 
 # Body
 
 ## Module Overview
 
-- Capability id: `body`; slot: `robot.body`
-- Body joint motion and waist lift / turn control.
+- Capability id: `body`; slots: `robot.body`
+- Domain: `motion`; capability version: `1.1.0`
+- Body (waist) motion: 4-DoF joint goals, the degenerate planar waist pose, waist velocity servo and the body constraint mode under whole-body control.
+- `WaistPose` describes the waist with `x` (forward) / `z` (lift) / `phi` (pitch); `WaistTwist` is the equivalent normalized velocity ratio.
+
+All motion Operations share the `body` resource with policy `queue` and a 60-second default budget.
 
 ## API Overview
 
-| Method | Request | Response | Type |
-|--------|---------|----------|------|
-| `get_joints` | — | `list[float]` | Command |
-| `get_move_duration` | — | `float` | Command |
-| `set_move_duration` | `move_duration` | `MoveDurationAppliedT` | Command |
-| `lift_waist` | `velocity_scale` | `LiftWaistVelocityAppliedT` | Command |
-| `turn_waist` | `velocity_scale` | `TurnWaistVelocityAppliedT` | Command |
-| `move_joints` | `positions`, `wait` | `MoveJointsOperation` | Operation |
-| `move_waist` | `mode`, `x`, `z`, `phi`, `wait` | `MoveWaistOperation` | Operation |
+| Method | Request | Response | Default timeout |
+|------|------|------|------|
+| `get_joint` | `Empty` | `JointState` | 1000 ms |
+| `get_pose` | `PoseQuery` | `Pose3d` | 1000 ms |
+| `get_mode` | `Empty` | `Mode` | 1000 ms |
+| `set_mode` | `Mode` | `Mode` | 1000 ms |
+| `get_joint_velocity_limit` | `Empty` | `Float64` | 1000 ms |
+| `set_joint_velocity_limit` | `Float64` | `Float64` | 1000 ms |
+| `get_linear_velocity_limit` | `Empty` | `Float64` | 1000 ms |
+| `set_linear_velocity_limit` | `Float64` | `Float64` | 1000 ms |
+| `get_angular_velocity_limit` | `Empty` | `Float64` | 1000 ms |
+| `set_angular_velocity_limit` | `Float64` | `Float64` | 1000 ms |
+| `get_joint_acceleration_limit` | `Empty` | `Float64` | 1000 ms |
+| `set_joint_acceleration_limit` | `Float64` | `Float64` | 1000 ms |
+| `get_linear_acceleration_limit` | `Empty` | `Float64` | 1000 ms |
+| `set_linear_acceleration_limit` | `Float64` | `Float64` | 1000 ms |
+| `get_angular_acceleration_limit` | `Empty` | `Float64` | 1000 ms |
+| `set_angular_acceleration_limit` | `Float64` | `Float64` | 1000 ms |
+| `servo_waist_twist` | `WaistTwist` | `WaistTwist` | 1000 ms |
+| `servo_pose` | `Pose3d` | `Pose3d` | 1000 ms |
+| `get_arrival_thresholds` | `Empty` | `ArrivalThresholds` | 1000 ms |
+| `set_arrival_thresholds` | `ArrivalThresholds` | `ArrivalThresholds` | 1000 ms |
 
-Command default `timeout_ms`: 1000 for `get_joints`, 2000 for `get_move_duration` / `set_move_duration`, 1000 for `lift_waist` / `turn_waist` (all overridable). All parameters are keyword-only.
+All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
+
+| Method | Request | Kind | Resources | Default budget |
+|------|------|------|------|------|
+| `move_joint` | `JointMove` | Operation | body | 60000 ms |
+| `move_joint_path` | `JointPath` | Operation | body | 60000 ms |
+| `move_waist` | `WaistMove` | Operation | body | 60000 ms |
+| `move_waist_relative` | `WaistMove` | Operation | body | 60000 ms |
+| `move_pose` | `PoseMove` | Operation | body | 60000 ms |
+| `move_pose_relative` | `PoseMove` | Operation | body | 60000 ms |
+
+Operations return a handle immediately; progress and results come from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
 
 | Channel | Content |
-|---------|---------|
-| `joints()` | Joint-position stream (`JointPositionsT`) |
+|------|------|
+| `joint()` | `JointState` |
+| `pose()` | `Pose3d` |
+
+Enums used on this page:
+
+**`BodyMode` enum**
+
+| Value | Description |
+|-------|-------------|
+| `FREE` | Body follows the arm tasks as a redundant degree of freedom |
+| `RELATIVE` | Hold the body upright or at a relative attitude |
+| `TRACKING` | Track an explicit 6D body pose goal |
+| `LOCK` | Lock the current body joints and pose |
+| `HEAD_COUPLED` | Couple body motion with the head |
+| `CUSTOM_LOCK` | Lock body degrees of freedom by a custom axis mask |
 
 ## Methods
 
-All method parameters are keyword-only. Command timeouts and Operation polling / cancel are documented in [Commands & Operations](../../usage/commands-operations.md); they are not repeated in each section.
+Signatures below are authoritative for names and defaults. Parameters before `*` accept positional or keyword form; those after `*` are keyword-only. Fields use snake_case (`frame_id`); the generated types also accept the camelCase alias.
 
-### get_joints
+### get_joint
 
-Read the current body joint angles.
+Read the body joint sample.
 
 ```python
-get_joints(*, timeout_ms: int = 1000) -> list[float]
+get_joint(*, timeout_ms: int = 1000) -> JointState
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
-
-`list[float]`: joint angles in radians.
-
-### get_move_duration
-
-Read the current interpolation duration of joint motion.
-
-```python
-get_move_duration(*, timeout_ms: int = 2000) -> float
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `2000` | Command timeout (milliseconds) |
-
-**Returns**
-
-`float`: interpolation duration of joint motion in seconds; larger values mean slower motion.
-
-### set_move_duration
-
-Set the interpolation duration of joint motion; persists until changed.
-
-```python
-set_move_duration(*, move_duration: float, timeout_ms: int = 2000) -> MoveDurationAppliedT
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `move_duration` | `float` | (required) | Interpolation duration in seconds; must be positive and finite, larger values mean slower motion |
-| `timeout_ms` | `int` | `2000` | Command timeout (milliseconds) |
-
-**Returns**
-
-`MoveDurationAppliedT`:
+**Returns** `JointState`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `outcome` | `OutcomeT` | `success` / `statusMessage` |
-| `appliedMoveDuration` | `float` | Actually applied interpolation duration (seconds) |
+|------|------|------|
+| `positions` | `list[float]` | Position list; point clouds store X/Y/Z interleaved |
+| `velocities` | `list[float]` | Joint velocity array |
+| `efforts` | `list[float]` | Joint effort array |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+
+### get_pose
+
+Read the body pose.
 
 ```python
-applied = robot.body.set_move_duration(move_duration=2.0)
-print(applied.outcome.success, applied.appliedMoveDuration)
-```
-
-### lift_waist
-
-Drive waist lifting with a normalized scale; send 0 to stop.
-
-```python
-lift_waist(*, velocity_scale: float, timeout_ms: int = 1000) -> LiftWaistVelocityAppliedT
+get_pose(*, frame_id: str = "", end_frame: str = "", timeout_ms: int = 1000) -> Pose3d
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `velocity_scale` | `float` | (required) | Velocity scale `[-1, 1]`; positive lifts up, negative lowers, `0` stops |
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `frame_id` | `str` | `""` | Reference frame; empty means the slot default base |
+| `end_frame` | `str` | `""` | Controlled end frame; empty means the active tool TCP, or the flange without a tool |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
-
-`LiftWaistVelocityAppliedT`:
+**Returns** `Pose3d`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `outcome` | `OutcomeT` | `success` / `statusMessage` |
-| `appliedVelocityScale` | `float` | Actually applied velocity scale |
+|------|------|------|
+| `x` | `float` | X coordinate or component in meters |
+| `y` | `float` | Y coordinate or component in meters |
+| `z` | `float` | Z coordinate or component in meters |
+| `qx` | `float` | Quaternion x |
+| `qy` | `float` | Quaternion y |
+| `qz` | `float` | Quaternion z |
+| `qw` | `float` | Quaternion w |
+| `frame_id` | `str` | Reference frame of this pose. Empty on a command means the slot default base. Feedback preserves the source frame verbatim. |
+| `stamp_ns` | `int` | Sample or goal time on robot_monotonic / PTP, nanoseconds. 0 means latest. |
+
+### get_mode
+
+Read the current mode.
 
 ```python
-robot.body.lift_waist(velocity_scale=0.5)
-# stop after reaching the target height
-robot.body.lift_waist(velocity_scale=0.0)
-```
-
-### turn_waist
-
-Drive waist turning with a normalized scale; send 0 to stop.
-
-```python
-turn_waist(*, velocity_scale: float, timeout_ms: int = 1000) -> TurnWaistVelocityAppliedT
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `velocity_scale` | `float` | (required) | Velocity scale `[-1, 1]`; `0` stops |
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
-
-**Returns**
-
-`TurnWaistVelocityAppliedT`: `outcome` / `appliedVelocityScale`, same field semantics as `lift_waist`.
-
-### move_joints
-
-Run a long-running joint-space move. Returns a pollable, cancelable Operation.
-
-```python
-move_joints(*, positions: list[float], wait: bool) -> MoveJointsOperation
+get_mode(*, timeout_ms: int = 1000) -> BodyMode
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `positions` | `list[float]` | (required) | Target joint angles in radians |
-| `wait` | `bool` | (required) | When `True`, the task finishes after arrival or timeout |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `BodyMode`
 
-`MoveJointsOperation`. Use `get()` / `events()` for snapshots, or `cancel()`. Snapshot fields:
+The proxy unwraps `Mode` into `BodyMode`.
+
+**`BodyMode` enum**
+
+| Value | Description |
+|-------|-------------|
+| `FREE` | Body follows the arm tasks as a redundant degree of freedom |
+| `RELATIVE` | Hold the body upright or at a relative attitude |
+| `TRACKING` | Track an explicit 6D body pose goal |
+| `LOCK` | Lock the current body joints and pose |
+| `HEAD_COUPLED` | Couple body motion with the head |
+| `CUSTOM_LOCK` | Lock body degrees of freedom by a custom axis mask |
+
+### set_mode
+
+Switch the body constraint mode under whole-body control.
+
+```python
+set_mode(mode: BodyMode, *, timeout_ms: int = 1000) -> BodyMode
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `mode` | `BodyMode` | (required) | Mode value |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `BodyMode`
+
+The proxy unwraps `Mode` into `BodyMode`.
+
+### get_joint_velocity_limit
+
+Read the joint velocity limit.
+
+```python
+get_joint_velocity_limit(*, timeout_ms: int = 1000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### set_joint_velocity_limit
+
+Set the joint velocity limit and return the applied value.
+
+```python
+set_joint_velocity_limit(value: float, *, timeout_ms: int = 1000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `value` | `float` | (required) | Joint velocity limit |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### get_linear_velocity_limit
+
+Read the linear velocity limit.
+
+```python
+get_linear_velocity_limit(*, timeout_ms: int = 1000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### set_linear_velocity_limit
+
+Set the linear velocity limit and return the applied value.
+
+```python
+set_linear_velocity_limit(value: float, *, timeout_ms: int = 1000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `value` | `float` | (required) | Linear velocity limit in m/s |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### get_angular_velocity_limit
+
+Read the angular velocity limit.
+
+```python
+get_angular_velocity_limit(*, timeout_ms: int = 1000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### set_angular_velocity_limit
+
+Set the angular velocity limit and return the applied value.
+
+```python
+set_angular_velocity_limit(value: float, *, timeout_ms: int = 1000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `value` | `float` | (required) | Angular velocity limit in rad/s |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### get_joint_acceleration_limit
+
+Read the joint acceleration limit.
+
+```python
+get_joint_acceleration_limit(*, timeout_ms: int = 1000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### set_joint_acceleration_limit
+
+Set the joint acceleration limit and return the applied value.
+
+```python
+set_joint_acceleration_limit(value: float, *, timeout_ms: int = 1000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `value` | `float` | (required) | Joint acceleration limit |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### get_linear_acceleration_limit
+
+Read the linear acceleration limit.
+
+```python
+get_linear_acceleration_limit(*, timeout_ms: int = 1000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### set_linear_acceleration_limit
+
+Set the linear acceleration limit and return the applied value.
+
+```python
+set_linear_acceleration_limit(value: float, *, timeout_ms: int = 1000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `value` | `float` | (required) | Linear acceleration limit in m/s² |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### get_angular_acceleration_limit
+
+Read the angular acceleration limit.
+
+```python
+get_angular_acceleration_limit(*, timeout_ms: int = 1000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### set_angular_acceleration_limit
+
+Set the angular acceleration limit and return the applied value.
+
+```python
+set_angular_acceleration_limit(value: float, *, timeout_ms: int = 1000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `value` | `float` | (required) | Angular acceleration limit in rad/s² |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### servo_waist_twist
+
+Body velocity servo: `lift` / `turn` / `pitch` are normalized ratios in [-1, 1].
+
+```python
+servo_waist_twist(*, lift: float, turn: float, pitch: float, timeout_ms: int = 1000) -> WaistTwist
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `lift` | `float` | (required) | Lift velocity ratio in [-1, 1] |
+| `turn` | `float` | (required) | Turn velocity ratio in [-1, 1] |
+| `pitch` | `float` | (required) | Pitch velocity ratio in [-1, 1] |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `WaistTwist`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `state` | `OperationState` | Task state |
-| `terminal` | `bool` | Whether the snapshot is terminal |
-| `feedback` | `ProgressT` \| `None` | `progress` (`float`), `statusMessage` (`str`) |
-| `result` | `OutcomeT` \| `None` | `success` / `statusMessage` |
-| `error` | `FabotError` \| `None` | Failure reason |
+|------|------|------|
+| `lift` | `float` | Lift velocity ratio, positive is up, in [-1, 1] |
+| `turn` | `float` | Turn velocity ratio, positive is left, in [-1, 1] |
+| `pitch` | `float` | Pitch velocity ratio, positive is forward, in [-1, 1] |
+
+### servo_pose
+
+Send one pose servo target and get the applied pose. This is a short command rather than a trajectory, suited to high-rate outer loops.
 
 ```python
-positions = robot.body.get_joints()
-positions[0] += 0.1
-op = robot.body.move_joints(positions=positions, wait=True)
-for snap in op.events(poll_timeout_ms=200, timeout_ms=30000):
-    print(snap.state, snap.feedback)
-    if snap.terminal:
-        break
+servo_pose(target: Pose3d | None = None, *, x: float = 0.0, y: float = 0.0, z: float = 0.0, qx: float = 0.0, qy: float = 0.0, qz: float = 0.0, qw: float = 1.0, frame_id: str = "", stamp_ns: int = 0, timeout_ms: int = 1000) -> Pose3d
 ```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `target` | `Pose3d | None` | `None` | Goal value |
+| `x` | `float` | `0.0` | X component in meters |
+| `y` | `float` | `0.0` | Y component in meters |
+| `z` | `float` | `0.0` | Z component in meters |
+| `qx` | `float` | `0.0` | Quaternion x |
+| `qy` | `float` | `0.0` | Quaternion y |
+| `qz` | `float` | `0.0` | Quaternion z |
+| `qw` | `float` | `1.0` | Quaternion w |
+| `frame_id` | `str` | `""` | Reference frame; empty means the slot default base |
+| `stamp_ns` | `int` | `0` | Goal time in ns; 0 means latest |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `Pose3d`
+
+| Field | Type | Description |
+|------|------|------|
+| `x` | `float` | X coordinate or component in meters |
+| `y` | `float` | Y coordinate or component in meters |
+| `z` | `float` | Z coordinate or component in meters |
+| `qx` | `float` | Quaternion x |
+| `qy` | `float` | Quaternion y |
+| `qz` | `float` | Quaternion z |
+| `qw` | `float` | Quaternion w |
+| `frame_id` | `str` | Reference frame of this pose. Empty on a command means the slot default base. Feedback preserves the source frame verbatim. |
+| `stamp_ns` | `int` | Sample or goal time on robot_monotonic / PTP, nanoseconds. 0 means latest. |
+
+### get_arrival_thresholds
+
+Read the arrival thresholds for this slot.
+
+```python
+get_arrival_thresholds(*, timeout_ms: int = 1000) -> ArrivalThresholds
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `ArrivalThresholds`
+
+| Field | Type | Description |
+|------|------|------|
+| `joint_tolerance` | `float` | Joint arrival tolerance in radians; must be finite and positive |
+| `max_timeout_s` | `float` | Extra arrival budget in seconds added to the motion duration |
+
+### set_arrival_thresholds
+
+Replace the arrival thresholds for this slot. The change is in-memory only and applies to later motions.
+
+```python
+set_arrival_thresholds(*, joint_tolerance: float = 0.02, max_timeout_s: float = 5.0, timeout_ms: int = 1000) -> ArrivalThresholds
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `joint_tolerance` | `float` | `0.02` | Joint arrival tolerance in radians |
+| `max_timeout_s` | `float` | `5.0` | Extra arrival budget in seconds |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `ArrivalThresholds`
+
+| Field | Type | Description |
+|------|------|------|
+| `joint_tolerance` | `float` | Joint arrival tolerance in radians; must be finite and positive |
+| `max_timeout_s` | `float` | Extra arrival budget in seconds added to the motion duration |
+
+### move_joint
+
+Joint-space motion. `tolerance` is the arrival tolerance, `duration` the requested time, `wait_timeout` the extra arrival wait; 0 uses the defaults.
+
+```python
+move_joint(target: JointPositions, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveJointOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `target` | `JointPositions` | (required) | Goal value |
+| `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+
+Returns a `MoveJointOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
+
+### move_joint_path
+
+Follow a joint waypoint sequence; at least two waypoints, the first reached from the current joints.
+
+```python
+move_joint_path(waypoints: list[JointPositions], *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveJointPathOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `waypoints` | `list[JointPositions]` | (required) | Waypoints, at least two |
+| `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+
+Returns a `MoveJointPathOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
 ### move_waist
 
-Run a long-running waist pose move. Returns a pollable, cancelable Operation.
+Absolute motion of the degenerate waist pose (`x` forward, `z` lift, `phi` pitch).
 
 ```python
-move_waist(*, mode: WaistMoveMode, x: float, z: float, phi: float, wait: bool) -> MoveWaistOperation
+move_waist(target: WaistPose, *, position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveWaistOperation
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `mode` | `WaistMoveMode` | (required) | `ABSOLUTE` (absolute pose) or `RELATIVE` (relative increment) |
-| `x` | `float` | (required) | `ABSOLUTE`: x in `base_footprint`; `RELATIVE`: dx. Meters |
-| `z` | `float` | (required) | `ABSOLUTE`: z in `base_footprint`; `RELATIVE`: dz. Meters |
-| `phi` | `float` | (required) | `ABSOLUTE`: body heading angle; `RELATIVE`: dphi. Radians |
-| `wait` | `bool` | (required) | When `True`, the task finishes after arrival or timeout |
+|------|------|------|------|
+| `target` | `WaistPose` | (required) | Goal value |
+| `position_tolerance` | `float` | `0.0` | Position tolerance in meters; 0 uses the slot default |
+| `orientation_tolerance` | `float` | `0.0` | Orientation tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
 
-For a pure lift, use `mode=RELATIVE` and set only `z` (`x=0, phi=0`).
-
-**Returns**
-
-`MoveWaistOperation`. Snapshot fields match `move_joints`: `state` / `feedback: ProgressT` / `result: OutcomeT` / `error`. The handle supports `cancel()`.
+Returns a `MoveWaistOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
 ```python
-from fabot.capabilities.body import WaistMoveMode
+from fabot.capabilities.body import WaistPose
 
-op = robot.body.move_waist(
-    mode=WaistMoveMode.RELATIVE, x=0.0, z=0.05, phi=0.0, wait=True,
-)
-snap = op.get(timeout_ms=30000)
-print(snap.state, snap.result)
+op = robot.body.move_waist(WaistPose(x=0.05, z=0.10, phi=0.0), duration=3.0)
+op.wait(timeout=15.0)
+print(robot.body.get_pose().z)
 ```
+
+### move_waist_relative
+
+Incremental motion of the degenerate waist pose.
+
+```python
+move_waist_relative(target: WaistPose, *, position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveWaistRelativeOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `target` | `WaistPose` | (required) | Goal value |
+| `position_tolerance` | `float` | `0.0` | Position tolerance in meters; 0 uses the slot default |
+| `orientation_tolerance` | `float` | `0.0` | Orientation tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+
+Returns a `MoveWaistRelativeOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
+
+### move_pose
+
+Absolute end-effector motion. The reference frame comes from `target.frame_id` (empty uses the slot base); `end_frame` empty uses the active TCP or flange.
+
+```python
+move_pose(target: Pose3d, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MovePoseOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `target` | `Pose3d` | (required) | Goal value |
+| `end_frame` | `str` | `""` | Controlled end frame; empty means the active tool TCP, or the flange without a tool |
+| `position_tolerance` | `float` | `0.0` | Position tolerance in meters; 0 uses the slot default |
+| `orientation_tolerance` | `float` | `0.0` | Orientation tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+
+Returns a `MovePoseOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
+
+### move_pose_relative
+
+Relative end-effector motion; `target` is an increment from the current pose.
+
+```python
+move_pose_relative(target: Pose3d, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MovePoseRelativeOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `target` | `Pose3d` | (required) | Goal value |
+| `end_frame` | `str` | `""` | Controlled end frame; empty means the active tool TCP, or the flange without a tool |
+| `position_tolerance` | `float` | `0.0` | Position tolerance in meters; 0 uses the slot default |
+| `orientation_tolerance` | `float` | `0.0` | Orientation tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+
+Returns a `MovePoseRelativeOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
 ## Channels
 
-Open parameters and frame fields are below; see [Events & Data Channels](../../usage/events-channels.md) for shared usage.
+Opening a channel takes a lease and returns a handle: iterate with `frames()`, take one sample with `next()`, renew with `renew()`, release with `close()`. See [Events & Data Channels](../../usage/events-channels.md).
 
-### joints()
+### joint()
 
-Subscribe to the body joint-position stream.
+Body joint-state stream.
 
 ```python
-joints(qos_profile: str = "latest") -> JointsChannel
+joint(qos_profile: str = "latest") -> Channel
 ```
 
-**Open parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `qos_profile` | `str` | `"latest"` | `"latest"` / `"realtime"` / `"reliable"` |
-
-**Frame** (`JointsChannelFrame`)
+Frame payload is `JointState`:
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `channel_id` | `str` | Channel id |
-| `sequence` | `int` | Frame sequence |
-| `timestamp_us` | `int` | Timestamp (microseconds) |
-| `payload` | `JointPositionsT` | `payload.positions`: `list[float]`, radians |
+|------|------|------|
+| `positions` | `list[float]` | Position list; point clouds store X/Y/Z interleaved |
+| `velocities` | `list[float]` | Joint velocity array |
+| `efforts` | `list[float]` | Joint effort array |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
 
-Iterate frames with `frames(poll_timeout_ms=..., timeout_ms=...)`.
+### pose()
+
+Body pose stream.
 
 ```python
-ch = robot.body.joints(qos_profile="latest")
-for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-    print(frame.channel_id, frame.sequence, frame.payload.positions)
+pose(qos_profile: str = "latest") -> Channel
 ```
+
+Frame payload is `Pose3d`:
+
+| Field | Type | Description |
+|------|------|------|
+| `x` | `float` | X coordinate or component in meters |
+| `y` | `float` | Y coordinate or component in meters |
+| `z` | `float` | Z coordinate or component in meters |
+| `qx` | `float` | Quaternion x |
+| `qy` | `float` | Quaternion y |
+| `qz` | `float` | Quaternion z |
+| `qw` | `float` | Quaternion w |
+| `frame_id` | `str` | Reference frame of this pose. Empty on a command means the slot default base. Feedback preserves the source frame verbatim. |
+| `stamp_ns` | `int` | Sample or goal time on robot_monotonic / PTP, nanoseconds. 0 means latest. |
 
 ## Events
 
-Subscribe via `robot.body.events`. Callbacks run on the SDK I/O thread: keep them light and do not call blocking APIs; see [Events & Data Channels](../../usage/events-channels.md).
+Subscribe through `robot.<slot>.events`. Callbacks run on the SDK I/O thread: keep them short and never call blocking APIs. Every event carries an `EventHeader` (`name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`).
 
-Every event includes an `EventHeader`: `name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`.
-
-### fault_changed
-
-Pushed when this slot's fault set changes.
-
-Subscribe with `robot.body.events.fault_changed.subscribe(callback)`.
-
-**Payload**
-
-`FaultChangedEvent.faults`: `Faults`. Today `Faults` only has `revision`; this module has no named faults yet. See [Faults](#faults).
-
-```python
-def on_fault(event):
-    print(event.header.slot_id, event.faults.revision)
-
-token = robot.body.events.fault_changed.subscribe(on_fault)
-```
-
-### lifecycle_changed
-
-Pushed when this slot's lifecycle or health changes.
-
-Subscribe with `robot.body.events.lifecycle_changed.subscribe(callback)`.
-
-**Payload**
-
-`LifecycleChangedEvent.lifecycle`: `CapabilityLifecycleSnapshot`:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `lifecycle` | `LifecycleState` | Lifecycle stage |
-| `health` | `HealthState` | Health |
-| `source_instance_id` | `str` | Source instance id |
-
-```python
-def on_lifecycle(event):
-    snap = event.lifecycle
-    print(event.header.slot_id, snap.lifecycle, snap.health)
-
-token = robot.body.events.lifecycle_changed.subscribe(on_lifecycle)
-```
+| Entry | Event type | payload |
+|------|------|------|
+| `robot.<slot>.events.fault_changed` | `FaultChangedEvent` | `FaultChangedEvent.faults`: `Faults` |
+| `robot.<slot>.events.lifecycle_changed` | `LifecycleChangedEvent` | `LifecycleChangedEvent.lifecycle`: `CapabilityLifecycleSnapshot` |
 
 ## Faults
 
-Query with `robot.body.faults()`, which returns `Faults`.
-
-This module has no named faults yet: `Faults` currently only exposes `revision`. Changes are pushed on `fault_changed`. See [Status, Faults & Lifecycle](../../usage/status-faults.md) for the shared model.
-
-If named faults appear later, each one is a `FaultState`:
+Query with `robot.<slot>.faults()`, which returns `Faults` (`revision` plus `records: list[FaultState]`). Each `FaultState`: 
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `active` | `bool` | Whether the fault is still standing |
-| `catalog_id` | `str` | Catalog id |
-| `fault_class` | `CapabilityStateClass` | Fault class |
-| `first_seen_us` / `last_seen_us` | `int` | First / last seen timestamp (microseconds) |
-| `count` | `int` | Occurrence count |
+|------|------|------|
+| `code` | `int` | Diagnostic code; `0` means no fault |
+| `source` | `str` | Fault source id |
+| `state` | `int` | Fault state bits |
+| `severity` | `int` | Severity, aligned with `HealthState` |
+| `timestamp_us` | `int` | Latest timestamp in microseconds |
+
+For human-readable fault text use `Catalogs.format_fault(record, capability_id="...")`; see [Catalogs](../../usage/catalogs.md).
 
 ## Status
 
-This module has no `status()`. For aggregated robot status see `robot.status()`.
+This module has no `status()`; see `robot.status()` for the aggregated view.
 
-Shared queries:
+Shared read-only queries:
 
-- `health()`: current health
-- `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `source_instance_id`)
+- `health()`: `SlotHealth` (`is_usable` / `lifecycle` / `health` / `standing_faults` / `pbit_completed` / `source_instance_id`)
+- `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `pbit_completed` / `source_instance_id`)
 
-Changes arrive on `lifecycle_changed`. See [Status, Faults & Lifecycle](../../usage/status-faults.md).
+Changes arrive through `lifecycle_changed`; see [Status, Faults & Lifecycle](../../usage/status-faults.md).
 
 ## Resources
 
-`move_joints` and `move_waist` share one body resource; new tasks queue.
+`move_joint` / `move_joint_path` / `move_waist` / `move_waist_relative` / `move_pose` share the `body` resource with policy `queue` and a 60-second default budget.

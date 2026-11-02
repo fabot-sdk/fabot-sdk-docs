@@ -2,32 +2,32 @@
 title: 文本目录 Catalogs
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-11-02
 ---
 
 # 文本目录 Catalogs
 
-`Catalogs`（文本目录）是独立的展示层工具类（`fabot.catalogs`，可从 `fabot` 顶层导入），不是能力模块，没有槽位。`Catalogs.load()` 绑定随 SDK 嵌入的日志 / 错误 / 故障文本目录；运行时纯查表，不访问机器人。使用场景见 [文本目录 Catalogs](../../usage/catalogs.md)。
+`Catalogs`（文本目录）是独立的展示层工具类（`fabot.catalogs`，可从 `fabot` 顶层导入），不是能力模块，没有槽位。它把**诊断码**、**日志键**与**指标名**映射成本地化文本；`Catalogs.load()` 绑定随 SDK 嵌入的文本表，运行时纯查表，不访问机器人。使用场景见 [文本目录 Catalogs](../../usage/catalogs.md)。
 
 ## 模块概述
 
-- 非能力、无槽位、无 Command / Operation
-- 产品路径：`Catalogs.load()`；测试或自建 UI 可用构造函数传入自定义文本目录
-- 查找语言由 `set_language` 设置，未命中按回退链落到 `en`
+- 非能力、无槽位、无 Command / Operation / 通道 / 事件
+- 产品路径：`Catalogs.load()`；也可用 `Catalogs.default()` 取进程级单例
+- 四张表：日志、错误、故障、指标；查找语言由 `set_language` 设置，未命中按回退链落到 `en`
 
 ## API 总览
 
-本模块没有 Command、Operation、数据通道与事件。
-
 | 成员 | 说明 |
 |------|------|
-| `Catalogs(...)` | 用自定义文本目录构造；产品路径请用 `load()` |
-| `load()` | 绑定 SDK 嵌入的文本目录，返回 `Catalogs` |
+| `Catalogs(...)` | 用自定义文本表构造；产品路径请用 `load()` |
+| `load(language=None)` | 绑定 SDK 嵌入的文本表，返回 `Catalogs` |
+| `default()` | 进程级懒加载单例 |
 | `language` | 当前语言偏好（只读） |
 | `set_language(locale)` | 设置语言，返回 `self` |
-| `format_log(record)` | 按 `{component}.{action}` 填模板 |
-| `format_error(error)` | 按 `FabotError.code` 填模板 |
-| `format_fault(record, capability_id="")` | 按 `{capability_id}/{catalog_id}` 填模板 |
+| `format_log(record, locale=None)` | 按 `{component}.{action}` 填模板 |
+| `format_error(error, locale=None)` | 按诊断码 `0xXXXXXXXX` 填模板 |
+| `format_fault(record, locale=None)` | 同 `format_error`，按记录的诊断码查表 |
+| `format_metric(record, locale=None)` | 按指标名查标题 |
 
 ## 方法
 
@@ -38,6 +38,7 @@ Catalogs(
     logs: Mapping[str, Mapping[str, str]] | None = None,
     errors: Mapping[str, Mapping[str, str]] | None = None,
     faults: Mapping[str, Mapping[str, str]] | None = None,
+    metrics: Mapping[str, Mapping[str, str]] | None = None,
     language: str = "en",
 ) -> Catalogs
 ```
@@ -47,25 +48,38 @@ Catalogs(
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
 | `logs` | `Mapping[str, Mapping[str, str]] \| None` | `None` | 日志表：键为 `component.action`，值为语言 → 模板 |
-| `errors` | `Mapping[str, Mapping[str, str]] \| None` | `None` | 错误表：键为错误码字符串，值为语言 → 模板 |
-| `faults` | `Mapping[str, Mapping[str, str]] \| None` | `None` | 故障表：键为 `{capability_id}/{catalog_id}`，值为语言 → 模板 |
+| `errors` | `Mapping[str, Mapping[str, str]] \| None` | `None` | 错误表：键为诊断码字符串（`0x0103000C`），值为语言 → 模板 |
+| `faults` | `Mapping[str, Mapping[str, str]] \| None` | `None` | 故障表：键同为诊断码字符串 |
+| `metrics` | `Mapping[str, Mapping[str, str]] \| None` | `None` | 指标表：键为指标名，值为语言 → 标题 |
 | `language` | `str` | `"en"` | 初始语言偏好；空串按 `"en"` |
 
-`None` 视为空的文本目录。产品代码应调用 `load()`，不要手填嵌入的文本目录。
+`None` 视为空表。产品代码应调用 `load()`，不要手填嵌入的文本表。
 
 ### load
 
 ```python
-Catalogs.load() -> Catalogs
+Catalogs.load(language: str | None = None) -> Catalogs
 ```
 
-绑定当前 SDK 版本嵌入的日志 / 错误 / 故障文本目录。无参数。
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `language` | `str \| None` | `None` | 初始语言；`None` 时用环境变量 `FABOT_LANG`，未设置则 `en` |
 
 ```python
 from fabot import Catalogs
 
-catalogs = Catalogs.load()
+catalogs = Catalogs.load("zh-CN")
 ```
+
+### default
+
+```python
+Catalogs.default() -> Catalogs
+```
+
+返回进程级懒加载单例（首次调用时按 `FABOT_LANG` 加载），适合在日志格式化等通用位置复用。
 
 ### language
 
@@ -96,7 +110,7 @@ catalogs = Catalogs.load().set_language("zh-CN")
 ### format_log
 
 ```python
-format_log(record: Any) -> str
+format_log(record: Any, *, locale: str | None = None) -> str
 ```
 
 **参数**
@@ -104,6 +118,7 @@ format_log(record: Any) -> str
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
 | `record` | `Any` | （必填） | 日志记录，通常为 `LogRecord`；按属性取值 |
+| `locale` | `str \| None` | `None` | 本次查找的语言，缺省用 `self.language` |
 
 查表键为 `{component}.{action}`。未命中返回该键。命中后用记录字段填 `{placeholder}`；未知占位符替换为空串。
 
@@ -116,40 +131,59 @@ print(catalogs.format_log(record))
 ### format_error
 
 ```python
-format_error(error: Any) -> str
+format_error(error: Any, *, locale: str | None = None) -> str
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `error` | `Any` | （必填） | `FabotError`（或带 `code` / `message` 的对象），或 `int` 错误码 |
+| `error` | `Any` | （必填） | `FabotError`（或带 `code` 的对象），或直接给 `int` 诊断码 |
 
-查表键为 `str(code)`。未命中回退到 `error.message`，再回退到错误码字符串。模板可用 `{code}`、`{message}`。
+查表键为 `0x{code:08X}`，先在错误表里查，再在故障表里查。命中后填 `{code}`；未命中回退到 `error.message`，再回退到诊断码字符串。
 
 ```python
 print(catalogs.format_error(err))
-print(catalogs.format_error(81001))
+print(catalogs.format_error(0x0103000C))
 ```
+
+`FabotError.localized(locale=None)` 是同一逻辑的便捷入口；`str(err)` 在显式设置了语言时也会带上目录文本。
 
 ### format_fault
 
 ```python
-format_fault(record: Any, capability_id: str = "") -> str
+format_fault(record: Any, *, locale: str | None = None) -> str
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `record` | `Any` | （必填） | 故障记录，按属性读取 `catalog_id` / `fault_id` / `capability_id` 等 |
-| `capability_id` | `str` | `""` | 能力 id；为空时改用 `record.capability_id` |
+| `record` | `Any` | （必填） | 故障记录（`RobotFaultRecord` / `FaultState` 等），按 `code` 查表 |
 
-查表键为 `{capability_id}/{catalog_id}`。两者都解析不到能力 id 时抛 `ValueError`。未命中回退到 `fault_id`，再回退到 `catalog_id`。`RobotFaultRecord` 自带 `capability_id`；`CapabilityFaultRecord` / `FaultState` 不含，必须显式传入。
+与 `format_error` 完全等价：诊断码已经在故障记录里，不需要再传 `capability_id`。
 
 ```python
-print(catalogs.format_fault(record))
-print(catalogs.format_fault(slot_fault, capability_id="chassis"))
+for record in robot.faults().chassis.records:
+    print(catalogs.format_fault(record))
+```
+
+### format_metric
+
+```python
+format_metric(record: Any, *, locale: str | None = None) -> str
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `record` | `Any` | （必填） | `MetricRecord` 或指标名字符串；按属性 `name` 取值 |
+
+查表键为指标名。未命中返回指标名本身；名字为空返回空串。
+
+```python
+print(catalogs.format_metric(metric_record))
 ```
 
 ## 通道
@@ -158,11 +192,11 @@ print(catalogs.format_fault(slot_fault, capability_id="chassis"))
 
 ## 事件
 
-无事件。结构化日志来自 `robot.logs.subscribe`，见 [事件与数据通道](../../usage/events-channels.md)。
+无事件。结构化日志来自 `robot.logs.subscribe`，见 [日志、指标与可观测性](../../usage/observability.md)。
 
 ## 异常
 
-`format_fault` 在无法解析 `capability_id` 时抛 `ValueError`（不是 `FabotError`）。`format_log` / `format_error` / `format_fault` 未命中文本目录时不抛错，按上文回退。协议错误的层次与处理见 [错误处理](../../usage/errors.md)。
+`format_log` / `format_error` / `format_fault` / `format_metric` 在未命中时不抛错，按上文回退。协议错误的层次与处理见 [错误处理](../../usage/errors.md)。
 
 ## 状态
 
@@ -170,4 +204,4 @@ print(catalogs.format_fault(slot_fault, capability_id="chassis"))
 
 ## 资源
 
-无独立资源句柄。文本是随 SDK 版本嵌入的快照；平台新增码或故障在未升级 SDK 时按原始 ID 回退显示，见 [版本配套](../../install/compatibility.md)。
+无独立资源句柄。文本是随 SDK 版本嵌入的快照；平台新增诊断码在未升级 SDK 时按原始码回退显示，见 [版本配套](../../install/compatibility.md)。

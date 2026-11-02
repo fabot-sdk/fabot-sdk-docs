@@ -2,444 +2,721 @@
 title: Chassis
 status: draft
 owner: fabot-core
-updated: 2026-09-07
+updated: 2026-11-02
 ---
 
 # Chassis
 
 ## Module Overview
 
-- Capability id: `chassis`; slot: `robot.chassis`
-- Chassis motion control: velocity commands, speed / acceleration limits, station navigation, relative moves, relocalization.
+- Capability id: `chassis`; slots: `robot.chassis`
+- Domain: `motion`; capability version: `1.1.0`
+- Planar chassis motion: velocity servo, map-frame absolute / relative navigation, station navigation, plus parking, lock and pause control.
+- `ChassisMode.MANUAL` allows `servo_twist` and body-relative moves; `AUTONOMOUS` allows map navigation. `NavigationMode` only selects the planning style.
+
+All navigation Operations share the `chassis` resource with policy `queue` and a 180-second default budget.
+The `ChassisStage` from `get_stage()` / `stage()` is a read-only projection of tasks and faults; there is no setter.
 
 ## API Overview
 
-| Method | Request | Response | Type |
-|--------|---------|----------|------|
-| `stop` | — | `OutcomeT` | Command |
-| `set_max_speed` | `linear`, `angular` | `MaxSpeedAppliedT` | Command |
-| `get_max_speed` | — | `MaxSpeedT` | Command |
-| `set_max_acceleration` | `linear`, `angular` | `MaxAccelerationAppliedT` | Command |
-| `get_max_acceleration` | — | `MaxAccelerationT` | Command |
-| `move` | `vx`, `vy`, `vtheta` | `OutcomeT` | Command |
-| `pause` | — | `OutcomeT` | Command |
-| `resume` | — | `OutcomeT` | Command |
-| `list_stations` | — | `StationListT` | Command |
-| `get_status` | — | `ChassisStatusT` | Command |
-| `move_relative` | `dx`, `dy`, `dtheta` | `MoveRelativeOperation` | Operation |
-| `navigate_to_station` | `station_id`, `mode` | `NavigateToStationOperation` | Operation |
-| `relocalize` | `pose` | `RelocalizeOperation` | Operation |
+| Method | Request | Response | Default timeout |
+|------|------|------|------|
+| `get_pose` | `Empty` | `Pose2d` | 3000 ms |
+| `set_pose` | `Pose2d` | `Pose2d` | 5000 ms |
+| `get_twist` | `Empty` | `Twist2d` | 3000 ms |
+| `get_stage` | `Empty` | `Stage` | 3000 ms |
+| `get_station` | `Empty` | `Stations` | 5000 ms |
+| `get_mode` | `Empty` | `Mode` | 3000 ms |
+| `set_mode` | `Mode` | `Mode` | 3000 ms |
+| `get_parking` | `Empty` | `Parking` | 3000 ms |
+| `set_parking` | `Parking` | `Parking` | 3000 ms |
+| `get_lock` | `Empty` | `Lock` | 3000 ms |
+| `set_lock` | `Lock` | `Lock` | 3000 ms |
+| `get_pause` | `Empty` | `Pause` | 3000 ms |
+| `set_pause` | `Pause` | `Pause` | 3000 ms |
+| `get_linear_velocity_limit` | `Empty` | `Float64` | 3000 ms |
+| `set_linear_velocity_limit` | `Float64` | `Float64` | 3000 ms |
+| `get_angular_velocity_limit` | `Empty` | `Float64` | 3000 ms |
+| `set_angular_velocity_limit` | `Float64` | `Float64` | 3000 ms |
+| `get_linear_acceleration_limit` | `Empty` | `Float64` | 3000 ms |
+| `set_linear_acceleration_limit` | `Float64` | `Float64` | 3000 ms |
+| `get_angular_acceleration_limit` | `Empty` | `Float64` | 3000 ms |
+| `set_angular_acceleration_limit` | `Float64` | `Float64` | 3000 ms |
+| `servo_twist` | `Twist2d` | `Twist2d` | 2000 ms |
 
-Command default `timeout_ms`: 2000 for `move`, 5000 for `stop` / `list_stations`, 3000 for all others (all overridable). All parameters are keyword-only.
+All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
+
+| Method | Request | Kind | Resources | Default budget |
+|------|------|------|------|------|
+| `move_pose` | `PoseMove` | Operation | chassis | 180000 ms |
+| `move_pose_relative` | `RelativePoseMove` | Operation | chassis | 180000 ms |
+| `move_station` | `StationMove` | Operation | chassis | 180000 ms |
+
+Operations return a handle immediately; progress and results come from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
+
+| Channel | Content |
+|------|------|
+| `pose()` | `Pose2d` |
+| `twist()` | `Twist2d` |
+| `stage()` | `Stage` |
+
+Enums used on this page:
+
+**`ChassisMode` enum**
+
+| Value | Description |
+|-------|-------------|
+| `MANUAL` | Manual: allows `servo_twist` and body-relative moves |
+| `AUTONOMOUS` | Autonomous: allows map navigation |
+
+**`NavigationMode` enum**
+
+| Value | Description |
+|-------|-------------|
+| `AUTONOMOUS` | Autonomous planning |
+| `LINE_FOLLOW` | Line following |
+| `POINT_TO_POINT` | Point to point |
 
 ## Methods
 
-All method parameters are keyword-only. Command timeouts and Operation polling / cancel are documented in [Commands & Operations](../../usage/commands-operations.md); they are not repeated in each section.
+Signatures below are authoritative for names and defaults. Parameters before `*` accept positional or keyword form; those after `*` are keyword-only. Fields use snake_case (`frame_id`); the generated types also accept the camelCase alias.
 
-### stop
+### get_pose
 
-Stop chassis motion immediately.
+Read the map-frame pose.
 
 ```python
-stop(*, timeout_ms: int = 5000) -> OutcomeT
+get_pose(*, timeout_ms: int = 3000) -> Pose2d
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `5000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
 
-**Returns**
-
-`OutcomeT`:
+**Returns** `Pose2d`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `success` | `bool` | Whether the command succeeded |
-| `statusMessage` | `str` | Status text |
+|------|------|------|
+| `x` | `float` | X coordinate or component in meters |
+| `y` | `float` | Y coordinate or component in meters |
+| `theta` | `float` | Heading angle in radians |
+| `frame_id` | `str` | Reference frame; an empty string in a command means the slot default base, feedback keeps the source frame |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
 
-### set_max_speed
+### set_pose
 
-Set the maximum speed limits.
+Reset the map-frame pose to the given value and return the applied pose.
 
 ```python
-set_max_speed(*, linear: float, angular: float, timeout_ms: int = 3000) -> MaxSpeedAppliedT
+set_pose(*, x: float, y: float, theta: float = 0.0, frame_id: str = "", stamp_ns: int = 0, timeout_ms: int = 5000) -> Pose2d
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `linear` | `float` | (required) | Maximum linear speed in m/s |
-| `angular` | `float` | (required) | Maximum angular speed in rad/s |
-| `timeout_ms` | `int` | `3000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `x` | `float` | (required) | X component in meters |
+| `y` | `float` | (required) | Y component in meters |
+| `theta` | `float` | `0.0` | Heading in radians |
+| `frame_id` | `str` | `""` | Reference frame; empty means the slot default base |
+| `stamp_ns` | `int` | `0` | Goal time in ns; 0 means latest |
+| `timeout_ms` | `int` | `5000` | Timeout in milliseconds |
 
-**Returns**
-
-`MaxSpeedAppliedT`:
+**Returns** `Pose2d`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `outcome` | `OutcomeT` | `success` / `statusMessage` |
-| `appliedLinear` | `float` | Actually applied maximum linear speed (m/s) |
-| `appliedAngular` | `float` | Actually applied maximum angular speed (rad/s) |
+|------|------|------|
+| `x` | `float` | X coordinate or component in meters |
+| `y` | `float` | Y coordinate or component in meters |
+| `theta` | `float` | Heading angle in radians |
+| `frame_id` | `str` | Reference frame; an empty string in a command means the slot default base, feedback keeps the source frame |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+
+### get_twist
+
+Read the current velocity.
 
 ```python
-applied = robot.chassis.set_max_speed(linear=0.5, angular=0.8)
-print(applied.outcome.success, applied.appliedLinear, applied.appliedAngular)
-```
-
-### get_max_speed
-
-Read the current maximum speed limits.
-
-```python
-get_max_speed(*, timeout_ms: int = 3000) -> MaxSpeedT
+get_twist(*, timeout_ms: int = 3000) -> Twist2d
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `3000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
 
-**Returns**
-
-`MaxSpeedT`: `linear` (m/s), `angular` (rad/s).
-
-### set_max_acceleration
-
-Set the maximum acceleration limits.
-
-```python
-set_max_acceleration(*, linear: float, angular: float, timeout_ms: int = 3000) -> MaxAccelerationAppliedT
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `linear` | `float` | (required) | Maximum linear acceleration in m/s² |
-| `angular` | `float` | (required) | Maximum angular acceleration in rad/s² |
-| `timeout_ms` | `int` | `3000` | Command timeout (milliseconds) |
-
-**Returns**
-
-`MaxAccelerationAppliedT`: `outcome` (`OutcomeT`), `appliedLinear`, `appliedAngular`; same meaning as `set_max_speed`.
-
-### get_max_acceleration
-
-Read the current maximum acceleration limits.
-
-```python
-get_max_acceleration(*, timeout_ms: int = 3000) -> MaxAccelerationT
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `3000` | Command timeout (milliseconds) |
-
-**Returns**
-
-`MaxAccelerationT`: `linear` (m/s²), `angular` (rad/s²).
-
-### move
-
-Send a velocity command.
-
-```python
-move(*, vx: float, vy: float, vtheta: float, timeout_ms: int = 2000) -> OutcomeT
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `vx` | `float` | (required) | Forward linear speed in m/s |
-| `vy` | `float` | (required) | Lateral linear speed in m/s |
-| `vtheta` | `float` | (required) | Angular speed in rad/s |
-| `timeout_ms` | `int` | `2000` | Command timeout (milliseconds) |
-
-**Returns**
-
-`OutcomeT`: `success` / `statusMessage`.
-
-```python
-robot.chassis.move(vx=0.3, vy=0.0, vtheta=0.2)   # m/s, rad/s
-# ... after moving for a while, stop
-outcome = robot.chassis.stop()
-print(outcome.success, outcome.statusMessage)
-```
-
-### pause
-
-Pause the current motion or navigation task.
-
-```python
-pause(*, timeout_ms: int = 3000) -> OutcomeT
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `3000` | Command timeout (milliseconds) |
-
-**Returns**
-
-`OutcomeT`: `success` / `statusMessage`.
-
-### resume
-
-Resume a motion or navigation task paused by `pause`.
-
-```python
-resume(*, timeout_ms: int = 3000) -> OutcomeT
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `3000` | Command timeout (milliseconds) |
-
-**Returns**
-
-`OutcomeT`: `success` / `statusMessage`.
-
-```python
-robot.chassis.pause()
-# ... confirm the surroundings are safe
-robot.chassis.resume()
-```
-
-### list_stations
-
-List the navigation stations on the map.
-
-```python
-list_stations(*, timeout_ms: int = 5000) -> StationListT
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `5000` | Command timeout (milliseconds) |
-
-**Returns**
-
-`StationListT`:
+**Returns** `Twist2d`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `stations` | `list[StationInfoT]` | Station list; each entry has `stationId` (`int`) and `name` (`str`) |
-| `statusMessage` | `str` | Status text |
+|------|------|------|
+| `vx` | `float` | Body-frame X velocity in m/s |
+| `vy` | `float` | Body-frame Y velocity in m/s |
+| `vtheta` | `float` | Angular velocity in rad/s |
+| `frame_id` | `str` | Reference frame; an empty string in a command means the slot default base, feedback keeps the source frame |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+
+### get_stage
+
+Read the current motion stage.
 
 ```python
-result = robot.chassis.list_stations()
-for station in result.stations:
-    print(station.stationId, station.name)
-```
-
-### get_status
-
-Read a snapshot of the chassis motion status.
-
-```python
-get_status(*, timeout_ms: int = 3000) -> ChassisStatusT
+get_stage(*, timeout_ms: int = 3000) -> ChassisStage
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `3000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `ChassisStage`
 
-`ChassisStatusT`:
+The proxy unwraps `Stage` into `ChassisStage`.
+
+**`ChassisStage` enum**
+
+| Value | Description |
+|-------|-------------|
+| `IDLE` | Idle |
+| `MOVING` | Moving |
+| `PAUSED` | Paused |
+| `FAULTED` | Faulted |
+
+### get_station
+
+Read the map station list; `get_stations` is an alias.
+
+```python
+get_station(*, timeout_ms: int = 5000) -> list[StationInfo]
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `5000` | Timeout in milliseconds |
+
+**Returns** `list[StationInfo]`
+
+The proxy unwraps `Stations` into `list[StationInfo]`.
+
+**Element fields** `StationInfo`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `pose` | `Pose2dT` \| `None` | Current pose: `x` / `y` (meters), `theta` (radians) |
-| `velocity` | `Twist2dT` \| `None` | Current velocity: `vx` / `vy` (m/s), `vtheta` (rad/s) |
-| `socPercent` | `int` | Battery percentage |
-| `controlMode` | `ControlMode` | Control mode: `MANUAL` / `AUTONOMOUS` |
-| `motionState` | `MotionState` | Motion state: `IDLE` / `MOVING` / `PAUSED` / `FAULTED` |
-| `targetStationId` | `int` | Current target station id |
-| `statusMessage` | `str` | Status text |
+|------|------|------|
+| `id` | `int` | Station id |
+| `name` | `str` | Station name |
+| `pose` | `Pose2d` | Station pose; absent when the backend does not provide one |
 
 ```python
-status = robot.chassis.get_status()
-print(status.motionState, status.socPercent, status.pose.x, status.pose.y)
+for station in robot.chassis.get_station():
+    print(station.id, station.name)
 ```
 
-### move_relative
+### get_mode
 
-Run a long-running move relative to the current pose. Returns a pollable, cancelable Operation.
+Read the current mode.
 
 ```python
-move_relative(*, dx: float, dy: float, dtheta: float) -> MoveRelativeOperation
+get_mode(*, timeout_ms: int = 3000) -> ChassisMode
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `dx` | `float` | (required) | Forward displacement in meters |
-| `dy` | `float` | (required) | Lateral displacement in meters |
-| `dtheta` | `float` | (required) | Rotation in radians |
+|------|------|------|------|
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `ChassisMode`
 
-`MoveRelativeOperation`. Use `get()` / `events()` for snapshots, or `cancel()`. Snapshot fields:
+The proxy unwraps `Mode` into `ChassisMode`.
+
+**`ChassisMode` enum**
+
+| Value | Description |
+|-------|-------------|
+| `MANUAL` | Manual: allows `servo_twist` and body-relative moves |
+| `AUTONOMOUS` | Autonomous: allows map navigation |
+
+### set_mode
+
+Switch between manual and autonomous modes.
+
+```python
+set_mode(mode: ChassisMode, *, timeout_ms: int = 3000) -> ChassisMode
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `mode` | `ChassisMode` | (required) | Mode value |
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
+
+**Returns** `ChassisMode`
+
+The proxy unwraps `Mode` into `ChassisMode`.
+
+**`ChassisMode` enum**
+
+| Value | Description |
+|-------|-------------|
+| `MANUAL` | Manual: allows `servo_twist` and body-relative moves |
+| `AUTONOMOUS` | Autonomous: allows map navigation |
+
+### get_parking
+
+Query whether parking is latched.
+
+```python
+get_parking(*, timeout_ms: int = 3000) -> bool
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
+
+**Returns** `bool`
+
+The proxy unwraps `Parking` into `bool`.
+
+### set_parking
+
+Set the parking latch.
+
+```python
+set_parking(*, parked: bool, timeout_ms: int = 3000) -> bool
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `parked` | `bool` | (required) | `True` latches parking |
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
+
+**Returns** `bool`
+
+The proxy unwraps `Parking` into `bool`.
+
+### get_lock
+
+Query whether the chassis degree of freedom is locked.
+
+```python
+get_lock(*, timeout_ms: int = 3000) -> bool
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
+
+**Returns** `bool`
+
+The proxy unwraps `Lock` into `bool`.
+
+### set_lock
+
+Lock or unlock the chassis degree of freedom.
+
+```python
+set_lock(*, locked: bool, timeout_ms: int = 3000) -> bool
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `locked` | `bool` | (required) | `True` locks the degree of freedom |
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
+
+**Returns** `bool`
+
+The proxy unwraps `Lock` into `bool`.
+
+### get_pause
+
+Query whether in-flight navigation is paused.
+
+```python
+get_pause(*, timeout_ms: int = 3000) -> bool
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
+
+**Returns** `bool`
+
+The proxy unwraps `Pause` into `bool`.
+
+### set_pause
+
+Pause or resume in-flight navigation without dropping `move_*` handles.
+
+```python
+set_pause(*, paused: bool, timeout_ms: int = 3000) -> bool
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `paused` | `bool` | (required) | `True` pauses in-flight navigation |
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
+
+**Returns** `bool`
+
+The proxy unwraps `Pause` into `bool`.
+
+### get_linear_velocity_limit
+
+Read the linear velocity limit.
+
+```python
+get_linear_velocity_limit(*, timeout_ms: int = 3000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### set_linear_velocity_limit
+
+Set the linear velocity limit and return the applied value.
+
+```python
+set_linear_velocity_limit(value: float, *, timeout_ms: int = 3000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `value` | `float` | (required) | Linear velocity limit in m/s |
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### get_angular_velocity_limit
+
+Read the angular velocity limit.
+
+```python
+get_angular_velocity_limit(*, timeout_ms: int = 3000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### set_angular_velocity_limit
+
+Set the angular velocity limit and return the applied value.
+
+```python
+set_angular_velocity_limit(value: float, *, timeout_ms: int = 3000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `value` | `float` | (required) | Angular velocity limit in rad/s |
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### get_linear_acceleration_limit
+
+Read the linear acceleration limit.
+
+```python
+get_linear_acceleration_limit(*, timeout_ms: int = 3000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### set_linear_acceleration_limit
+
+Set the linear acceleration limit and return the applied value.
+
+```python
+set_linear_acceleration_limit(value: float, *, timeout_ms: int = 3000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `value` | `float` | (required) | Linear acceleration limit in m/s² |
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### get_angular_acceleration_limit
+
+Read the angular acceleration limit.
+
+```python
+get_angular_acceleration_limit(*, timeout_ms: int = 3000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### set_angular_acceleration_limit
+
+Set the angular acceleration limit and return the applied value.
+
+```python
+set_angular_acceleration_limit(value: float, *, timeout_ms: int = 3000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `value` | `float` | (required) | Angular acceleration limit in rad/s² |
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### servo_twist
+
+Velocity servo returning the applied velocity; only allowed in `MANUAL` mode.
+
+```python
+servo_twist(*, vx: float, vy: float, vtheta: float = 0.0, frame_id: str = "", stamp_ns: int = 0, timeout_ms: int = 2000) -> Twist2d
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `vx` | `float` | (required) | Body-frame X velocity in m/s |
+| `vy` | `float` | (required) | Body-frame Y velocity in m/s |
+| `vtheta` | `float` | `0.0` | Angular velocity in rad/s |
+| `frame_id` | `str` | `""` | Reference frame; empty means the slot default base |
+| `stamp_ns` | `int` | `0` | Goal time in ns; 0 means latest |
+| `timeout_ms` | `int` | `2000` | Timeout in milliseconds |
+
+**Returns** `Twist2d`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `state` | `OperationState` | Task state |
-| `terminal` | `bool` | Whether the snapshot is terminal |
-| `feedback` | `ChassisProgressT` \| `None` | `progress` (`float`), `statusMessage` (`str`), `taskId` (`int`) |
-| `result` | `ChassisOutcomeT` \| `None` | `success` (`bool`), `statusMessage` (`str`), `taskId` (`int`) |
-| `error` | `FabotError` \| `None` | Failure reason |
+|------|------|------|
+| `vx` | `float` | Body-frame X velocity in m/s |
+| `vy` | `float` | Body-frame Y velocity in m/s |
+| `vtheta` | `float` | Angular velocity in rad/s |
+| `frame_id` | `str` | Reference frame; an empty string in a command means the slot default base, feedback keeps the source frame |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
 
 ```python
-op = robot.chassis.move_relative(dx=1.0, dy=0.0, dtheta=0.0)
-for snap in op.events(poll_timeout_ms=200, timeout_ms=60000):
-    print(snap.state, snap.feedback)
-    if snap.terminal:
-        break
+from fabot.capabilities.chassis import ChassisMode
+
+robot.chassis.set_mode(ChassisMode.MANUAL)
+robot.chassis.servo_twist(vx=0.2, vy=0.0, vtheta=0.1)
+robot.chassis.servo_twist(vx=0.0, vy=0.0, vtheta=0.0)
 ```
 
-### navigate_to_station
+### move_pose
 
-Navigate to a station. Returns a pollable, cancelable Operation. Snapshot fields match `move_relative`: `state` / `feedback: ChassisProgressT` / `result: ChassisOutcomeT` / `error`. The handle supports `cancel()`.
+Navigate to an absolute map-frame pose.
 
 ```python
-navigate_to_station(*, station_id: int, mode: NavigationMode) -> NavigateToStationOperation
+move_pose(target: Pose2d, *, mode: NavigationMode = NavigationMode.AUTONOMOUS, position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0) -> MovePoseOperation
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `station_id` | `int` | (required) | Target station id, from `list_stations()` |
-| `mode` | `NavigationMode` | (required) | `AUTONOMOUS` / `LINE_FOLLOW` / `POINT_TO_POINT` |
+|------|------|------|------|
+| `target` | `Pose2d` | (required) | Goal value |
+| `mode` | `NavigationMode` | `NavigationMode.AUTONOMOUS` | Mode value |
+| `position_tolerance` | `float` | `0.0` | Position tolerance in meters; 0 uses the slot default |
+| `orientation_tolerance` | `float` | `0.0` | Orientation tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+
+Returns a `MovePoseOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
+
+### move_pose_relative
+
+Body-frame relative navigation; `target.x` / `y` / `theta` are `dx` / `dy` / `dyaw`.
+
+```python
+move_pose_relative(target: Pose2d, *, position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0) -> MovePoseRelativeOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `target` | `Pose2d` | (required) | Goal value |
+| `position_tolerance` | `float` | `0.0` | Position tolerance in meters; 0 uses the slot default |
+| `orientation_tolerance` | `float` | `0.0` | Orientation tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+
+Returns a `MovePoseRelativeOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
+
+### move_station
+
+Navigate to a map station; `station_id` comes from `get_station()`.
+
+```python
+move_station(station_id: int, *, mode: NavigationMode = NavigationMode.AUTONOMOUS, duration: float = 0.0) -> MoveStationOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `station_id` | `int` | (required) | Station id |
+| `mode` | `NavigationMode` | `NavigationMode.AUTONOMOUS` | Mode value |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+
+Returns a `MoveStationOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
 ```python
 from fabot.capabilities.chassis import NavigationMode
 
-stations = robot.chassis.list_stations().stations
-op = robot.chassis.navigate_to_station(
-    station_id=stations[0].stationId, mode=NavigationMode.AUTONOMOUS,
-)
-snap = op.get(timeout_ms=60000)
-print(snap.state, snap.result)
-```
-
-### relocalize
-
-Relocalize the chassis at the given pose. Returns a pollable, cancelable Operation. Snapshot fields match `move_relative`.
-
-```python
-relocalize(*, pose: Pose2dT) -> RelocalizeOperation
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `pose` | `Pose2dT` | (required) | Relocalization pose: `x` / `y` (meters), `theta` (radians) |
-
-```python
-from fabot.types.Pose2d import Pose2dT
-
-pose = Pose2dT()
-pose.x, pose.y, pose.theta = 1.0, 2.0, 0.0
-op = robot.chassis.relocalize(pose=pose)
+stations = robot.chassis.get_station()
+op = robot.chassis.move_station(stations[0].id, mode=NavigationMode.AUTONOMOUS)
+snap = op.get(timeout=5.0)
+print(snap.state)
 ```
 
 ## Channels
 
-This module has no data channels. See [Events & Data Channels](../../usage/events-channels.md) for shared channel usage.
+Opening a channel takes a lease and returns a handle: iterate with `frames()`, take one sample with `next()`, renew with `renew()`, release with `close()`. See [Events & Data Channels](../../usage/events-channels.md).
+
+### pose()
+
+Map-frame pose stream.
+
+```python
+pose(qos_profile: str = "latest") -> Channel
+```
+
+Frame payload is `Pose2d`:
+
+| Field | Type | Description |
+|------|------|------|
+| `x` | `float` | X coordinate or component in meters |
+| `y` | `float` | Y coordinate or component in meters |
+| `theta` | `float` | Heading angle in radians |
+| `frame_id` | `str` | Reference frame; an empty string in a command means the slot default base, feedback keeps the source frame |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+
+### twist()
+
+Velocity stream.
+
+```python
+twist(qos_profile: str = "latest") -> Channel
+```
+
+Frame payload is `Twist2d`:
+
+| Field | Type | Description |
+|------|------|------|
+| `vx` | `float` | Body-frame X velocity in m/s |
+| `vy` | `float` | Body-frame Y velocity in m/s |
+| `vtheta` | `float` | Angular velocity in rad/s |
+| `frame_id` | `str` | Reference frame; an empty string in a command means the slot default base, feedback keeps the source frame |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+
+### stage()
+
+Motion-stage stream.
+
+```python
+stage(qos_profile: str = "latest") -> Channel
+```
+
+Frame payload is `Stage`:
+
+| Field | Type | Description |
+|------|------|------|
+| `stage` | `ChassisStage` | Motion stage (`ChassisStage`) |
 
 ## Events
 
-Subscribe via `robot.chassis.events`. Callbacks run on the SDK I/O thread: keep them light and do not call blocking APIs; see [Events & Data Channels](../../usage/events-channels.md).
+Subscribe through `robot.<slot>.events`. Callbacks run on the SDK I/O thread: keep them short and never call blocking APIs. Every event carries an `EventHeader` (`name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`).
 
-Every event includes an `EventHeader`: `name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`.
-
-### fault_changed
-
-Pushed when this slot's fault set changes.
-
-Subscribe with `robot.chassis.events.fault_changed.subscribe(callback)`.
-
-**Payload**
-
-`FaultChangedEvent.faults`: `Faults`. Today `Faults` only has `revision`; this module has no named faults yet. See [Faults](#faults).
-
-```python
-def on_fault(event):
-    print(event.header.slot_id, event.faults.revision)
-
-token = robot.chassis.events.fault_changed.subscribe(on_fault)
-```
-
-### lifecycle_changed
-
-Pushed when this slot's lifecycle or health changes.
-
-Subscribe with `robot.chassis.events.lifecycle_changed.subscribe(callback)`.
-
-**Payload**
-
-`LifecycleChangedEvent.lifecycle`: `CapabilityLifecycleSnapshot`:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `lifecycle` | `LifecycleState` | Lifecycle stage |
-| `health` | `HealthState` | Health |
-| `source_instance_id` | `str` | Source instance id |
-
-```python
-def on_lifecycle(event):
-    snap = event.lifecycle
-    print(event.header.slot_id, snap.lifecycle, snap.health)
-
-token = robot.chassis.events.lifecycle_changed.subscribe(on_lifecycle)
-```
+| Entry | Event type | payload |
+|------|------|------|
+| `robot.<slot>.events.fault_changed` | `FaultChangedEvent` | `FaultChangedEvent.faults`: `Faults` |
+| `robot.<slot>.events.lifecycle_changed` | `LifecycleChangedEvent` | `LifecycleChangedEvent.lifecycle`: `CapabilityLifecycleSnapshot` |
 
 ## Faults
 
-Query with `robot.chassis.faults()`, which returns `Faults`.
-
-This module has no named faults yet: `Faults` currently only exposes `revision`. Changes are pushed on `fault_changed`. See [Status, Faults & Lifecycle](../../usage/status-faults.md) for the shared model.
-
-If named faults appear later, each one is a `FaultState`:
+Query with `robot.<slot>.faults()`, which returns `Faults` (`revision` plus `records: list[FaultState]`). Each `FaultState`: 
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `active` | `bool` | Whether the fault is still standing |
-| `catalog_id` | `str` | Catalog id |
-| `fault_class` | `CapabilityStateClass` | Fault class |
-| `first_seen_us` / `last_seen_us` | `int` | First / last seen timestamp (microseconds) |
-| `count` | `int` | Occurrence count |
+|------|------|------|
+| `code` | `int` | Diagnostic code; `0` means no fault |
+| `source` | `str` | Fault source id |
+| `state` | `int` | Fault state bits |
+| `severity` | `int` | Severity, aligned with `HealthState` |
+| `timestamp_us` | `int` | Latest timestamp in microseconds |
+
+For human-readable fault text use `Catalogs.format_fault(record, capability_id="...")`; see [Catalogs](../../usage/catalogs.md).
 
 ## Status
 
-This module has no `status()`. Use [`get_status()`](#get_status) for a chassis motion snapshot; for aggregated robot status see `robot.status()`.
+This module has no `status()`; see `robot.status()` for the aggregated view.
 
-Shared queries:
+Shared read-only queries:
 
-- `health()`: current health
-- `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `source_instance_id`)
+- `health()`: `SlotHealth` (`is_usable` / `lifecycle` / `health` / `standing_faults` / `pbit_completed` / `source_instance_id`)
+- `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `pbit_completed` / `source_instance_id`)
 
-Changes arrive on `lifecycle_changed`. See [Status, Faults & Lifecycle](../../usage/status-faults.md).
+Changes arrive through `lifecycle_changed`; see [Status, Faults & Lifecycle](../../usage/status-faults.md).
 
 ## Resources
 
-`move_relative` / `navigate_to_station` / `relocalize` share one chassis resource; new tasks queue and do not run concurrently.
+`move_pose` / `move_pose_relative` / `move_station` share the `chassis` resource with policy `queue` and a 180-second default budget.

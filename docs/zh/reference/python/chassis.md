@@ -2,7 +2,7 @@
 title: 底盘 Chassis
 status: draft
 owner: fabot-core
-updated: 2026-09-07
+updated: 2026-11-02
 ---
 
 # 底盘 Chassis
@@ -10,436 +10,713 @@ updated: 2026-09-07
 ## 模块概述
 
 - 能力 id：`chassis`；槽位：`robot.chassis`
-- 底盘运动控制：速度指令、限速与限加速度、站点导航、相对移动、重定位。
+- 能力域：`motion`；能力版本：`1.1.0`
+- 底盘平面运动：速度伺服、地图系绝对 / 相对位姿导航、站点导航，以及驻停、锁止、暂停等状态控制。
+- `ChassisMode.MANUAL` 允许 `servo_twist` 与车体相对移动，`AUTONOMOUS` 允许地图导航；`NavigationMode` 只影响导航规划方式。
+
+所有导航 Operation 共用资源 `chassis`，策略 `queue`，默认时限 180 秒。
+`get_stage()` / `stage()` 给出的 `ChassisStage` 是只读运动阶段，由任务与故障投影产生，没有对应的 set 方法。
 
 ## API 总览
 
-| 方法 | 请求 | 响应 | 类型 |
+| 方法 | 请求 | 响应 | 默认超时 |
 |------|------|------|------|
-| `stop` | — | `OutcomeT` | Command |
-| `set_max_speed` | `linear`, `angular` | `MaxSpeedAppliedT` | Command |
-| `get_max_speed` | — | `MaxSpeedT` | Command |
-| `set_max_acceleration` | `linear`, `angular` | `MaxAccelerationAppliedT` | Command |
-| `get_max_acceleration` | — | `MaxAccelerationT` | Command |
-| `move` | `vx`, `vy`, `vtheta` | `OutcomeT` | Command |
-| `pause` | — | `OutcomeT` | Command |
-| `resume` | — | `OutcomeT` | Command |
-| `list_stations` | — | `StationListT` | Command |
-| `get_status` | — | `ChassisStatusT` | Command |
-| `move_relative` | `dx`, `dy`, `dtheta` | `MoveRelativeOperation` | Operation |
-| `navigate_to_station` | `station_id`, `mode` | `NavigateToStationOperation` | Operation |
-| `relocalize` | `pose` | `RelocalizeOperation` | Operation |
+| `get_pose` | `Empty` | `Pose2d` | 3000 ms |
+| `set_pose` | `Pose2d` | `Pose2d` | 5000 ms |
+| `get_twist` | `Empty` | `Twist2d` | 3000 ms |
+| `get_stage` | `Empty` | `Stage` | 3000 ms |
+| `get_station` | `Empty` | `Stations` | 5000 ms |
+| `get_mode` | `Empty` | `Mode` | 3000 ms |
+| `set_mode` | `Mode` | `Mode` | 3000 ms |
+| `get_parking` | `Empty` | `Parking` | 3000 ms |
+| `set_parking` | `Parking` | `Parking` | 3000 ms |
+| `get_lock` | `Empty` | `Lock` | 3000 ms |
+| `set_lock` | `Lock` | `Lock` | 3000 ms |
+| `get_pause` | `Empty` | `Pause` | 3000 ms |
+| `set_pause` | `Pause` | `Pause` | 3000 ms |
+| `get_linear_velocity_limit` | `Empty` | `Float64` | 3000 ms |
+| `set_linear_velocity_limit` | `Float64` | `Float64` | 3000 ms |
+| `get_angular_velocity_limit` | `Empty` | `Float64` | 3000 ms |
+| `set_angular_velocity_limit` | `Float64` | `Float64` | 3000 ms |
+| `get_linear_acceleration_limit` | `Empty` | `Float64` | 3000 ms |
+| `set_linear_acceleration_limit` | `Float64` | `Float64` | 3000 ms |
+| `get_angular_acceleration_limit` | `Empty` | `Float64` | 3000 ms |
+| `set_angular_acceleration_limit` | `Float64` | `Float64` | 3000 ms |
+| `servo_twist` | `Twist2d` | `Twist2d` | 2000 ms |
 
-Command 默认 `timeout_ms`：`move` 为 2000，`stop` / `list_stations` 为 5000，其余均为 3000（均可覆盖）。参数均为关键字参数。
+以上均为 Command（同步请求-响应），`timeout_ms` 可逐次覆盖。
+
+| 方法 | 请求 | 类型 | 资源 | 默认时限 |
+|------|------|------|------|------|
+| `move_pose` | `PoseMove` | Operation | chassis | 180000 ms |
+| `move_pose_relative` | `RelativePoseMove` | Operation | chassis | 180000 ms |
+| `move_station` | `StationMove` | Operation | chassis | 180000 ms |
+
+Operation 立即返回句柄，进度与结果通过快照获取；通用用法见 [命令与长时操作](../../usage/commands-operations.md)。
+
+| 通道 | 内容 |
+|------|------|
+| `pose()` | `Pose2d` |
+| `twist()` | `Twist2d` |
+| `stage()` | `Stage` |
+
+本页方法用到的枚举：
+
+**`ChassisMode` 枚举**
+
+| 取值 | 说明 |
+|------|------|
+| `MANUAL` | 手动：允许 `servo_twist` 与车体相对移动 |
+| `AUTONOMOUS` | 自主：允许地图导航 |
+
+**`NavigationMode` 枚举**
+
+| 取值 | 说明 |
+|------|------|
+| `AUTONOMOUS` | 自主规划 |
+| `LINE_FOLLOW` | 循线 |
+| `POINT_TO_POINT` | 点到点 |
 
 ## 方法
 
-以下均为关键字参数。Command 超时与 Operation 轮询、取消见 [命令与长时操作](../../usage/commands-operations.md)，各节不重复展开。
+参数名与默认值以本节签名块为准；未标 `*` 的参数可按位置或关键字传入，`*` 之后的只能按关键字传入。字段名用小写下划线写法（如 `frame_id`），生成类型同时接受原样的驼峰别名。
 
-### stop
+### get_pose
 
-立即停止底盘运动。
+读取地图系位姿。
 
 ```python
-stop(*, timeout_ms: int = 5000) -> OutcomeT
+get_pose(*, timeout_ms: int = 3000) -> Pose2d
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `timeout_ms` | `int` | `5000` | Command 超时（毫秒） |
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
 
-**返回**
-
-`OutcomeT`：
+**返回** `Pose2d`
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `success` | `bool` | 是否成功 |
-| `statusMessage` | `str` | 状态说明 |
+| `x` | `float` | X 坐标或分量，米 |
+| `y` | `float` | Y 坐标或分量，米 |
+| `theta` | `float` | 航向角，弧度 |
+| `frame_id` | `str` | 参考坐标系名；命令里空串表示槽位缺省基准，反馈原样保留来源系 |
+| `stamp_ns` | `int` | 机器人时基上的时间戳（纳秒）；0 表示最新 |
 
-### set_max_speed
+### set_pose
 
-设置最大速度限制。
+把地图系位姿重置为给定值（重定位），返回生效位姿。
 
 ```python
-set_max_speed(*, linear: float, angular: float, timeout_ms: int = 3000) -> MaxSpeedAppliedT
+set_pose(*, x: float, y: float, theta: float = 0.0, frame_id: str = "", stamp_ns: int = 0, timeout_ms: int = 5000) -> Pose2d
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `linear` | `float` | （必填） | 最大线速度，单位米/秒 |
-| `angular` | `float` | （必填） | 最大角速度，单位弧度/秒 |
-| `timeout_ms` | `int` | `3000` | Command 超时（毫秒） |
+| `x` | `float` | （必填） | X 分量，米 |
+| `y` | `float` | （必填） | Y 分量，米 |
+| `theta` | `float` | `0.0` | 航向角，弧度 |
+| `frame_id` | `str` | `""` | 参考坐标系；空串表示槽位缺省基准 |
+| `stamp_ns` | `int` | `0` | 目标时刻（纳秒）；0 表示最新 |
+| `timeout_ms` | `int` | `5000` | 调用超时（毫秒） |
 
-**返回**
-
-`MaxSpeedAppliedT`：
+**返回** `Pose2d`
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `outcome` | `OutcomeT` | `success` / `statusMessage` |
-| `appliedLinear` | `float` | 实际生效的最大线速度（米/秒） |
-| `appliedAngular` | `float` | 实际生效的最大角速度（弧度/秒） |
+| `x` | `float` | X 坐标或分量，米 |
+| `y` | `float` | Y 坐标或分量，米 |
+| `theta` | `float` | 航向角，弧度 |
+| `frame_id` | `str` | 参考坐标系名；命令里空串表示槽位缺省基准，反馈原样保留来源系 |
+| `stamp_ns` | `int` | 机器人时基上的时间戳（纳秒）；0 表示最新 |
+
+### get_twist
+
+读取当前速度。
 
 ```python
-applied = robot.chassis.set_max_speed(linear=0.5, angular=0.8)
-print(applied.outcome.success, applied.appliedLinear, applied.appliedAngular)
-```
-
-### get_max_speed
-
-读取当前最大速度限制。
-
-```python
-get_max_speed(*, timeout_ms: int = 3000) -> MaxSpeedT
+get_twist(*, timeout_ms: int = 3000) -> Twist2d
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `timeout_ms` | `int` | `3000` | Command 超时（毫秒） |
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
 
-**返回**
-
-`MaxSpeedT`：`linear`（米/秒）、`angular`（弧度/秒）。
-
-### set_max_acceleration
-
-设置最大加速度限制。
-
-```python
-set_max_acceleration(*, linear: float, angular: float, timeout_ms: int = 3000) -> MaxAccelerationAppliedT
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `linear` | `float` | （必填） | 最大线加速度，单位米/秒² |
-| `angular` | `float` | （必填） | 最大角加速度，单位弧度/秒² |
-| `timeout_ms` | `int` | `3000` | Command 超时（毫秒） |
-
-**返回**
-
-`MaxAccelerationAppliedT`：`outcome`（`OutcomeT`）、`appliedLinear`、`appliedAngular`，含义同 `set_max_speed`。
-
-### get_max_acceleration
-
-读取当前最大加速度限制。
-
-```python
-get_max_acceleration(*, timeout_ms: int = 3000) -> MaxAccelerationT
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `timeout_ms` | `int` | `3000` | Command 超时（毫秒） |
-
-**返回**
-
-`MaxAccelerationT`：`linear`（米/秒²）、`angular`（弧度/秒²）。
-
-### move
-
-下发速度指令。
-
-```python
-move(*, vx: float, vy: float, vtheta: float, timeout_ms: int = 2000) -> OutcomeT
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `vx` | `float` | （必填） | 前向线速度，单位米/秒 |
-| `vy` | `float` | （必填） | 侧向线速度，单位米/秒 |
-| `vtheta` | `float` | （必填） | 角速度，单位弧度/秒 |
-| `timeout_ms` | `int` | `2000` | Command 超时（毫秒） |
-
-**返回**
-
-`OutcomeT`：`success` / `statusMessage`。
-
-```python
-robot.chassis.move(vx=0.3, vy=0.0, vtheta=0.2)   # m/s, rad/s
-# ... 运动一段时间后停止
-outcome = robot.chassis.stop()
-print(outcome.success, outcome.statusMessage)
-```
-
-### pause
-
-暂停当前运动或导航任务。
-
-```python
-pause(*, timeout_ms: int = 3000) -> OutcomeT
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `timeout_ms` | `int` | `3000` | Command 超时（毫秒） |
-
-**返回**
-
-`OutcomeT`：`success` / `statusMessage`。
-
-### resume
-
-恢复被 `pause` 暂停的运动或导航任务。
-
-```python
-resume(*, timeout_ms: int = 3000) -> OutcomeT
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `timeout_ms` | `int` | `3000` | Command 超时（毫秒） |
-
-**返回**
-
-`OutcomeT`：`success` / `statusMessage`。
-
-```python
-robot.chassis.pause()
-# ... 确认周围环境安全
-robot.chassis.resume()
-```
-
-### list_stations
-
-列出地图上的导航站点。
-
-```python
-list_stations(*, timeout_ms: int = 5000) -> StationListT
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `timeout_ms` | `int` | `5000` | Command 超时（毫秒） |
-
-**返回**
-
-`StationListT`：
+**返回** `Twist2d`
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `stations` | `list[StationInfoT]` | 站点列表；每项含 `stationId`（`int`）与 `name`（`str`） |
-| `statusMessage` | `str` | 状态说明 |
+| `vx` | `float` | 车体系 X 线速度，米/秒 |
+| `vy` | `float` | 车体系 Y 线速度，米/秒 |
+| `vtheta` | `float` | 角速度，弧度/秒 |
+| `frame_id` | `str` | 参考坐标系名；命令里空串表示槽位缺省基准，反馈原样保留来源系 |
+| `stamp_ns` | `int` | 机器人时基上的时间戳（纳秒）；0 表示最新 |
+
+### get_stage
+
+读取当前运动阶段。
 
 ```python
-result = robot.chassis.list_stations()
-for station in result.stations:
-    print(station.stationId, station.name)
-```
-
-### get_status
-
-读取底盘运动状态快照。
-
-```python
-get_status(*, timeout_ms: int = 3000) -> ChassisStatusT
+get_stage(*, timeout_ms: int = 3000) -> ChassisStage
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `timeout_ms` | `int` | `3000` | Command 超时（毫秒） |
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
 
-**返回**
+**返回** `ChassisStage`
 
-`ChassisStatusT`：
+`Stage` 在代理层被解包成 `ChassisStage`。
+
+**`ChassisStage` 枚举**
+
+| 取值 | 说明 |
+|------|------|
+| `IDLE` | 空闲 |
+| `MOVING` | 运动中 |
+| `PAUSED` | 已暂停 |
+| `FAULTED` | 故障 |
+
+### get_station
+
+读取地图站点列表。`get_stations` 是别名。
+
+```python
+get_station(*, timeout_ms: int = 5000) -> list[StationInfo]
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `timeout_ms` | `int` | `5000` | 调用超时（毫秒） |
+
+**返回** `list[StationInfo]`
+
+`Stations` 在代理层被解包成 `list[StationInfo]`。
+
+**元素字段** `StationInfo`
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `pose` | `Pose2dT` \| `None` | 当前位姿：`x` / `y`（米），`theta`（弧度） |
-| `velocity` | `Twist2dT` \| `None` | 当前速度：`vx` / `vy`（米/秒），`vtheta`（弧度/秒） |
-| `socPercent` | `int` | 电量百分比 |
-| `controlMode` | `ControlMode` | 控制模式：`MANUAL` / `AUTONOMOUS` |
-| `motionState` | `MotionState` | 运动状态：`IDLE` / `MOVING` / `PAUSED` / `FAULTED` |
-| `targetStationId` | `int` | 当前目标站点 id |
-| `statusMessage` | `str` | 状态说明 |
+| `id` | `int` | 站点 id |
+| `name` | `str` | 站点名称 |
+| `pose` | `Pose2d` | 站点位姿；缺省表示后端未提供 |
 
 ```python
-status = robot.chassis.get_status()
-print(status.motionState, status.socPercent, status.pose.x, status.pose.y)
+for station in robot.chassis.get_station():
+    print(station.id, station.name)
 ```
 
-### move_relative
+### get_mode
 
-相对当前位姿执行长时移动，返回可轮询、可取消的 Operation。
+读取当前模式。
 
 ```python
-move_relative(*, dx: float, dy: float, dtheta: float) -> MoveRelativeOperation
+get_mode(*, timeout_ms: int = 3000) -> ChassisMode
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `dx` | `float` | （必填） | 前向位移，单位米 |
-| `dy` | `float` | （必填） | 侧向位移，单位米 |
-| `dtheta` | `float` | （必填） | 转角，单位弧度 |
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
 
-**返回**
+**返回** `ChassisMode`
 
-`MoveRelativeOperation`。通过 `get()` / `events()` 取快照，也可 `cancel()`。快照字段：
+`Mode` 在代理层被解包成 `ChassisMode`。
+
+**`ChassisMode` 枚举**
+
+| 取值 | 说明 |
+|------|------|
+| `MANUAL` | 手动：允许 `servo_twist` 与车体相对移动 |
+| `AUTONOMOUS` | 自主：允许地图导航 |
+
+### set_mode
+
+切换手动 / 自主方式。
+
+```python
+set_mode(mode: ChassisMode, *, timeout_ms: int = 3000) -> ChassisMode
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `mode` | `ChassisMode` | （必填） | 模式取值 |
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
+
+**返回** `ChassisMode`
+
+`Mode` 在代理层被解包成 `ChassisMode`。
+
+**`ChassisMode` 枚举**
+
+| 取值 | 说明 |
+|------|------|
+| `MANUAL` | 手动：允许 `servo_twist` 与车体相对移动 |
+| `AUTONOMOUS` | 自主：允许地图导航 |
+
+### get_parking
+
+查询是否驻停锁死。
+
+```python
+get_parking(*, timeout_ms: int = 3000) -> bool
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
+
+**返回** `bool`
+
+`Parking` 在代理层被解包成 `bool`。
+
+### set_parking
+
+设置驻停锁死状态。
+
+```python
+set_parking(*, parked: bool, timeout_ms: int = 3000) -> bool
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `parked` | `bool` | （必填） | `True` 驻停锁死 |
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
+
+**返回** `bool`
+
+`Parking` 在代理层被解包成 `bool`。
+
+### get_lock
+
+查询底盘自由度是否被锁止。
+
+```python
+get_lock(*, timeout_ms: int = 3000) -> bool
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
+
+**返回** `bool`
+
+`Lock` 在代理层被解包成 `bool`。
+
+### set_lock
+
+锁止或解锁底盘自由度。
+
+```python
+set_lock(*, locked: bool, timeout_ms: int = 3000) -> bool
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `locked` | `bool` | （必填） | `True` 锁止该自由度 |
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
+
+**返回** `bool`
+
+`Lock` 在代理层被解包成 `bool`。
+
+### get_pause
+
+查询在途导航是否被暂停。
+
+```python
+get_pause(*, timeout_ms: int = 3000) -> bool
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
+
+**返回** `bool`
+
+`Pause` 在代理层被解包成 `bool`。
+
+### set_pause
+
+暂停或恢复在途导航；不销毁 `move_*` 句柄。
+
+```python
+set_pause(*, paused: bool, timeout_ms: int = 3000) -> bool
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `paused` | `bool` | （必填） | `True` 暂停在途导航 |
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
+
+**返回** `bool`
+
+`Pause` 在代理层被解包成 `bool`。
+
+### get_linear_velocity_limit
+
+读取线速度上限。
+
+```python
+get_linear_velocity_limit(*, timeout_ms: int = 3000) -> float
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
+
+**返回** `float`
+
+`Float64` 在代理层被解包成 `float`。
+
+### set_linear_velocity_limit
+
+设置线速度上限，返回生效值。
+
+```python
+set_linear_velocity_limit(value: float, *, timeout_ms: int = 3000) -> float
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `value` | `float` | （必填） | 线速度上限，米/秒 |
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
+
+**返回** `float`
+
+`Float64` 在代理层被解包成 `float`。
+
+### get_angular_velocity_limit
+
+读取角速度上限。
+
+```python
+get_angular_velocity_limit(*, timeout_ms: int = 3000) -> float
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
+
+**返回** `float`
+
+`Float64` 在代理层被解包成 `float`。
+
+### set_angular_velocity_limit
+
+设置角速度上限，返回生效值。
+
+```python
+set_angular_velocity_limit(value: float, *, timeout_ms: int = 3000) -> float
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `value` | `float` | （必填） | 角速度上限，弧度/秒 |
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
+
+**返回** `float`
+
+`Float64` 在代理层被解包成 `float`。
+
+### get_linear_acceleration_limit
+
+读取线加速度上限。
+
+```python
+get_linear_acceleration_limit(*, timeout_ms: int = 3000) -> float
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
+
+**返回** `float`
+
+`Float64` 在代理层被解包成 `float`。
+
+### set_linear_acceleration_limit
+
+设置线加速度上限，返回生效值。
+
+```python
+set_linear_acceleration_limit(value: float, *, timeout_ms: int = 3000) -> float
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `value` | `float` | （必填） | 线加速度上限，米/秒² |
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
+
+**返回** `float`
+
+`Float64` 在代理层被解包成 `float`。
+
+### get_angular_acceleration_limit
+
+读取角加速度上限。
+
+```python
+get_angular_acceleration_limit(*, timeout_ms: int = 3000) -> float
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
+
+**返回** `float`
+
+`Float64` 在代理层被解包成 `float`。
+
+### set_angular_acceleration_limit
+
+设置角加速度上限，返回生效值。
+
+```python
+set_angular_acceleration_limit(value: float, *, timeout_ms: int = 3000) -> float
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `value` | `float` | （必填） | 角加速度上限，弧度/秒² |
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
+
+**返回** `float`
+
+`Float64` 在代理层被解包成 `float`。
+
+### servo_twist
+
+速度伺服，返回实际生效速度。`MANUAL` 模式下才允许。
+
+```python
+servo_twist(*, vx: float, vy: float, vtheta: float = 0.0, frame_id: str = "", stamp_ns: int = 0, timeout_ms: int = 2000) -> Twist2d
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `vx` | `float` | （必填） | 车体系 X 线速度，米/秒 |
+| `vy` | `float` | （必填） | 车体系 Y 线速度，米/秒 |
+| `vtheta` | `float` | `0.0` | 角速度，弧度/秒 |
+| `frame_id` | `str` | `""` | 参考坐标系；空串表示槽位缺省基准 |
+| `stamp_ns` | `int` | `0` | 目标时刻（纳秒）；0 表示最新 |
+| `timeout_ms` | `int` | `2000` | 调用超时（毫秒） |
+
+**返回** `Twist2d`
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `state` | `OperationState` | 任务状态 |
-| `terminal` | `bool` | 是否终态 |
-| `feedback` | `ChassisProgressT` \| `None` | `progress`（`float`）、`statusMessage`（`str`）、`taskId`（`int`） |
-| `result` | `ChassisOutcomeT` \| `None` | `success`（`bool`）、`statusMessage`（`str`）、`taskId`（`int`） |
-| `error` | `FabotError` \| `None` | 失败原因 |
+| `vx` | `float` | 车体系 X 线速度，米/秒 |
+| `vy` | `float` | 车体系 Y 线速度，米/秒 |
+| `vtheta` | `float` | 角速度，弧度/秒 |
+| `frame_id` | `str` | 参考坐标系名；命令里空串表示槽位缺省基准，反馈原样保留来源系 |
+| `stamp_ns` | `int` | 机器人时基上的时间戳（纳秒）；0 表示最新 |
 
 ```python
-op = robot.chassis.move_relative(dx=1.0, dy=0.0, dtheta=0.0)
-for snap in op.events(poll_timeout_ms=200, timeout_ms=60000):
-    print(snap.state, snap.feedback)
-    if snap.terminal:
-        break
+from fabot.capabilities.chassis import ChassisMode
+
+robot.chassis.set_mode(ChassisMode.MANUAL)
+robot.chassis.servo_twist(vx=0.2, vy=0.0, vtheta=0.1)
+robot.chassis.servo_twist(vx=0.0, vy=0.0, vtheta=0.0)
 ```
 
-### navigate_to_station
+### move_pose
 
-导航到指定站点，返回可轮询、可取消的 Operation。快照字段与 `move_relative` 相同：`state` / `feedback: ChassisProgressT` / `result: ChassisOutcomeT` / `error`，可 `cancel()`。
+地图系绝对位姿导航。
 
 ```python
-navigate_to_station(*, station_id: int, mode: NavigationMode) -> NavigateToStationOperation
+move_pose(target: Pose2d, *, mode: NavigationMode = NavigationMode.AUTONOMOUS, position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0) -> MovePoseOperation
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `station_id` | `int` | （必填） | 目标站点 id，取自 `list_stations()` |
-| `mode` | `NavigationMode` | （必填） | `AUTONOMOUS`（自主导航）/ `LINE_FOLLOW`（循线）/ `POINT_TO_POINT`（点到点） |
+| `target` | `Pose2d` | （必填） | 目标值 |
+| `mode` | `NavigationMode` | `NavigationMode.AUTONOMOUS` | 模式取值 |
+| `position_tolerance` | `float` | `0.0` | 位置到位容差（米）；0 表示沿用槽位缺省 |
+| `orientation_tolerance` | `float` | `0.0` | 姿态到位容差；0 表示沿用槽位缺省 |
+| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+
+返回 `MovePoseOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
+
+### move_pose_relative
+
+车体系相对位移导航，`target.x` / `y` / `theta` 即 `dx` / `dy` / `dyaw`。
+
+```python
+move_pose_relative(target: Pose2d, *, position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0) -> MovePoseRelativeOperation
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `target` | `Pose2d` | （必填） | 目标值 |
+| `position_tolerance` | `float` | `0.0` | 位置到位容差（米）；0 表示沿用槽位缺省 |
+| `orientation_tolerance` | `float` | `0.0` | 姿态到位容差；0 表示沿用槽位缺省 |
+| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+
+返回 `MovePoseRelativeOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
+
+### move_station
+
+导航到地图站点，`station_id` 取自 `get_station()`。
+
+```python
+move_station(station_id: int, *, mode: NavigationMode = NavigationMode.AUTONOMOUS, duration: float = 0.0) -> MoveStationOperation
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `station_id` | `int` | （必填） | 站点 id |
+| `mode` | `NavigationMode` | `NavigationMode.AUTONOMOUS` | 模式取值 |
+| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+
+返回 `MoveStationOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
 
 ```python
 from fabot.capabilities.chassis import NavigationMode
 
-stations = robot.chassis.list_stations().stations
-op = robot.chassis.navigate_to_station(
-    station_id=stations[0].stationId, mode=NavigationMode.AUTONOMOUS,
-)
-snap = op.get(timeout_ms=60000)
-print(snap.state, snap.result)
-```
-
-### relocalize
-
-以指定位姿重定位底盘，返回可轮询、可取消的 Operation。快照字段与 `move_relative` 相同。
-
-```python
-relocalize(*, pose: Pose2dT) -> RelocalizeOperation
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `pose` | `Pose2dT` | （必填） | 重定位位姿：`x` / `y`（米），`theta`（弧度） |
-
-```python
-from fabot.types.Pose2d import Pose2dT
-
-pose = Pose2dT()
-pose.x, pose.y, pose.theta = 1.0, 2.0, 0.0
-op = robot.chassis.relocalize(pose=pose)
+stations = robot.chassis.get_station()
+op = robot.chassis.move_station(stations[0].id, mode=NavigationMode.AUTONOMOUS)
+snap = op.get(timeout=5.0)
+print(snap.state)
 ```
 
 ## 通道
 
-本模块没有数据通道。通用通道用法见 [事件与数据通道](../../usage/events-channels.md)。
+打开即建立租约并返回 Channel 句柄；用 `frames()` 迭代，`next()` 取一帧，`renew()` 续租，`close()` 释放。通用用法见 [事件与数据通道](../../usage/events-channels.md)。
+
+### pose()
+
+地图系位姿流。
+
+```python
+pose(qos_profile: str = "latest") -> Channel
+```
+
+帧 payload 为 `Pose2d`：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `x` | `float` | X 坐标或分量，米 |
+| `y` | `float` | Y 坐标或分量，米 |
+| `theta` | `float` | 航向角，弧度 |
+| `frame_id` | `str` | 参考坐标系名；命令里空串表示槽位缺省基准，反馈原样保留来源系 |
+| `stamp_ns` | `int` | 机器人时基上的时间戳（纳秒）；0 表示最新 |
+
+### twist()
+
+速度流。
+
+```python
+twist(qos_profile: str = "latest") -> Channel
+```
+
+帧 payload 为 `Twist2d`：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `vx` | `float` | 车体系 X 线速度，米/秒 |
+| `vy` | `float` | 车体系 Y 线速度，米/秒 |
+| `vtheta` | `float` | 角速度，弧度/秒 |
+| `frame_id` | `str` | 参考坐标系名；命令里空串表示槽位缺省基准，反馈原样保留来源系 |
+| `stamp_ns` | `int` | 机器人时基上的时间戳（纳秒）；0 表示最新 |
+
+### stage()
+
+运动阶段流。
+
+```python
+stage(qos_profile: str = "latest") -> Channel
+```
+
+帧 payload 为 `Stage`：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `stage` | `ChassisStage` | 运动阶段（`ChassisStage`） |
 
 ## 事件
 
-经 `robot.chassis.events` 订阅。回调在 SDK I/O 线程执行，须保持轻量、禁止调用阻塞 API，见 [事件与数据通道](../../usage/events-channels.md)。
+经 `robot.<slot>.events` 订阅；回调在 SDK I/O 线程执行，须保持轻量、禁止调用阻塞 API。事件均带 `EventHeader`（`name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`）。
 
-事件均带 `EventHeader`：`name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`。
-
-### fault_changed
-
-该槽位故障集合变化时推送。
-
-订阅：`robot.chassis.events.fault_changed.subscribe(callback)`。
-
-**payload**
-
-`FaultChangedEvent.faults`：`Faults`。当前 `Faults` 只有 `revision`，本模块尚无已命名故障，见 [异常](#_5)。
-
-```python
-def on_fault(event):
-    print(event.header.slot_id, event.faults.revision)
-
-token = robot.chassis.events.fault_changed.subscribe(on_fault)
-```
-
-### lifecycle_changed
-
-该槽位生命周期或健康度变化时推送。
-
-订阅：`robot.chassis.events.lifecycle_changed.subscribe(callback)`。
-
-**payload**
-
-`LifecycleChangedEvent.lifecycle`：`CapabilityLifecycleSnapshot`：
-
-| 字段 | 类型 | 说明 |
+| 入口 | 事件类型 | payload |
 |------|------|------|
-| `lifecycle` | `LifecycleState` | 生命周期阶段 |
-| `health` | `HealthState` | 健康度 |
-| `source_instance_id` | `str` | 来源实例 id |
-
-```python
-def on_lifecycle(event):
-    snap = event.lifecycle
-    print(event.header.slot_id, snap.lifecycle, snap.health)
-
-token = robot.chassis.events.lifecycle_changed.subscribe(on_lifecycle)
-```
+| `robot.<slot>.events.fault_changed` | `FaultChangedEvent` | `FaultChangedEvent.faults`：`Faults` |
+| `robot.<slot>.events.lifecycle_changed` | `LifecycleChangedEvent` | `LifecycleChangedEvent.lifecycle`：`CapabilityLifecycleSnapshot` |
 
 ## 异常
 
-查询入口：`robot.chassis.faults()`，返回 `Faults`。
-
-本模块尚无已命名故障：当前 `Faults` 只有 `revision`。变化通过 `fault_changed` 推送。通用约定见 [状态、故障与生命周期](../../usage/status-faults.md)。
-
-若日后出现已命名故障，每条为 `FaultState`：
+查询入口 `robot.<slot>.faults()`，返回 `Faults`（`revision` + `records: list[FaultState]`）。单条 `FaultState`：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `active` | `bool` | 是否仍在生效 |
-| `catalog_id` | `str` | 目录 id |
-| `fault_class` | `CapabilityStateClass` | 故障等级 |
-| `first_seen_us` / `last_seen_us` | `int` | 首次 / 最近见到的时间戳（微秒） |
-| `count` | `int` | 累计次数 |
+| `code` | `int` | 诊断码；`0` 表示无故障 |
+| `source` | `str` | 故障来源标识 |
+| `state` | `int` | 故障状态位 |
+| `severity` | `int` | 严重度，与 `HealthState` 对齐 |
+| `timestamp_us` | `int` | 最近一次时间戳（微秒） |
+
+展示给人看的故障文本用 `Catalogs.format_fault(record, capability_id="...")`，见 [文本目录 Catalogs](../../usage/catalogs.md)。
 
 ## 状态
 
-本模块没有 `status()`；底盘运动状态快照用 [`get_status()`](#get_status)，整机聚合状态见 `robot.status()`。
+本模块没有 `status()`；整机聚合状态见 `robot.status()`。
 
-公共查询：
+公共只读查询：
 
-- `health()`：当前健康度
-- `lifecycle()`：`CapabilityLifecycleSnapshot`（`lifecycle` / `health` / `source_instance_id`）
+- `health()`：`SlotHealth`（`is_usable` / `lifecycle` / `health` / `standing_faults` / `pbit_completed` / `source_instance_id`）
+- `lifecycle()`：`CapabilityLifecycleSnapshot`（`lifecycle` / `health` / `pbit_completed` / `source_instance_id`）
 
-变化走 `lifecycle_changed`，见 [状态、故障与生命周期](../../usage/status-faults.md)。
+变化走 `lifecycle_changed` 事件，见 [状态、故障与生命周期](../../usage/status-faults.md)。
 
 ## 资源
 
-`move_relative` / `navigate_to_station` / `relocalize` 共享同一底盘资源，新任务排队执行，不并发。
+`move_pose` / `move_pose_relative` / `move_station` 共用资源 `chassis`，策略 `queue`，默认时限 180 秒。

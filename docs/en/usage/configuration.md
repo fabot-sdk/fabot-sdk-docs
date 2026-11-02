@@ -2,48 +2,59 @@
 title: Configuration
 status: draft
 owner: fabot-core
-updated: 2026-10-26
+updated: 2026-11-02
 ---
 
 # Configuration
 
-The whole-robot configuration (slot bindings and per-capability configuration domains) is read and modified via `robot.configuration`. Modifications use **CAS (Compare-And-Swap)**: the commit carries the expected `revision`, and a conflict with the robot's current configuration raises `ConfigurationConflict` (see [Error Handling](errors.md) for the error hierarchy).
+Configuration has two levels: the **robot configuration** (slot bindings, `robot.configuration`) and **capability / skill config domains** (each entity's own parameters via `proxy.get_config()` and friends). Both use **CAS (Compare-And-Swap)**: the submission carries the expected revision and raises `ConfigurationConflict` when the robot has moved on (see [Error Handling](errors.md)).
 
-## Reading Configuration
+## Who owns what
+
+| Level | Entry | Scope |
+|-------|-------|-------|
+| Robot | `robot.configuration.get()` / `apply()` | Which adapter each slot binds, enabled / essential flags, deployment node |
+| Capability / skill | `robot.<slot>.get_config()` / `set_config()` / `edit_config()` | That entity's own parameter domains (arrival thresholds, camera streams, sync groups, …) |
+
+Changing a capability parameter does not need a robot-wide patch; changing "which adapter lives in this slot" does.
+
+## Robot configuration
 
 ```python
 cfg = robot.configuration.get()     # RobotConfig snapshot
-print(cfg.revision)                 # configuration revision
+print(cfg.revision)
 print(cfg.io.adapter_id)            # "fabot_io"
-print(cfg.to_yaml())                # export as YAML
+print(cfg.to_yaml())
 ```
 
-Each slot on `RobotConfig` is a `SlotBinding` attribute (e.g. `cfg.io`, `cfg.left_arm`, `cfg.chassis`; see [Overview](../overview.md) for all 23 slots).
+Every slot on `RobotConfig` is a `SlotBinding` attribute (`cfg.io`, `cfg.left_arm`, `cfg.chassis`; the full 23 slots are listed in [Robot Entry](../reference/python/robot.md)).
 
-## Modifying Configuration
+### Changing bindings
 
-Build a patch that describes only the changes, then commit it with `apply()`:
+Build a patch containing only your changes, then `apply()` it:
 
 ```python
 from fabot.robot import RobotConfig
-from fabot.adapters import FabotIoConfig
+from fabot.adapters import IoConfig
 
-patch = RobotConfig()                       # empty patch: untouched slots stay as-is
-patch.io.bind(FabotIoConfig())              # bind fabot_io and write its config
+patch = RobotConfig()                       # empty patch: untouched slots keep their state
+patch.io.bind(IoConfig())                   # bind fabot_io with its config domains
 patch.chassis.unbind()                      # unbind the chassis
 
-new_cfg = robot.configuration.apply(patch)  # CAS commit; returns the applied snapshot
+new_cfg = robot.configuration.apply(patch)  # CAS commit; returns the new snapshot
 ```
 
-`apply()` internally reads the latest configuration, merges the **touched slots** from the patch into it (`merge_touched`), and commits with the latest `revision` — so a patch only needs to contain the parts you want to change.
+`apply()` reads the latest configuration, merges only the slots the patch **touched** (`merge_touched`), then submits with the latest `revision`. A patch therefore only needs the changed parts.
+
+`to_yaml()` rewrites only the `adapters` section and leaves every other top-level key (services, coordinate frames, …) untouched — a full replacement would stop services that were omitted.
 
 :::note
-Configurations from `from_yaml()` / `get()` are for inspection and backup; their slots are not "touched", so submitting one directly as a patch changes nothing. Use `bind()` / `unbind()` to make changes.
+Configurations from `from_yaml()` / `get()` are for inspection and backup; their slots do not count as "touched", so submitting them as a patch changes nothing. Use `bind()` / `unbind()` to modify.
 :::
 
-## Conflict Retry
+### Retrying conflicts
 
-When multiple clients modify the configuration concurrently, the conflicting side gets `ConfigurationConflict` (code 81001; 81002 if the configuration was rewritten during the commit). Since `apply()` always merges against the latest configuration, simply retry:
+When several clients change configuration concurrently, the loser gets `ConfigurationConflict`. Since `apply()` always merges against the latest configuration, retrying is enough:
 
 ```python
 from fabot.errors import ConfigurationConflict
@@ -56,26 +67,26 @@ for _ in range(3):
         continue
 ```
 
-## Slot Bindings (SlotBinding)
+### SlotBinding
 
 | Method | Description |
-|------|------|
-| `bind(config, *, required=None, node_id=None, enabled=None)` | Bind an adapter; `config` is its config class or instance, with optional `required` / `node_id` / `enabled` |
+|--------|-------------|
+| `bind(config, *, required=None, node_id=None, enabled=None)` | Bind an adapter from its config class or instance; optionally set `required` / `node_id` / `enabled` |
 | `unbind()` | Unbind the slot |
-| `to_mapping()` | Export as a dict; returns `None` when unbound |
-| `domain_updates()` | Collect the touched config-domain documents of the slot |
+| `to_mapping()` | Export as a dict; `None` when unbound |
+| `domain_updates()` | Collect the config-domain documents for this slot |
 
-Changing a binding triggers a lifecycle transition of the corresponding capability (see [Status, Faults & Lifecycle](status-faults.md)), observable via `robot.events.registry_changed` and `robot.events.config_changed` (see [Events & Channels](events-channels.md)).
+Binding changes trigger lifecycle transitions (see [Status, Faults & Lifecycle](status-faults.md)) and can be observed via `robot.events.registry_changed` and `robot.events.config_changed` (see [Events & Data Channels](events-channels.md)).
 
-## RobotConfig Utility Methods
+### RobotConfig helpers
 
 | Method | Description |
-|------|------|
-| `to_yaml()` / `from_yaml(text, revision=None)` | Export / import YAML (`api_version: fabot/v1`), for backup and migration |
-| `from_state(state)` | Build from an internal snapshot; normally used by `get()` |
-| `merge_touched(patch)` | Merge the touched slots of a patch into the current configuration; used internally by `apply()` |
+|--------|-------------|
+| `to_yaml()` / `from_yaml(text, revision=None)` | Export / import YAML (`api_version: fabot/v1`) for backup and migration |
+| `from_state(state)` | Build from an internal snapshot; used by `get()` |
+| `merge_touched(patch)` | Merge the patch's touched slots into the current config; used by `apply()` |
 
-The exported YAML looks like:
+Exported YAML looks like:
 
 ```yaml
 api_version: fabot/v1
@@ -87,26 +98,36 @@ adapters:
     enabled: false
 ```
 
-## Capability Configuration Domains (Typed per Adapter)
+## Capability config domains
 
-Each adapter's configuration domain maps to a typed dataclass (under `fabot.adapters`, supporting `to_yaml` / `from_yaml`). Reading:
+Each adapter's config domain is a typed dataclass under `fabot.adapters` (with `to_yaml()` / `from_yaml()` / `field_options()`). Slot proxies expose three methods:
+
+| Method | Description |
+|--------|-------------|
+| `get_config()` | Read the slot's bound config domains as a typed dataclass |
+| `set_config(config)` | Submit only this slot's domains; other slots and top-level keys stay put. Returns the latest config |
+| `edit_config()` | Context manager: read on entry, submit the **changed domains** on exit |
+
+`edit_config()` is the least error-prone form because it submits only what actually changed:
 
 ```python
-cfg = robot.configuration.get()
-io_conf = cfg.io.config          # FabotIoConfig; None if the slot is unbound or the adapter is unknown
+with robot.left_arm.edit_config() as conf:
+    conf.arrival.joint_tolerance = 0.01
+# the arrival domain is committed on exit
 ```
 
-Modifying: edit the dataclass, then submit it via `bind()` in a patch:
+The explicit equivalent:
 
 ```python
-from fabot.robot import RobotConfig
-
-io_conf.channels.digital.relay1.pin = 5
-patch = RobotConfig()
-patch.io.bind(io_conf)
-robot.configuration.apply(patch)
+conf = robot.left_arm.get_config()
+conf.arrival.max_timeout_s = 8.0
+robot.left_arm.set_config(conf)
 ```
 
-:::note
-Platform services are configured through `get_config()` / `set_config()` on `robot.services`; see [Platform Services](services.md).
-:::
+`get_config()` raises `AdapterUnbound` when the slot has no adapter, and `RuntimeError` when no config type is registered for the adapter.
+
+Skills (`robot.skills.*`) use the same three methods for their own domains, see [Skills & Extensions](skills.md).
+
+## Platform service configuration
+
+Services are configured through `robot.services` with `get_config()` / `set_config()`, see [Platform Services](services.md).

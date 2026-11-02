@@ -2,7 +2,7 @@
 title: 运动 Motion
 status: draft
 owner: fabot-core
-updated: 2026-09-09
+updated: 2026-11-02
 ---
 
 # 运动 Motion
@@ -10,299 +10,411 @@ updated: 2026-09-09
 ## 模块概述
 
 - 能力 id：`motion`；槽位：`robot.motion`
-- 全身运动规划与执行控制：查询整机关节角、控制运控状态机（FSM）、急停与复位。
+- 能力域：`motion`；能力版本：`1.1.0`
+- 全身运动控制：运动体制、全身关节 / 位姿目标、回零与预设构型，以及全身控制状态与质心稳定裕度。
+- `MotionMode` 是控制体制（`HOLD` / `OCS2` / `MOVEJ`），与 `robot.state()` 的运行状态不是同一概念。
+
+所有运动 Operation 共用资源 `motion_controller`，策略 `queue`，默认时限 60 秒。
+`set_mode(COMPLIANCE)` 会被拒绝：当前控制栈没有可进入的顺应状态。
 
 ## API 总览
 
-| 方法 | 请求 | 响应 | 类型 |
+| 方法 | 请求 | 响应 | 默认超时 |
 |------|------|------|------|
-| `get_joints` | — | `list[JointPositionT]` | Command |
-| `stop` | — | `OutcomeT` | Command |
-| `get_fsm_state` | — | `FsmState` | Command |
-| `set_fsm_state` | `state` | `FsmAppliedT` | Command |
-| `reset_fsm` | — | `OutcomeT` | Command |
-| `set_body_mode` | `mode` | `OutcomeT` | Command |
+| `get_joint` | `Empty` | `WholeBodyJointState` | 1000 ms |
+| `get_wbc_state` | `Empty` | `WbcState` | 1000 ms |
+| `get_center_of_mass` | `Empty` | `CenterOfMass` | 1000 ms |
+| `get_mode` | `Empty` | `Mode` | 1000 ms |
+| `set_mode` | `Mode` | `Mode` | 7000 ms |
+| `servo_pose` | `WholeBodyPoseTarget` | `WholeBodyPoseTarget` | 1000 ms |
 
-Command 默认 `timeout_ms`：`get_joints` / `stop` / `get_fsm_state` 为 1000，`set_fsm_state` / `set_body_mode` 为 3000，`reset_fsm` 为 30000（均可覆盖）。参数均为关键字参数。
+以上均为 Command（同步请求-响应），`timeout_ms` 可逐次覆盖。
+
+| 方法 | 请求 | 类型 | 资源 | 默认时限 |
+|------|------|------|------|------|
+| `move_home` | `Home` | Operation | motion_controller | 60000 ms |
+| `move_preset` | `Preset` | Operation | motion_controller | 60000 ms |
+| `move_joint` | `JointMove` | Operation | motion_controller | 60000 ms |
+| `move_joint_path` | `JointPath` | Operation | motion_controller | 60000 ms |
+| `move_pose` | `PoseMove` | Operation | motion_controller | 60000 ms |
+
+Operation 立即返回句柄，进度与结果通过快照获取；通用用法见 [命令与长时操作](../../usage/commands-operations.md)。
 
 | 通道 | 内容 |
 |------|------|
-| `joints()` | 整机关节位置流（`NamedJointsT`） |
+| `joint()` | `WholeBodyJointState` |
+| `wbc_state()` | `WbcState` |
+| `center_of_mass()` | `CenterOfMass` |
+
+本页方法用到的枚举：
+
+**`MotionMode` 枚举**
+
+| 取值 | 说明 |
+|------|------|
+| `HOLD` | 保持当前构型 |
+| `OCS2` | OCS2 全身控制 |
+| `MOVEJ` | MoveJ 关节伺服从 |
+| `COMPLIANCE` | 顺应控制；当前控制栈未实现，`set_mode` 会被拒绝 |
+
+**`HomePose` 枚举**
+
+| 取值 | 说明 |
+|------|------|
+| `PRIMARY` | 主零位 |
+| `SECONDARY` | 次零位 |
+| `TERTIARY` | 第三零位 |
 
 ## 方法
 
-以下均为关键字参数。Command 超时见 [命令与长时操作](../../usage/commands-operations.md)，各节不重复展开。
+参数名与默认值以本节签名块为准；未标 `*` 的参数可按位置或关键字传入，`*` 之后的只能按关键字传入。字段名用小写下划线写法（如 `frame_id`），生成类型同时接受原样的驼峰别名。
 
-### get_joints
+### get_joint
 
-读取整机当前关节角。
+读取全身关节采样（躯干 / 左臂 / 右臂 / 头部）。
 
 ```python
-get_joints(*, timeout_ms: int = 1000) -> list[JointPositionT]
+get_joint(*, timeout_ms: int = 1000) -> WholeBodyJointState
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
+| `timeout_ms` | `int` | `1000` | 调用超时（毫秒） |
 
-**返回**
-
-`list[JointPositionT]`，每项：
+**返回** `WholeBodyJointState`
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `name` | `str` | 关节名 |
-| `position` | `float` | 关节角，单位弧度 |
+| `body` | `JointState` | 躯干数据 |
+| `left_arm` | `JointState` | 左臂数据 |
+| `right_arm` | `JointState` | 右臂数据 |
+| `head` | `JointState` | 头部数据 |
+
+### get_wbc_state
+
+读取全身控制状态：各部位模式、双臂使能与底盘锁止。
 
 ```python
-for joint in robot.motion.get_joints():
-    print(joint.name, joint.position)
-```
-
-### stop
-
-停止当前运动。
-
-```python
-stop(*, timeout_ms: int = 1000) -> OutcomeT
+get_wbc_state(*, timeout_ms: int = 1000) -> WbcState
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
+| `timeout_ms` | `int` | `1000` | 调用超时（毫秒） |
 
-**返回**
-
-`OutcomeT`：
+**返回** `WbcState`
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `success` | `bool` | 是否成功 |
-| `statusMessage` | `str` | 状态说明 |
+| `body_mode` | `BodyMode` | 躯干约束模式（`BodyMode`） |
+| `head_mode` | `HeadMode` | 控制器 current_state 不回读头部模式；无观测时保持 DISABLE。 |
+| `arms_mode` | `ArmsMode` | 双臂耦合模式（`ArmsMode`） |
+| `left_arm_enabled` | `bool` | 左臂是否使能 |
+| `right_arm_enabled` | `bool` | 右臂是否使能 |
+| `chassis_locked` | `bool` | 底盘是否锁止 |
+| `stamp_ns` | `int` | 机器人时基上的时间戳（纳秒）；0 表示最新 |
+
+### get_center_of_mass
+
+读取质心投影与相对支撑矩形的稳定裕度。
 
 ```python
-outcome = robot.motion.stop()
-print(outcome.success, outcome.statusMessage)
-```
-
-### get_fsm_state
-
-查询运控状态机当前状态。
-
-```python
-get_fsm_state(*, timeout_ms: int = 1000) -> FsmState
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
-
-**返回**
-
-`FsmState` 枚举：`FsmState.Home` / `FsmState.Hold` / `FsmState.Ocs2` / `FsmState.MoveJ`。
-
-```python
-from fabot.capabilities.motion import FsmState
-
-state = robot.motion.get_fsm_state()
-if state == FsmState.Hold:
-    print("运控处于 Hold")
-```
-
-### set_fsm_state
-
-切换运控状态机状态，返回实际生效结果。
-
-```python
-set_fsm_state(*, state: FsmState, timeout_ms: int = 3000) -> FsmAppliedT
+get_center_of_mass(*, timeout_ms: int = 1000) -> CenterOfMass
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `state` | `FsmState` | （必填） | 目标状态：`FsmState.Home` / `FsmState.Hold` / `FsmState.Ocs2` / `FsmState.MoveJ` |
-| `timeout_ms` | `int` | `3000` | Command 超时（毫秒） |
+| `timeout_ms` | `int` | `1000` | 调用超时（毫秒） |
 
-**返回**
-
-`FsmAppliedT`：
+**返回** `CenterOfMass`
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `appliedState` | `int` | 实际生效的状态，对应 `FsmState` 取值 |
-| `outcome` | `OutcomeT` \| `None` | `success` / `statusMessage` |
+| `position` | `Vector3d` | 质心在 base_footprint 下的三维坐标，米。 |
+| `status` | `SupportStatus` | 状态快照 |
+| `min_safe_margin` | `float` | 相对支撑矩形的最小安全裕度，米 |
+| `stamp_ns` | `int` | 机器人时基上的时间戳（纳秒）；0 表示最新 |
+
+### get_mode
+
+读取当前模式。
 
 ```python
-from fabot.capabilities.motion import FsmState
-
-applied = robot.motion.set_fsm_state(state=FsmState.Hold)
-print(applied.appliedState, applied.outcome)
-```
-
-### reset_fsm
-
-复位运控状态机。该操作可能耗时较长，默认超时 30 秒。
-
-```python
-reset_fsm(*, timeout_ms: int = 30000) -> OutcomeT
+get_mode(*, timeout_ms: int = 1000) -> MotionMode
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `timeout_ms` | `int` | `30000` | Command 超时（毫秒） |
+| `timeout_ms` | `int` | `1000` | 调用超时（毫秒） |
 
-**返回**
+**返回** `MotionMode`
 
-`OutcomeT`：`success` / `statusMessage`。
+`Mode` 在代理层被解包成 `MotionMode`。
+
+**`MotionMode` 枚举**
+
+| 取值 | 说明 |
+|------|------|
+| `HOLD` | 保持当前构型 |
+| `OCS2` | OCS2 全身控制 |
+| `MOVEJ` | MoveJ 关节伺服从 |
+| `COMPLIANCE` | 顺应控制；当前控制栈未实现，`set_mode` 会被拒绝 |
+
+### set_mode
+
+切换运动体制，返回生效体制。
 
 ```python
-outcome = robot.motion.reset_fsm()
-print(outcome.success, outcome.statusMessage)
-```
-
-### set_body_mode
-
-设置整机身体约束模式。
-
-```python
-set_body_mode(*, mode: str, timeout_ms: int = 3000) -> OutcomeT
+set_mode(mode: MotionMode, *, timeout_ms: int = 7000) -> MotionMode
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `mode` | `str` | （必填） | 模式名（大小写敏感）：`BODY_FREE` / `BODY_RELATIVE` / `BODY_TRACKING` / `BODY_LOCK` / `BODY_HEAD_COUPLED` / `BODY_CUSTOM_LOCK` / `BODY_UNLOCK`；`BODY_VERTICAL` 是 `BODY_RELATIVE` 的旧别名 |
-| `timeout_ms` | `int` | `3000` | Command 超时（毫秒） |
+| `mode` | `MotionMode` | （必填） | 模式取值 |
+| `timeout_ms` | `int` | `7000` | 调用超时（毫秒） |
 
-**返回**
+**返回** `MotionMode`
 
-`OutcomeT`：`success` / `statusMessage`。
+`Mode` 在代理层被解包成 `MotionMode`。
 
 ```python
-outcome = robot.motion.set_body_mode(mode="BODY_RELATIVE")
-print(outcome.success, outcome.statusMessage)
+from fabot.capabilities.motion import MotionMode
+
+applied = robot.motion.set_mode(MotionMode.OCS2)
+print(applied)
+print(robot.motion.get_wbc_state().body_mode)
 ```
+
+### servo_pose
+
+全身位姿伺服：三个部位都给目标位姿，返回实际生效值。
+
+```python
+servo_pose(*, left_arm: Pose3d, right_arm: Pose3d, body: Pose3d, timeout_ms: int = 1000) -> WholeBodyPoseTarget
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `left_arm` | `Pose3d` | （必填） | 左臂目标位姿 |
+| `right_arm` | `Pose3d` | （必填） | 右臂目标位姿 |
+| `body` | `Pose3d` | （必填） | 躯干目标位姿 |
+| `timeout_ms` | `int` | `1000` | 调用超时（毫秒） |
+
+**返回** `WholeBodyPoseTarget`
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `left_arm` | `Pose3d` | 左臂数据 |
+| `right_arm` | `Pose3d` | 右臂数据 |
+| `body` | `Pose3d` | 躯干数据 |
+
+### move_home
+
+回到预设零位。`HomePose.PRIMARY` 是默认目标。
+
+```python
+move_home(target: HomePose = HomePose.PRIMARY, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveHomeOperation
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `target` | `HomePose` | `HomePose.PRIMARY` | 目标值 |
+| `tolerance` | `float` | `0.0` | 到位容差；0 表示沿用槽位缺省 |
+| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+| `wait_timeout` | `float` | `0.0` | 额外到位等待（秒）；0 表示沿用缺省等待策略 |
+
+返回 `MoveHomeOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
+
+```python
+from fabot.capabilities.motion import HomePose
+
+robot.motion.move_home(HomePose.PRIMARY, duration=5.0).wait(timeout=30.0)
+```
+
+### move_preset
+
+运动到具名预设构型。
+
+```python
+move_preset(target: str, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MovePresetOperation
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `target` | `str` | （必填） | 目标值 |
+| `tolerance` | `float` | `0.0` | 到位容差；0 表示沿用槽位缺省 |
+| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+| `wait_timeout` | `float` | `0.0` | 额外到位等待（秒）；0 表示沿用缺省等待策略 |
+
+返回 `MovePresetOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
+
+### move_joint
+
+关节空间运动。`tolerance` 为到位容差，`duration` 为期望时长，`wait_timeout` 为额外到位等待；三者取 0 均表示沿用缺省。
+
+```python
+move_joint(target: WholeBodyJointTarget, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveJointOperation
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `target` | `WholeBodyJointTarget` | （必填） | 目标值 |
+| `tolerance` | `float` | `0.0` | 到位容差；0 表示沿用槽位缺省 |
+| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+| `wait_timeout` | `float` | `0.0` | 额外到位等待（秒）；0 表示沿用缺省等待策略 |
+
+返回 `MoveJointOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
+
+### move_joint_path
+
+沿关节路点序列运动；至少两个路点，当前关节接到第一个路点。
+
+```python
+move_joint_path(waypoints: list[WholeBodyJointTarget], *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveJointPathOperation
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `waypoints` | `list[WholeBodyJointTarget]` | （必填） | 路点序列，至少两个 |
+| `tolerance` | `float` | `0.0` | 到位容差；0 表示沿用槽位缺省 |
+| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+| `wait_timeout` | `float` | `0.0` | 额外到位等待（秒）；0 表示沿用缺省等待策略 |
+
+返回 `MoveJointPathOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
+
+### move_pose
+
+末端位姿绝对运动。参考系取 `target.frame_id`，空串缺省槽位基准；`end_frame` 空串缺省当前 TCP 或法兰。
+
+```python
+move_pose(target: WholeBodyPoseTarget, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MovePoseOperation
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `target` | `WholeBodyPoseTarget` | （必填） | 目标值 |
+| `end_frame` | `str` | `""` | 受控末端坐标系；空串表示当前工具 TCP，无工具时为法兰 |
+| `position_tolerance` | `float` | `0.0` | 位置到位容差（米）；0 表示沿用槽位缺省 |
+| `orientation_tolerance` | `float` | `0.0` | 姿态到位容差；0 表示沿用槽位缺省 |
+| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+| `wait_timeout` | `float` | `0.0` | 额外到位等待（秒）；0 表示沿用缺省等待策略 |
+
+返回 `MovePoseOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
 
 ## 通道
 
-打开参数与帧约定如下；通用用法见 [事件与数据通道](../../usage/events-channels.md)。
+打开即建立租约并返回 Channel 句柄；用 `frames()` 迭代，`next()` 取一帧，`renew()` 续租，`close()` 释放。通用用法见 [事件与数据通道](../../usage/events-channels.md)。
 
-### joints()
+### joint()
 
-订阅整机关节位置流。
+全身关节状态流。
 
 ```python
-joints(qos_profile: str = "latest") -> JointsChannel
+joint(qos_profile: str = "latest") -> Channel
 ```
 
-**打开参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `qos_profile` | `str` | `"latest"` | `"latest"` / `"realtime"` / `"reliable"` |
-
-**帧**（`JointsChannelFrame`）
+帧 payload 为 `WholeBodyJointState`：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `channel_id` | `str` | 通道 id |
-| `sequence` | `int` | 帧序号 |
-| `timestamp_us` | `int` | 时间戳（微秒） |
-| `payload` | `NamedJointsT` | `payload.positions`：`list[JointPositionT]`，每项 `name`（关节名）/ `position`（弧度） |
+| `body` | `JointState` | 躯干数据 |
+| `left_arm` | `JointState` | 左臂数据 |
+| `right_arm` | `JointState` | 右臂数据 |
+| `head` | `JointState` | 头部数据 |
 
-用 `frames(poll_timeout_ms=..., timeout_ms=...)` 迭代帧。
+### wbc_state()
+
+全身控制状态流。
 
 ```python
-ch = robot.motion.joints(qos_profile="latest")
-for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-    for joint in frame.payload.positions:
-        print(frame.sequence, joint.name, joint.position)
+wbc_state(qos_profile: str = "latest") -> Channel
 ```
+
+帧 payload 为 `WbcState`：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `body_mode` | `BodyMode` | 躯干约束模式（`BodyMode`） |
+| `head_mode` | `HeadMode` | 控制器 current_state 不回读头部模式；无观测时保持 DISABLE。 |
+| `arms_mode` | `ArmsMode` | 双臂耦合模式（`ArmsMode`） |
+| `left_arm_enabled` | `bool` | 左臂是否使能 |
+| `right_arm_enabled` | `bool` | 右臂是否使能 |
+| `chassis_locked` | `bool` | 底盘是否锁止 |
+| `stamp_ns` | `int` | 机器人时基上的时间戳（纳秒）；0 表示最新 |
+
+### center_of_mass()
+
+质心与稳定裕度流。
+
+```python
+center_of_mass(qos_profile: str = "latest") -> Channel
+```
+
+帧 payload 为 `CenterOfMass`：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `position` | `Vector3d` | 质心在 base_footprint 下的三维坐标，米。 |
+| `status` | `SupportStatus` | 状态快照 |
+| `min_safe_margin` | `float` | 相对支撑矩形的最小安全裕度，米 |
+| `stamp_ns` | `int` | 机器人时基上的时间戳（纳秒）；0 表示最新 |
 
 ## 事件
 
-经 `robot.motion.events` 订阅。回调在 SDK I/O 线程执行，须保持轻量、禁止调用阻塞 API，见 [事件与数据通道](../../usage/events-channels.md)。
+经 `robot.<slot>.events` 订阅；回调在 SDK I/O 线程执行，须保持轻量、禁止调用阻塞 API。事件均带 `EventHeader`（`name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`）。
 
-事件均带 `EventHeader`：`name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`。
-
-### fault_changed
-
-该槽位故障集合变化时推送。
-
-订阅：`robot.motion.events.fault_changed.subscribe(callback)`。
-
-**payload**
-
-`FaultChangedEvent.faults`：`Faults`。当前 `Faults` 只有 `revision`，本模块尚无已命名故障，见 [异常](#_5)。
-
-```python
-def on_fault(event):
-    print(event.header.slot_id, event.faults.revision)
-
-token = robot.motion.events.fault_changed.subscribe(on_fault)
-```
-
-### lifecycle_changed
-
-该槽位生命周期或健康度变化时推送。
-
-订阅：`robot.motion.events.lifecycle_changed.subscribe(callback)`。
-
-**payload**
-
-`LifecycleChangedEvent.lifecycle`：`CapabilityLifecycleSnapshot`：
-
-| 字段 | 类型 | 说明 |
+| 入口 | 事件类型 | payload |
 |------|------|------|
-| `lifecycle` | `LifecycleState` | 生命周期阶段 |
-| `health` | `HealthState` | 健康度 |
-| `source_instance_id` | `str` | 来源实例 id |
-
-```python
-def on_lifecycle(event):
-    snap = event.lifecycle
-    print(event.header.slot_id, snap.lifecycle, snap.health)
-
-token = robot.motion.events.lifecycle_changed.subscribe(on_lifecycle)
-```
+| `robot.<slot>.events.fault_changed` | `FaultChangedEvent` | `FaultChangedEvent.faults`：`Faults` |
+| `robot.<slot>.events.lifecycle_changed` | `LifecycleChangedEvent` | `LifecycleChangedEvent.lifecycle`：`CapabilityLifecycleSnapshot` |
 
 ## 异常
 
-查询入口：`robot.motion.faults()`，返回 `Faults`。
-
-本模块尚无已命名故障：当前 `Faults` 只有 `revision`。变化通过 `fault_changed` 推送。通用约定见 [状态、故障与生命周期](../../usage/status-faults.md)。
-
-若日后出现已命名故障，每条为 `FaultState`：
+查询入口 `robot.<slot>.faults()`，返回 `Faults`（`revision` + `records: list[FaultState]`）。单条 `FaultState`：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `active` | `bool` | 是否仍在生效 |
-| `catalog_id` | `str` | 目录 id |
-| `fault_class` | `CapabilityStateClass` | 故障等级 |
-| `first_seen_us` / `last_seen_us` | `int` | 首次 / 最近见到的时间戳（微秒） |
-| `count` | `int` | 累计次数 |
+| `code` | `int` | 诊断码；`0` 表示无故障 |
+| `source` | `str` | 故障来源标识 |
+| `state` | `int` | 故障状态位 |
+| `severity` | `int` | 严重度，与 `HealthState` 对齐 |
+| `timestamp_us` | `int` | 最近一次时间戳（微秒） |
+
+展示给人看的故障文本用 `Catalogs.format_fault(record, capability_id="...")`，见 [文本目录 Catalogs](../../usage/catalogs.md)。
 
 ## 状态
 
 本模块没有 `status()`；整机聚合状态见 `robot.status()`。
 
-公共查询：
+公共只读查询：
 
-- `health()`：当前健康度
-- `lifecycle()`：`CapabilityLifecycleSnapshot`（`lifecycle` / `health` / `source_instance_id`）
+- `health()`：`SlotHealth`（`is_usable` / `lifecycle` / `health` / `standing_faults` / `pbit_completed` / `source_instance_id`）
+- `lifecycle()`：`CapabilityLifecycleSnapshot`（`lifecycle` / `health` / `pbit_completed` / `source_instance_id`）
 
-变化走 `lifecycle_changed`，见 [状态、故障与生命周期](../../usage/status-faults.md)。
+变化走 `lifecycle_changed` 事件，见 [状态、故障与生命周期](../../usage/status-faults.md)。
 
 ## 资源
 
-`set_fsm_state` 与 `reset_fsm` 占用整机运动控制资源：其中一个执行期间，对同一资源的另一个调用会被直接拒绝而不是排队。`get_joints` / `stop` / `get_fsm_state` / `set_body_mode` 不占用该资源，可随时调用。
+`move_home` / `move_preset` / `move_joint` / `move_joint_path` / `move_pose` 共用资源 `motion_controller`，策略 `queue`，默认时限 60 秒。

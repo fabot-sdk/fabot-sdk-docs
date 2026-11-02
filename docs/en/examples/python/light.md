@@ -2,59 +2,54 @@
 title: Light
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-11-02
 ---
 
 # Light
 
-Control the light strip: switch the effect mode, color, brightness, and animation period. All five light methods are short commands — see [Commands & Operations](../../usage/commands-operations.md) for the command model and [Light](../../reference/python/light.md) for the API.
+Control the light strip: mode, color, brightness and animation period. All five methods are short commands; the command model is in [Commands & Operations](../../usage/commands-operations.md) and the API in [Light](../../reference/python/light.md).
 
-## Set Effect Mode and Color
+## Set mode and color
 
-`set_mode` switches mode, color, and animation period in one call; the color is an `Rgb8T` (`r` / `g` / `b`, each 0–255). Write commands return a snapshot of the strip after it takes effect.
+`set_mode` switches mode, color and animation period together; the color is an `Rgb8` (`r` / `g` / `b`, each 0–255). Writes return the applied strip snapshot (`outcome` plus `status`).
 
 ```python
 from fabot import Robot
 from fabot.capabilities.light import LightMode
-from fabot.types.Rgb8 import Rgb8T
+from fabot.types import Rgb8
 
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready(["light"])
 
-    red = Rgb8T()
-    red.r, red.g, red.b = 255, 0, 0
-    applied = robot.light.set_mode(mode=LightMode.BREATHE, color=red, period_ms=2000)
-    print(applied.outcome.success, applied.outcome.statusMessage)
-    print(applied.status.mode, applied.status.periodMs, applied.status.ledCount)
+    applied = robot.light.set_mode(
+        LightMode.BREATHE,
+        color=Rgb8(r=255, g=0, b=0),
+        period_ms=2000,
+    )
+    print(applied.outcome.success, applied.status.mode, applied.status.period_ms)
 ```
 
-Notes:
+`LightMode` is `OFF` / `SOLID` / `BLINK` / `BREATHE` / `RAINBOW` / `CHASE`. `OFF` and `RAINBOW` ignore the color, and `UNKNOWN` is not a legal command value.
 
-- `LightMode` values: `OFF` / `SOLID` / `BLINK` / `BREATHE` / `RAINBOW` / `CHASE`. `OFF` / `RAINBOW` ignore the color, and `period_ms` has no visible effect on `OFF` / `SOLID` — the full enum table is under [Light](../../reference/python/light.md).
-- `set_mode` does not change brightness; adjust it separately with `set_brightness`.
+## Adjust color, brightness and period separately
 
-## Tune Color, Brightness, and Period
-
-To change a single field without touching the mode, use the matching command:
+Each of these changes one aspect and keeps the rest:
 
 ```python
-applied = robot.light.set_color(r=0, g=255, b=0)      # color only
-print(applied.outcome.success, applied.status.color.g)
+robot.light.set_color(r=0, g=255, b=0)
+robot.light.set_brightness(128)
+robot.light.set_period(500)
 
-applied = robot.light.set_brightness(brightness=128)  # brightness only (0-255)
-print(applied.status.brightness)
-
-applied = robot.light.set_period(period_ms=500)       # animation period only (ms)
-print(applied.status.periodMs)
+status = robot.light.get_status().status
+print(status.mode, status.color, status.brightness, status.period_ms, status.led_count)
 ```
 
-## Read Current Strip Status
+## Turn the strip off
 
 ```python
-applied = robot.light.get_status()
-status = applied.status
-print(status.mode, status.brightness, status.periodMs)
-print(status.color.r, status.color.g, status.color.b)
+from fabot.types import Rgb8
+
+robot.light.set_mode(LightMode.OFF, color=Rgb8(r=0, g=0, b=0))
 ```
 
-`get_status` and the three write commands all return `LightStatusAppliedT` (`outcome` / `status`); the full field list is under [Light get_status](../../reference/python/light.md#get_status).
+The strip has no data channel and no long-running task; read state with `get_status()`, and fault or lifecycle changes arrive through `robot.light.events`.

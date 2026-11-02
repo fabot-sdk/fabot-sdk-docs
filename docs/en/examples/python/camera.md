@@ -2,44 +2,16 @@
 title: Camera
 status: draft
 owner: fabot-core
-updated: 2026-10-26
+updated: 2026-11-02
 ---
 
 # Camera
 
-Capture image frames, subscribe to camera image streams, and get preview playback URLs. The camera has five slots (`head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera`) — one API set, each an independent camera. For the channel model see [Events and Channels](../../usage/events-channels.md); for interfaces and fields see [Camera](../../reference/python/camera.md).
+Capture multi-stream frames, read calibration and intrinsics, control imaging parameters, and subscribe to image streams and preview endpoints. There are five camera slots (`head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera`) sharing one API on independent slots. The channel model is in [Events & Data Channels](../../usage/events-channels.md), and fields are in [Camera](../../reference/python/camera.md).
 
-## Capture a Frame Set
+## Capture a frame set
 
-`capture` grabs the current color + depth frame pair and returns a `CaptureT`: check the result via `outcome`; the image frames live in `color` / `depth`. `synchronized` tells whether the two frames were captured in sync.
-
-```python
-from fabot import Robot
-
-with Robot.connect("192.168.1.10", 7557) as robot:
-    robot.wait_ready(["head_camera"])
-
-    shot = robot.head_camera.capture()
-    if shot.outcome is not None and shot.outcome.success:
-        color = shot.color
-        print("Color frame:", color.width, "x", color.height, color.encoding,
-              "| synchronized:", shot.synchronized)
-        if shot.depth is not None:
-            print("Depth frame:", shot.depth.width, "x", shot.depth.height)
-    else:
-        msg = shot.outcome.statusMessage if shot.outcome else "no result"
-        print("Capture failed:", msg)
-```
-
-Notes:
-
-- Capture returns whole-frame pixel bytes (`ImageFrameT.data`) and is bulky — use it for occasional snapshots only; subscribe to a channel for live video.
-- When you need only color or only depth, use `capture_color` / `capture_depth` (returning `image` / `outcome`) to avoid transferring the stream you do not need.
-- Capture and channel subscriptions do not take the `camera_control` resource; see [Camera](../../reference/python/camera.md).
-
-## Subscribe to the Frame Set Stream
-
-`frameset()` subscribes to the frame set stream; each set contains color / depth / infrared frames (`CameraFrameSetT`). Iterate with `frames()`, then `close()`.
+`capture` returns a `FrameSet`: `color` / `depth` / `registered_depth` / `infrared` / left-right infrared / `confidence`, each an `ImageFrame` (`None` when the stream is absent), plus `sync_status` describing how those streams were paired in time. Cameras start streaming automatically once active, so `open()` is usually unnecessary.
 
 ```python
 from fabot import Robot
@@ -47,82 +19,129 @@ from fabot import Robot
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready(["head_camera"])
 
-    ch = robot.head_camera.frameset(qos_profile="latest")
-    try:
-        for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-            fs = frame.payload
-            color = fs.color
-            print("Frame set", frame.sequence,
-                  "| synchronized:", fs.synchronized,
-                  "| color:", f"{color.width}x{color.height}" if color else None)
-            if frame.sequence >= 30:   # demo: first 30 sets only
-                break
-    finally:
-        ch.close()
+    frame_set = robot.head_camera.capture()
+    print("sequence:", frame_set.sequence, "sync:", frame_set.sync_status)
+
+    if frame_set.color is not None:
+        img = frame_set.color
+        print(img.width, img.height, img.format, img.frame_id, img.stamp_ns)
+        print(len(img.data), "bytes")
 ```
 
-Notes:
-
-- For a single color or depth stream, use the `color()` / `depth()` channel instead — its `payload` is directly an `ImageFrameT`, saving bandwidth.
-- `qos_profile` is one of `"latest"` (latest only) / `"realtime"` / `"reliable"`; for iteration parameters and general conventions see [Events and Channels](../../usage/events-channels.md).
-
-## Open a Camera Session and Get a Preview URL
-
-When you need a specific resolution / frame rate, first `open` a session with stream profiles (it shares the `camera_control` resource, so requests are queued), then `close` when done. For desktop preview, use the `rtsp()` channel to get a playback URL (an info-only channel with no frame iteration).
+`capture(streams=[...])` restricts the streams; `wait_for_fresh=False` allows a cached frame, in which case `max_age_ms` bounds the accepted age.
 
 ```python
-from fabot import Robot
-from fabot.capabilities.camera import StreamKind, StreamProfileT
+from fabot.capabilities.camera import StreamKind
 
-with Robot.connect("192.168.1.10", 7557) as robot:
-    robot.wait_ready(["head_camera"])
-
-    profile = StreamProfileT()
-    profile.stream = StreamKind.COLOR
-    profile.width, profile.height, profile.fps = 1280, 720, 30
-    profile.encoding = "rgb8"
-
-    session = robot.head_camera.open(profiles=[profile], enable_sync=True)
-    print("Session state:", session.state, "| slot:", session.cameraSlot)
-    if session.outcome is not None:
-        print("Result:", session.outcome.success, session.outcome.statusMessage)
-
-    with robot.head_camera.rtsp() as ch:
-        print("RTSP preview URL:", ch.info.url)
-
-    robot.head_camera.close()
+depth_only = robot.head_camera.capture(streams=[StreamKind.DEPTH], max_age_ms=200)
 ```
 
-## Reading camera intrinsics
+## Read calibration and intrinsics
 
-`get_intrinsics` returns the color and depth intrinsics (`IntrinsicsT`). It contains K and distortion only, not the color-to-depth extrinsics. The pipeline must already be started by `open()`; otherwise `outcome.success` is `False`.
+`get_calibration()` returns per-stream intrinsics, extrinsics, the stereo baseline and the depth scale in one call; `get_intrinsics` is an alias. A change in `generation` means the calibration was updated and should be re-read.
 
 ```python
-from fabot import Robot
-from fabot.capabilities.camera import StreamKind, StreamProfileT
+calib = robot.head_camera.get_calibration()
+print("generation:", calib.generation, "depth scale:", calib.depth_scale)
+print("valid depth:", calib.min_depth_m, calib.max_depth_m)
 
-with Robot.connect("192.168.1.10", 7557) as robot:
-    robot.wait_ready(["head_camera"])
+intr = calib.color
+print(intr.width, intr.height, intr.fx, intr.fy, intr.cx, intr.cy)
+print("distortion model:", intr.distortion_model, "coeffs:", intr.distortion)
 
-    profile = StreamProfileT()
-    profile.stream = StreamKind.COLOR
-    profile.width, profile.height, profile.fps = 1280, 720, 30
-    profile.encoding = "rgb8"
-    robot.head_camera.open(profiles=[profile], enable_sync=True)
-
-    intr = robot.head_camera.get_intrinsics()
-    if intr.color is not None:
-        print("Color intrinsics:", intr.color.width, "x", intr.color.height,
-              "| fx/fy:", intr.color.fx, intr.color.fy,
-              "| distortion:", intr.color.distortionModel, intr.color.d)
-    if intr.depth is not None:
-        print("Depth intrinsics:", intr.depth.width, "x", intr.depth.height)
-
-    robot.head_camera.close()
+# Depth-to-color extrinsics
+print(calib.depth_to_color.target_frame, calib.depth_to_color.source_frame)
+print(calib.depth_to_color.tx, calib.depth_to_color.qw)
 ```
 
-Notes:
+## Deproject depth into a point cloud
 
-- When depth is aligned to color, depth frames actually use the color intrinsics; the depth path still reports its own calibration.
-- When neither path is available (slot unconfigured, pipeline not started, or calibration not yet received), `outcome.success` is `False`; the command does not block waiting.
+`fabot.frames` provides the pixel and depth geometry; combined with the calibration it turns a depth image into 3D points:
 
+```python
+from fabot.frames import deproject_depth_to_points, select_depth_intrinsics
+
+frame_set = robot.head_camera.capture(streams=[StreamKind.DEPTH])
+intr = select_depth_intrinsics(frame_set.depth, calib)
+points = deproject_depth_to_points(frame_set.depth, intr, stride=2, max_depth=5.0)
+print(points.shape)      # (N, 3) in meters, in the depth optical frame
+
+# Then transform into the robot base frame
+points_base = robot.frames.transform_points(points, "base_link", frame_set.depth.frame_id)
+```
+
+## Control imaging parameters
+
+`set_imaging` replaces exposure / gain / white balance / mains frequency / emitter settings and returns the applied state:
+
+```python
+from fabot.capabilities.camera import (
+    AutoExposureStrategy, ColorImagingControl, DepthImagingControl, ExposureMode,
+    SensorExposureControl,
+)
+
+state = robot.head_camera.set_imaging(
+    color=ColorImagingControl(
+        exposure=SensorExposureControl(mode=ExposureMode.MANUAL, exposure_us=8000),
+    ),
+    depth=DepthImagingControl(),
+    ae_strategy=AutoExposureStrategy.MOTION_PRIORITY,
+)
+print(state.ae_strategy)
+```
+
+Use the enum constants for enum fields (such as `ExposureMode.MANUAL`); passing a plain string fails during serialization.
+
+## Software trigger
+
+A camera whose sync role is `SOFTWARE_TRIGGER` can be triggered explicitly with `trigger()`:
+
+```python
+ack = robot.head_camera.trigger(frame_count=1)
+print(ack.trigger_sequence, ack.accepted_at_ns)
+```
+
+## Subscribe to image streams
+
+`color()` pushes `ImageFrame`, `frameset()` pushes whole `FrameSet`s, and `depth()` / `registered_depth()` / `infrared()` / left-right infrared / `confidence()` / `points()` / `imu()` cover the rest.
+
+```python
+ch = robot.head_camera.color(qos_profile="latest")
+try:
+    for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
+        print(frame.sequence, frame.payload.width, frame.payload.height)
+finally:
+    ch.close()
+```
+
+## Preview endpoints
+
+`rtsp()` / `webrtc()` publish media endpoint descriptors (`MediaEndpoint`) rather than image frames, which is convenient when handing a URL to a player:
+
+```python
+ch = robot.head_camera.rtsp()
+try:
+    for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
+        print(frame.payload.uri, frame.payload.codec, frame.payload.width)
+        break
+finally:
+    ch.close()
+```
+
+## Subscribe to camera events
+
+Session and calibration changes have dedicated events, so no polling is needed:
+
+```python
+def on_session(event):
+    st = event.camera_session
+    print(st.state, st.registration_mode, st.calibration_generation)
+
+def on_calibration(event):
+    print("calibration updated:", event.camera_calibration.generation)
+
+session_token = robot.head_camera.events.camera_session_changed.subscribe(on_session)
+calib_token = robot.head_camera.events.camera_calibration_changed.subscribe(on_calibration)
+```
+
+Device connect / disconnect is reported by `camera_device_connection_changed` (payload `DeviceConnectionEvent`).

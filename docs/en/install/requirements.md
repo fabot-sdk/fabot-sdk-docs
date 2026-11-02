@@ -2,7 +2,7 @@
 title: Requirements
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-11-02
 ---
 
 # Requirements

@@ -2,7 +2,7 @@
 title: 版本配套
 status: draft
 owner: fabot-core
-updated: 2026-10-26
+updated: 2026-11-02
 ---
 
 # 版本配套

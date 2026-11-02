@@ -2,268 +2,209 @@
 title: Light
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-11-02
 ---
 
 # Light
 
 ## Module Overview
 
-- Capability id: `light`; slot: `robot.light`
-- Light-strip control: lighting mode, color, brightness, and animation period. All five methods are short commands; write commands return the applied strip snapshot.
+- Capability id: `light`; slots: `robot.light`
+- Domain: `light`; capability version: `1.1.0`
+- Light-strip appearance: mode, color, brightness and animation period, last write wins.
+- `OFF` and `RAINBOW` ignore the color; `UNKNOWN` is not a legal command value.
+
+Writes and `get_status` all return `LightStatusApplied` (`outcome` plus `status`).
 
 ## API Overview
 
-| Method | Request | Response | Type |
-|--------|---------|----------|------|
-| `set_mode` | `mode`, `color`, `period_ms` | `LightStatusAppliedT` | Command |
-| `set_color` | `r`, `g`, `b` | `LightStatusAppliedT` | Command |
-| `set_brightness` | `brightness` | `LightStatusAppliedT` | Command |
-| `set_period` | `period_ms` | `LightStatusAppliedT` | Command |
-| `get_status` | — | `LightStatusAppliedT` | Command |
+| Method | Request | Response | Default timeout |
+|------|------|------|------|
+| `set_mode` | `LightModeChange` | `LightStatusApplied` | 1000 ms |
+| `set_color` | `Rgb8` | `LightStatusApplied` | 1000 ms |
+| `set_brightness` | `Brightness` | `LightStatusApplied` | 1000 ms |
+| `set_period` | `Period` | `LightStatusApplied` | 1000 ms |
+| `get_status` | `Empty` | `LightStatusApplied` | 1000 ms |
 
-Command default `timeout_ms` is 1000 for all methods (overridable). All parameters are keyword-only.
+All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
 
-## Methods
+Enums used on this page:
 
-All method parameters are keyword-only. Command timeouts are documented in [Commands & Operations](../../usage/commands-operations.md); they are not repeated in each section.
-
-`LightMode` enum:
+**`LightMode` enum**
 
 | Value | Description |
 |-------|-------------|
-| `OFF` | Lights off (color ignored) |
-| `SOLID` | Solid on |
-| `BLINK` | Blinking |
-| `BREATHE` | Breathing |
+| `OFF` | Off (color ignored) |
+| `SOLID` | Solid |
+| `BLINK` | Blink |
+| `BREATHE` | Breathe |
 | `RAINBOW` | Rainbow (color ignored) |
 | `CHASE` | Chase |
 
-`UNKNOWN` is not a legal command value and is rejected.
+## Methods
 
-Write commands and `get_status` all return `LightStatusAppliedT`:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `outcome` | `OutcomeT` \| `None` | `success` / `statusMessage` |
-| `status` | `LightStatusT` \| `None` | Applied strip snapshot |
-
-`LightStatusT`:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `mode` | `LightMode` | Current lighting mode |
-| `color` | `Rgb8T` | Current color: `r` / `g` / `b`, each 0–255 |
-| `brightness` | `int` | Brightness, 0–255 |
-| `periodMs` | `int` | Animation period (milliseconds) |
-| `ledCount` | `int` | Number of LEDs on the strip |
+Signatures below are authoritative for names and defaults. Parameters before `*` accept positional or keyword form; those after `*` are keyword-only. Fields use snake_case (`frame_id`); the generated types also accept the camelCase alias.
 
 ### set_mode
 
-Switch the lighting mode, setting color and animation period at the same time; brightness is unchanged.
+Switch the mode and set color plus period; the brightness is unchanged.
 
 ```python
-set_mode(*, mode: LightMode, color: Rgb8T, period_ms: int, timeout_ms: int = 1000) -> LightStatusAppliedT
+set_mode(mode: LightMode, *, color: Rgb8, period_ms: int = 0, target_light: int = 0, timeout_ms: int = 1000) -> LightStatusApplied
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `mode` | `LightMode` | (required) | Lighting mode; `OFF` / `RAINBOW` ignore the color |
-| `color` | `Rgb8T` | (required) | Color: `r` / `g` / `b`, each 0–255 |
-| `period_ms` | `int` | (required) | Animation period (milliseconds); no visible effect for `OFF` / `SOLID` |
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `mode` | `LightMode` | (required) | Mode value |
+| `color` | `Rgb8` | (required) | Color imaging control |
+| `period_ms` | `int` | `0` | Animation period in milliseconds |
+| `target_light` | `int` | `0` | Target strip index; 0 means default |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `LightStatusApplied`
 
-`LightStatusAppliedT`: `outcome` / `status`, fields as above.
+| Field | Type | Description |
+|------|------|------|
+| `outcome` | `Outcome` | Call result |
+| `status` | `LightStatus` | Status snapshot |
 
 ```python
 from fabot.capabilities.light import LightMode
-from fabot.types.Rgb8 import Rgb8T
+from fabot.types import Rgb8
 
-color = Rgb8T()
-color.r, color.g, color.b = 255, 0, 0
-applied = robot.light.set_mode(mode=LightMode.BREATHE, color=color, period_ms=2000)
-print(applied.outcome.success, applied.status.mode, applied.status.periodMs)
+applied = robot.light.set_mode(LightMode.BREATHE, color=Rgb8(r=255, g=0, b=0), period_ms=2000)
+print(applied.outcome.success, applied.status.mode, applied.status.period_ms)
 ```
 
 ### set_color
 
-Change the color only; the mode is unchanged.
+Change only the color.
 
 ```python
-set_color(*, r: int, g: int, b: int, timeout_ms: int = 1000) -> LightStatusAppliedT
+set_color(*, r: int, g: int, b: int, timeout_ms: int = 1000) -> LightStatusApplied
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `r` / `g` / `b` | `int` | (required) | Color components, each 0–255 |
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `r` | `int` | (required) | Red channel, 0–255 |
+| `g` | `int` | (required) | Green channel, 0–255 |
+| `b` | `int` | (required) | Blue channel, 0–255 |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `LightStatusApplied`
 
-`LightStatusAppliedT`: `outcome` / `status`.
-
-```python
-applied = robot.light.set_color(r=0, g=255, b=0)
-print(applied.outcome.success, applied.outcome.statusMessage)
-```
+| Field | Type | Description |
+|------|------|------|
+| `outcome` | `Outcome` | Call result |
+| `status` | `LightStatus` | Status snapshot |
 
 ### set_brightness
 
-Change the brightness only; the mode is unchanged.
+Change only the brightness.
 
 ```python
-set_brightness(*, brightness: int, timeout_ms: int = 1000) -> LightStatusAppliedT
+set_brightness(brightness: int, *, timeout_ms: int = 1000) -> LightStatusApplied
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `brightness` | `int` | (required) | Brightness, 0–255 |
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `brightness` | `int` | (required) | Brightness from 0 to 255 |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `LightStatusApplied`
 
-`LightStatusAppliedT`: `outcome` / `status`.
-
-```python
-applied = robot.light.set_brightness(brightness=128)
-print(applied.outcome.success, applied.status.brightness)
-```
+| Field | Type | Description |
+|------|------|------|
+| `outcome` | `Outcome` | Call result |
+| `status` | `LightStatus` | Status snapshot |
 
 ### set_period
 
-Change the animation period only; the mode is unchanged. No visible effect for `OFF` / `SOLID`.
+Change only the period; no visible effect for `OFF` / `SOLID`.
 
 ```python
-set_period(*, period_ms: int, timeout_ms: int = 1000) -> LightStatusAppliedT
+set_period(period_ms: int, *, timeout_ms: int = 1000) -> LightStatusApplied
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `period_ms` | `int` | (required) | Animation period (milliseconds) |
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `period_ms` | `int` | (required) | Animation period in milliseconds |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `LightStatusApplied`
 
-`LightStatusAppliedT`: `outcome` / `status`.
-
-```python
-applied = robot.light.set_period(period_ms=500)
-print(applied.outcome.success, applied.status.periodMs)
-```
+| Field | Type | Description |
+|------|------|------|
+| `outcome` | `Outcome` | Call result |
+| `status` | `LightStatus` | Status snapshot |
 
 ### get_status
 
-Read the current strip snapshot.
+Read the current strip snapshot; `get_state` is an alias.
 
 ```python
-get_status(*, timeout_ms: int = 1000) -> LightStatusAppliedT
+get_status(*, timeout_ms: int = 1000) -> LightStatusApplied
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `LightStatusApplied`
 
-`LightStatusAppliedT`: the current snapshot is in the `status` field.
-
-```python
-applied = robot.light.get_status()
-status = applied.status
-print(status.mode, status.brightness, status.periodMs, status.ledCount)
-print(status.color.r, status.color.g, status.color.b)
-```
+| Field | Type | Description |
+|------|------|------|
+| `outcome` | `Outcome` | Call result |
+| `status` | `LightStatus` | Status snapshot |
 
 ## Channels
 
-This module has no data channels. Query strip state with `get_status`; fault and lifecycle changes arrive as events, see below.
+This module has no data channels. See [Events & Data Channels](../../usage/events-channels.md).
 
 ## Events
 
-Subscribe via `robot.light.events`. Callbacks run on the SDK I/O thread: keep them light and do not call blocking APIs; see [Events & Data Channels](../../usage/events-channels.md).
+Subscribe through `robot.<slot>.events`. Callbacks run on the SDK I/O thread: keep them short and never call blocking APIs. Every event carries an `EventHeader` (`name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`).
 
-Every event includes an `EventHeader`: `name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`.
-
-### fault_changed
-
-Pushed when this slot's fault set changes.
-
-Subscribe with `robot.light.events.fault_changed.subscribe(callback)`.
-
-**Payload**
-
-`FaultChangedEvent.faults`: `Faults`. Today `Faults` only has `revision`; this module has no named faults yet. See [Faults](#faults).
-
-```python
-def on_fault(event):
-    print(event.header.slot_id, event.faults.revision)
-
-token = robot.light.events.fault_changed.subscribe(on_fault)
-```
-
-### lifecycle_changed
-
-Pushed when this slot's lifecycle or health changes.
-
-Subscribe with `robot.light.events.lifecycle_changed.subscribe(callback)`.
-
-**Payload**
-
-`LifecycleChangedEvent.lifecycle`: `CapabilityLifecycleSnapshot`:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `lifecycle` | `LifecycleState` | Lifecycle stage |
-| `health` | `HealthState` | Health |
-| `source_instance_id` | `str` | Source instance id |
-
-```python
-def on_lifecycle(event):
-    snap = event.lifecycle
-    print(event.header.slot_id, snap.lifecycle, snap.health)
-
-token = robot.light.events.lifecycle_changed.subscribe(on_lifecycle)
-```
+| Entry | Event type | payload |
+|------|------|------|
+| `robot.<slot>.events.fault_changed` | `FaultChangedEvent` | `FaultChangedEvent.faults`: `Faults` |
+| `robot.<slot>.events.lifecycle_changed` | `LifecycleChangedEvent` | `LifecycleChangedEvent.lifecycle`: `CapabilityLifecycleSnapshot` |
 
 ## Faults
 
-Query with `robot.light.faults()`, which returns `Faults`.
-
-This module has no named faults yet: `Faults` currently only exposes `revision`. Changes are pushed on `fault_changed`. See [Status, Faults & Lifecycle](../../usage/status-faults.md) for the shared model.
-
-If named faults appear later, each one is a `FaultState`:
+Query with `robot.<slot>.faults()`, which returns `Faults` (`revision` plus `records: list[FaultState]`). Each `FaultState`: 
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `active` | `bool` | Whether the fault is still standing |
-| `catalog_id` | `str` | Catalog id |
-| `fault_class` | `CapabilityStateClass` | Fault class |
-| `first_seen_us` / `last_seen_us` | `int` | First / last seen timestamp (microseconds) |
-| `count` | `int` | Occurrence count |
+|------|------|------|
+| `code` | `int` | Diagnostic code; `0` means no fault |
+| `source` | `str` | Fault source id |
+| `state` | `int` | Fault state bits |
+| `severity` | `int` | Severity, aligned with `HealthState` |
+| `timestamp_us` | `int` | Latest timestamp in microseconds |
+
+For human-readable fault text use `Catalogs.format_fault(record, capability_id="...")`; see [Catalogs](../../usage/catalogs.md).
 
 ## Status
 
-This module has no `status()`. Query strip state with `get_status` above; for aggregated robot status see `robot.status()`.
+This module has no `status()`; see `robot.status()` for the aggregated view.
 
-Shared queries:
+Shared read-only queries:
 
-- `health()`: current health
-- `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `source_instance_id`)
+- `health()`: `SlotHealth` (`is_usable` / `lifecycle` / `health` / `standing_faults` / `pbit_completed` / `source_instance_id`)
+- `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `pbit_completed` / `source_instance_id`)
 
-Changes arrive on `lifecycle_changed`. See [Status, Faults & Lifecycle](../../usage/status-faults.md).
+Changes arrive through `lifecycle_changed`; see [Status, Faults & Lifecycle](../../usage/status-faults.md).
 
 ## Resources
 
-All five methods are short commands with no long-running tasks; the module declares no exclusive resources, so commands are not queued or mutually excluded.
+All five calls are short Commands with no long-running tasks or exclusive resources; nothing queues or rejects.

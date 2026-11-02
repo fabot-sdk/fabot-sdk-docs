@@ -2,86 +2,99 @@
 title: Dual-Arm Motion
 status: draft
 owner: fabot-core
-updated: 2026-09-09
+updated: 2026-11-02
 ---
 
 # Dual-Arm Motion
 
-Move both arms by joint angles or end-effector poses, and subscribe to the joint position stream. For the long-running task model see [Commands & Operations](../../usage/commands-operations.md), for channel usage see [Events & Data Channels](../../usage/events-channels.md), and for the interface see [Arms](../../reference/python/arms.md).
+Move both arms together by joint angles or end-effector poses, switch coupling and impedance modes, and subscribe to joint streams. The long-running task model is in [Commands & Operations](../../usage/commands-operations.md), channels in [Events & Data Channels](../../usage/events-channels.md), and the API in [Arms](../../reference/python/arms.md).
 
 ## Move joints to target angles
 
-Read the current joint angles first, adjust one of them, then issue `move_joints`, polling progress via `events()` until a terminal state. `positions` is the left arm's joint angles followed by the right arm's (commonly 14 in total), in radians.
+Read the current dual-arm joints, adjust them, then call `move_joint` and poll with `events()` until terminal. Each side of `DualJoints` is a `JointPositions` (radians).
 
 ```python
 from fabot import Robot
-from fabot.core.types import OperationState
+from fabot.capabilities.arms import DualJoints
+from fabot.core import OperationState
+from fabot.types import JointPositions
 
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready(["arms"])
 
-    positions = robot.arms.get_joints()
-    print("current joints:", positions)
-    positions[1] += 0.2  # rotate the 2nd joint of the left arm by 0.2 rad
+    state = robot.arms.get_joint()
+    left = list(state.left.positions)
+    right = list(state.right.positions)
+    left[1] += 0.1
 
-    op = robot.arms.move_joints(positions=positions, wait=True)
+    op = robot.arms.move_joint(
+        DualJoints(left=JointPositions(positions=left), right=JointPositions(positions=right)),
+        duration=3.0,
+    )
     for snap in op.events(poll_timeout_ms=200, timeout_ms=30000):
-        if snap.feedback is not None:
-            print("progress:", snap.feedback.progress, snap.feedback.statusMessage)
         if snap.terminal:
             break
 
-    if snap.state == OperationState.Succeeded:
-        print("reached:", snap.result.statusMessage)
+    if snap.state is OperationState.Succeeded:
+        print("arrived")
     else:
         print("failed:", snap.error)
 ```
 
-Notes:
+Note: every dual-arm motion Operation shares the `arms` resource with policy `queue`.
 
-- `wait=True` means the task ends only after reaching the target or timing out.
-- The progress snapshot's `feedback` is a `ProgressT` (`progress` / `statusMessage`) and may be `None` right after the task starts; the terminal `result` is an `OutcomeT` (`success` / `statusMessage`). Read `error` for the failure reason — see [Error Handling](../../usage/errors.md).
-- `move_joints` / `move_dual_arm_pose` / `move_dual_arm_path` share the same resource; new tasks are queued.
+## Whole-body joint and pose servo
 
-## Move both end-effectors to target poses
-
-`move_dual_arm_pose` smoothly moves both end-effectors into place at the same time: `poses` must have length 2 (left arm, then right arm), and `frame_id` selects the reference frame (`arm_base` / `base_footprint` / `body_link4`). This example raises both end-effectors by 5 cm relative to the current pose read from `get_pose()`, and waits for the terminal state in one call with `get()`:
+For high-rate outer loops use `servo_pose` (a short command): one goal per call, returning the applied poses.
 
 ```python
-current = robot.arms.get_pose()
-print("frame:", current.frameId)
-left, right = current.poses
-print("left end-effector:", left.x, left.y, left.z)
+from fabot.types import Pose3d
 
-left.z += 0.05   # raise the left end-effector by 5 cm
-right.z += 0.05
-op = robot.arms.move_dual_arm_pose(poses=[left, right], wait=True, frame_id="arm_base")
-snap = op.get(timeout_ms=30000)
-if snap.result is not None:
-    print(snap.state, snap.result.success, snap.result.statusMessage)
-else:
-    print(snap.state, snap.error)
+left_goal = Pose3d(x=0.35, y=0.15, z=0.30, qw=1.0, frame_id="torso_link")
+right_goal = Pose3d(x=0.35, y=-0.15, z=0.30, qw=1.0, frame_id="torso_link")
+applied = robot.arms.servo_pose(left=left_goal, right=right_goal)
+print(applied.left, applied.right)
 ```
 
-An end-effector pose is a `Pose3dT`: `x` / `y` / `z` in meters, `qx` / `qy` / `qz` / `qw` as the orientation quaternion. Dual-arm Cartesian motion only goes through `move_dual_arm_*`; do not run it in parallel with the single-arm `smooth_move_pose` / `direct_move_pose`.
+## Coupling and impedance drag
 
-## Subscribe to the joint position stream
-
-`joints()` opens the dual-arm joint position channel; iterate frames with `frames()` and `close()` when done:
+`ArmsMode.COUPLED` holds the relative end-effector pose captured at the moment coupling is enabled; `ImpedanceMode` supports guided drag teaching, and `DISABLED` returns to rigid position control.
 
 ```python
-ch = robot.arms.joints(qos_profile="latest")
+from fabot.capabilities.arms import ArmsMode, ImpedanceMode
+
+robot.arms.set_mode(ArmsMode.COUPLED)        # lock the relative pose
+# ... move both arms together ...
+
+robot.arms.set_impedance(ImpedanceMode.LOW)  # light compliance, draggable by hand
+# ... drag manually ...
+robot.arms.set_impedance(ImpedanceMode.DISABLED)
+
+robot.arms.set_mode(ArmsMode.INDEPENDENT)    # back to independent arms
+```
+
+## Brakes and limits
+
+`set_brake(open=True)` releases both brakes and returns a `DualBrakeState` (`left_open` / `right_open`). Velocity and acceleration limits apply to the pair:
+
+```python
+brakes = robot.arms.set_brake(open=True)
+print(brakes.left_open, brakes.right_open)
+
+robot.arms.set_joint_velocity_limit(1.0)     # rad/s
+robot.arms.set_linear_velocity_limit(0.2)    # m/s
+print(robot.arms.get_joint_velocity_limit(), robot.arms.get_linear_velocity_limit())
+```
+
+## Subscribe to joint streams
+
+The `joint()` channel pushes `DualJointState` (`left` / `right` share one timestamp); `pose()` pushes `DualPose`:
+
+```python
+ch = robot.arms.joint(qos_profile="latest")
 try:
     for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-        print(frame.sequence, frame.payload.positions)
+        print(frame.sequence, frame.payload.left.positions, frame.payload.right.positions)
 finally:
     ch.close()
 ```
-
-`payload` is a `JointPositionsT`; `payload.positions` holds the left arm's joint angles followed by the right arm's (radians). Use the `pose()` channel for the pose stream; see [Arms](../../reference/python/arms.md) for the frame structure.
-
-## Related links
-
-- [Arms API Reference](../../reference/python/arms.md)
-- [Commands & Operations](../../usage/commands-operations.md)
-- [Events & Data Channels](../../usage/events-channels.md)

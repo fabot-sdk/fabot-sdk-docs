@@ -2,59 +2,54 @@
 title: 灯效
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-11-02
 ---
 
 # 灯效
 
-控制灯带：切换灯效模式、颜色、亮度与动画周期。灯效的五个方法都是短命令，命令模型见 [命令与长时操作](../../usage/commands-operations.md)，接口见 [灯效](../../reference/python/light.md)。
+控制灯带：切换灯效模式、颜色、亮度与动画周期。五个方法都是短命令，命令模型见 [命令与长时操作](../../usage/commands-operations.md)，接口见 [灯效](../../reference/python/light.md)。
 
 ## 设置灯效模式与颜色
 
-`set_mode` 一次切换模式、颜色与动画周期；颜色用 `Rgb8T`（`r` / `g` / `b`，各 0–255）。写命令返回生效后的灯带快照。
+`set_mode` 一次切换模式、颜色与动画周期；颜色用 `Rgb8`（`r` / `g` / `b`，各 0–255）。写命令返回生效后的灯带快照（`outcome` + `status`）。
 
 ```python
 from fabot import Robot
 from fabot.capabilities.light import LightMode
-from fabot.types.Rgb8 import Rgb8T
+from fabot.types import Rgb8
 
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready(["light"])
 
-    red = Rgb8T()
-    red.r, red.g, red.b = 255, 0, 0
-    applied = robot.light.set_mode(mode=LightMode.BREATHE, color=red, period_ms=2000)
-    print(applied.outcome.success, applied.outcome.statusMessage)
-    print(applied.status.mode, applied.status.periodMs, applied.status.ledCount)
+    applied = robot.light.set_mode(
+        LightMode.BREATHE,
+        color=Rgb8(r=255, g=0, b=0),
+        period_ms=2000,
+    )
+    print(applied.outcome.success, applied.status.mode, applied.status.period_ms)
 ```
 
-注意：
+`LightMode` 取值：`OFF` / `SOLID` / `BLINK` / `BREATHE` / `RAINBOW` / `CHASE`。`OFF` 与 `RAINBOW` 忽略颜色；`UNKNOWN` 不是合法命令值。
 
-- `LightMode` 取值 `OFF` / `SOLID` / `BLINK` / `BREATHE` / `RAINBOW` / `CHASE`；`OFF` / `RAINBOW` 忽略颜色，`period_ms` 对 `OFF` / `SOLID` 无可见效果，枚举全表见 [灯效](../../reference/python/light.md)。
-- `set_mode` 不改变亮度，亮度用 `set_brightness` 单独调。
+## 分别调颜色、亮度与周期
 
-## 微调颜色、亮度与周期
-
-模式不变、只改单项时用对应命令：
+三个方法只改一项，其余保持：
 
 ```python
-applied = robot.light.set_color(r=0, g=255, b=0)      # 只改颜色
-print(applied.outcome.success, applied.status.color.g)
+robot.light.set_color(r=0, g=255, b=0)
+robot.light.set_brightness(128)
+robot.light.set_period(500)
 
-applied = robot.light.set_brightness(brightness=128)  # 只改亮度（0–255）
-print(applied.status.brightness)
-
-applied = robot.light.set_period(period_ms=500)       # 只改动画周期（毫秒）
-print(applied.status.periodMs)
+status = robot.light.get_status().status
+print(status.mode, status.color, status.brightness, status.period_ms, status.led_count)
 ```
 
-## 读取当前灯带状态
+## 关灯
 
 ```python
-applied = robot.light.get_status()
-status = applied.status
-print(status.mode, status.brightness, status.periodMs)
-print(status.color.r, status.color.g, status.color.b)
+from fabot.types import Rgb8
+
+robot.light.set_mode(LightMode.OFF, color=Rgb8(r=0, g=0, b=0))
 ```
 
-`get_status` 与三个写命令返回同一类型 `LightStatusAppliedT`（`outcome` / `status`），字段全表见 [灯效 get_status](../../reference/python/light.md#get_status)。
+灯带没有数据通道，也没有长时任务；状态用 `get_status()` 查询，故障与生命周期变化经 `robot.light.events` 推送。

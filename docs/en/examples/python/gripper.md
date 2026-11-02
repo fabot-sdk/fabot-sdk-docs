@@ -2,66 +2,64 @@
 title: Gripper
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-11-02
 ---
 
 # Gripper
 
-Control the opening/closing motion, speed, and torque of the left/right gripper, and subscribe to the position stream. Both grippers share the same API as independent slots (`robot.left_gripper` / `robot.right_gripper`). See [Commands & Operations](../../usage/commands-operations.md) for the long-running task model, [Events & Data Channels](../../usage/events-channels.md) for channel usage, and [Gripper](../../reference/python/gripper.md) for the full API.
+Control the left / right gripper opening, velocity and force limits, and subscribe to the opening stream. The two grippers share one API on independent slots (`robot.left_gripper` / `robot.right_gripper`). The long-running task model is in [Commands & Operations](../../usage/commands-operations.md), channels in [Events & Data Channels](../../usage/events-channels.md), and the API in [Gripper](../../reference/python/gripper.md).
 
-## Set Speed/Torque and Move
+## Set limits and move
 
-`move_joints` does not carry speed or torque; set the persistent values first via `set_velocity` / `set_torque`. `move_joints` returns a long-running Operation — poll progress snapshots with `events()` until a terminal state.
+Velocity and force limits are persistent settings, not per-call arguments: call `set_velocity_limit` / `set_force_limit` first, then `move_opening`. Opening ranges from 0 (closed) to 1 (open).
 
 ```python
 from fabot import Robot
-from fabot.core.types import OperationState
+from fabot.core import OperationState
 
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready(["left_gripper"])
 
-    gripper = robot.left_gripper
-    print("current positions:", gripper.get_joints())
+    robot.left_gripper.set_velocity_limit(0.5)
+    robot.left_gripper.set_force_limit(20.0)
 
-    applied_v = gripper.set_velocity(velocity=0.5)
-    applied_t = gripper.set_torque(torque=0.3)
-    print("velocity:", applied_v.appliedVelocity, "torque:", applied_t.appliedTorque)
+    print("current opening:", robot.left_gripper.get_opening())
 
-    op = gripper.move_joints(positions=[0.8], duration_s=0.0, position_threshold=0.0)
-    for snap in op.events(poll_timeout_ms=200, timeout_ms=10000):
-        if snap.feedback is not None:
-            print("progress:", snap.feedback.progress, snap.feedback.statusMessage)
-        if snap.terminal:
-            break
-
-    if snap.state == OperationState.Succeeded:
-        print("reached:", snap.result.success)
-    else:
-        print("failed:", snap.error)
+    op = robot.left_gripper.move_opening(1.0, duration=1.0)   # fully open
+    snap = op.get(timeout=5.0)
+    print(snap.state is OperationState.Succeeded, robot.left_gripper.get_opening())
 ```
 
-Notes:
+Note: `opening` and `joint[0]` map to the same actuator on the current adapter and both read back from the same joint position; `duration` is a wait budget rather than a trajectory duration, and speed is governed by the velocity limit.
 
-- The length of `positions` depends on the end-effector definition; a common single-DoF gripper takes length 1. Pass `0.0` for `duration_s` / `position_threshold` to use the defaults (5 seconds / 0.01).
-- `set_velocity` / `set_torque` return `ToolSpeedAppliedT` / `TorqueAppliedT`: `outcome.success` tells whether the request was accepted; `appliedVelocity` / `appliedTorque` hold the effective values.
-- `move_joints` tasks on the same gripper share one motion resource and queue up; see [Gripper](../../reference/python/gripper.md).
+## Opening servo
 
-## Subscribe to the Position Stream
-
-Open the position channel with `joints()`, iterate frames with `frames()`, and always `close()` it when done:
+For continuous tracking use `servo_opening` (a short command), which returns the applied opening:
 
 ```python
-from fabot import Robot
-
-with Robot.connect("192.168.1.10", 7557) as robot:
-    robot.wait_ready(["right_gripper"])
-
-    ch = robot.right_gripper.joints(qos_profile="latest")
-    try:
-        for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-            print(frame.sequence, frame.payload.positions)
-    finally:
-        ch.close()
+for target in (0.2, 0.5, 0.8):
+    print(target, robot.right_gripper.servo_opening(target))
 ```
 
-The frame `payload` is a `JointPositionsT`; `payload.positions` holds the per-joint opening positions. `qos_profile` is a string (`"latest"` / `"realtime"` / `"reliable"`), not an enum — see [Events & Data Channels](../../usage/events-channels.md).
+## Physical-stroke control
+
+`move_joint` takes a `Doubles` whose `values` must have length 1; with a percentage-only actuator it equals the opening and is also clamped to [0, 1]:
+
+```python
+from fabot.types import Doubles
+
+robot.right_gripper.move_joint(Doubles(values=[0.0])).wait(timeout=5.0)   # fully closed
+```
+
+## Subscribe to the opening stream
+
+`opening()` pushes `Float64` (`value` is the opening) and `joint()` pushes `JointState`:
+
+```python
+ch = robot.left_gripper.opening(qos_profile="latest")
+try:
+    for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
+        print(frame.sequence, frame.payload.value)
+finally:
+    ch.close()
+```

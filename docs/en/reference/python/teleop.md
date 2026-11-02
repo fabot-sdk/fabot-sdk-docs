@@ -2,167 +2,113 @@
 title: Teleop
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-11-02
 ---
 
 # Teleop
 
 ## Module Overview
 
-- Capability id: `teleop`; slot: `robot.teleop`
-- Establishment and teardown of remote teleoperation (joystick) control sessions. The robot has a single teleop slot.
+- Capability id: `teleop`; slots: `robot.teleop`
+- Domain: `motion`; capability version: `1.1.0`
+- Start and stop a joystick teleop session. The robot has exactly one teleop slot.
+- The session is itself a long-running Operation; cancelling it ends the session.
+
+The `joystick_control` resource uses policy `reject`: a second start during a session fails immediately instead of queueing. Stop the session or wait for it to end first.
 
 ## API Overview
 
-| Method | Request | Response | Type |
-|--------|---------|----------|------|
-| `start_joystick_control` | — | `StartJoystickControlOperation` | Operation |
-| `stop_joystick_control` | — | `OutcomeT` | Command |
+| Method | Request | Response | Default timeout |
+|------|------|------|------|
+| `stop_joystick_control` | `Empty` | `Outcome` | 10000 ms |
 
-Command default `timeout_ms`: 10000 for `stop_joystick_control` (overridable). All parameters are keyword-only.
+All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
+
+| Method | Request | Kind | Resources | Default budget |
+|------|------|------|------|------|
+| `start_joystick_control` | `Empty` | Operation | joystick_control | 45000 ms |
+
+Operations return a handle immediately; progress and results come from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
 
 ## Methods
 
-All method parameters are keyword-only. Command timeouts and Operation polling / cancel are documented in [Commands & Operations](../../usage/commands-operations.md); they are not repeated in each section.
-
-### start_joystick_control
-
-Establish a joystick teleoperation session. Returns a pollable, cancelable Operation. While the session is active, remote control data is ingested continuously; canceling the Operation ends the session.
-
-```python
-start_joystick_control() -> StartJoystickControlOperation
-```
-
-**Parameters**
-
-None.
-
-**Returns**
-
-`StartJoystickControlOperation`. Use `get()` / `events()` for snapshots, or `cancel()`. The session has a default time limit and enters a terminal state when it expires. Snapshot fields:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `state` | `OperationState` | Task state |
-| `terminal` | `bool` | Whether the snapshot is terminal |
-| `feedback` | `ProgressT` \| `None` | `progress` (`float`), `statusMessage` (`str`) |
-| `result` | `OutcomeT` \| `None` | `success` / `statusMessage` |
-| `error` | `FabotError` \| `None` | Failure reason |
-
-```python
-op = robot.teleop.start_joystick_control()
-for snap in op.events(poll_timeout_ms=500, timeout_ms=60000):
-    print(snap.state, snap.feedback)
-    if snap.terminal:
-        break
-```
+Signatures below are authoritative for names and defaults. Parameters before `*` accept positional or keyword form; those after `*` are keyword-only. Fields use snake_case (`frame_id`); the generated types also accept the camelCase alias.
 
 ### stop_joystick_control
 
-Stop the current joystick teleoperation session.
+Stop the current session.
 
 ```python
-stop_joystick_control(*, timeout_ms: int = 10000) -> OutcomeT
+stop_joystick_control(*, timeout_ms: int = 10000) -> Outcome
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `10000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `10000` | Timeout in milliseconds |
 
-**Returns**
-
-`OutcomeT`:
+**Returns** `Outcome`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `success` | `bool` | Whether the command succeeded |
-| `statusMessage` | `str` | Status text |
+|------|------|------|
+| `success` | `bool` | Whether the call succeeded |
+| `status_message` | `str` | Status text |
+
+### start_joystick_control
+
+Start a joystick session and return a pollable, cancelable Operation. The session has a 45-second default budget and ends automatically.
 
 ```python
-outcome = robot.teleop.stop_joystick_control()
-print(outcome.success, outcome.statusMessage)
+start_joystick_control() -> StartJoystickControlOperation
+```
+
+Returns a `StartJoystickControlOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
+
+```python
+robot.teleop.start_joystick_control()
+# ... 手柄操作 ...
+robot.teleop.stop_joystick_control()
 ```
 
 ## Channels
 
-This module has no data channels. Teleoperation sessions are established and ended through the methods above, and session progress and results come from Operation snapshots; see [Events & Data Channels](../../usage/events-channels.md) for general channel usage.
+This module has no data channels. See [Events & Data Channels](../../usage/events-channels.md).
 
 ## Events
 
-Subscribe via `robot.teleop.events`. Callbacks run on the SDK I/O thread: keep them light and do not call blocking APIs; see [Events & Data Channels](../../usage/events-channels.md).
+Subscribe through `robot.<slot>.events`. Callbacks run on the SDK I/O thread: keep them short and never call blocking APIs. Every event carries an `EventHeader` (`name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`).
 
-Every event includes an `EventHeader`: `name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`.
-
-### fault_changed
-
-Pushed when this slot's fault set changes.
-
-Subscribe with `robot.teleop.events.fault_changed.subscribe(callback)`.
-
-**Payload**
-
-`FaultChangedEvent.faults`: `Faults`. Today `Faults` only has `revision`; this module has no named faults yet. See [Faults](#faults).
-
-```python
-def on_fault(event):
-    print(event.header.slot_id, event.faults.revision)
-
-token = robot.teleop.events.fault_changed.subscribe(on_fault)
-```
-
-### lifecycle_changed
-
-Pushed when this slot's lifecycle or health changes.
-
-Subscribe with `robot.teleop.events.lifecycle_changed.subscribe(callback)`.
-
-**Payload**
-
-`LifecycleChangedEvent.lifecycle`: `CapabilityLifecycleSnapshot`:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `lifecycle` | `LifecycleState` | Lifecycle stage |
-| `health` | `HealthState` | Health |
-| `source_instance_id` | `str` | Source instance id |
-
-```python
-def on_lifecycle(event):
-    snap = event.lifecycle
-    print(event.header.slot_id, snap.lifecycle, snap.health)
-
-token = robot.teleop.events.lifecycle_changed.subscribe(on_lifecycle)
-```
+| Entry | Event type | payload |
+|------|------|------|
+| `robot.<slot>.events.fault_changed` | `FaultChangedEvent` | `FaultChangedEvent.faults`: `Faults` |
+| `robot.<slot>.events.lifecycle_changed` | `LifecycleChangedEvent` | `LifecycleChangedEvent.lifecycle`: `CapabilityLifecycleSnapshot` |
 
 ## Faults
 
-Query with `robot.teleop.faults()`, which returns `Faults`.
-
-This module has no named faults yet: `Faults` currently only exposes `revision`. Changes are pushed on `fault_changed`. See [Status, Faults & Lifecycle](../../usage/status-faults.md) for the shared model.
-
-If named faults appear later, each one is a `FaultState`:
+Query with `robot.<slot>.faults()`, which returns `Faults` (`revision` plus `records: list[FaultState]`). Each `FaultState`: 
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `active` | `bool` | Whether the fault is still standing |
-| `catalog_id` | `str` | Catalog id |
-| `fault_class` | `CapabilityStateClass` | Fault class |
-| `first_seen_us` / `last_seen_us` | `int` | First / last seen timestamp (microseconds) |
-| `count` | `int` | Occurrence count |
+|------|------|------|
+| `code` | `int` | Diagnostic code; `0` means no fault |
+| `source` | `str` | Fault source id |
+| `state` | `int` | Fault state bits |
+| `severity` | `int` | Severity, aligned with `HealthState` |
+| `timestamp_us` | `int` | Latest timestamp in microseconds |
+
+For human-readable fault text use `Catalogs.format_fault(record, capability_id="...")`; see [Catalogs](../../usage/catalogs.md).
 
 ## Status
 
-This module has no `status()`. For aggregated robot status see `robot.status()`.
+This module has no `status()`; see `robot.status()` for the aggregated view.
 
-Shared queries:
+Shared read-only queries:
 
-- `health()`: current health
-- `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `source_instance_id`)
+- `health()`: `SlotHealth` (`is_usable` / `lifecycle` / `health` / `standing_faults` / `pbit_completed` / `source_instance_id`)
+- `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `pbit_completed` / `source_instance_id`)
 
-Changes arrive on `lifecycle_changed`. See [Status, Faults & Lifecycle](../../usage/status-faults.md).
+Changes arrive through `lifecycle_changed`; see [Status, Faults & Lifecycle](../../usage/status-faults.md).
 
 ## Resources
 
-Teleoperation control is an exclusive resource: only one joystick session may be active at a time. Calling `start_joystick_control` while a session is running is rejected outright (no queuing); call `stop_joystick_control` or wait for the session to end before starting a new one.
+Joystick control is exclusive with policy `reject`: only one session at a time, and a second start is rejected outright.

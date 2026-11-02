@@ -2,7 +2,7 @@
 title: 连接与 Robot 入口
 status: draft
 owner: fabot-core
-updated: 2026-10-26
+updated: 2026-11-02
 ---
 
 # 连接与 Robot 入口
@@ -17,20 +17,25 @@ from fabot import Robot
 # 按控制面端点连接（默认端口 7557）
 robot = Robot.connect("192.168.1.10", 7557)
 
-# 等价写法：connect 是 from_endpoint 的别名
+# 等价写法：from_endpoint 只接受显式端点
 robot = Robot.from_endpoint("192.168.1.10", 7557)
 
 # 从配置对象连接
 from fabot.core import ClientConfig, ClientOptions
+
 config = ClientConfig(client_id="fabot_sdk")
 options = ClientOptions(resolve_timeout_ms=1000, command_timeout_ms=3000)
 robot = Robot.from_config(config, options)
+
+# 连接后顺带等待槽位就绪
+robot = Robot.connect("192.168.1.10", 7557, wait_ready=True)
 
 # 推荐用 with 管理生命周期，退出时自动 close()
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready()
 ```
 
+- `connect` 的 `host` 为空时按 `config` 的缺省端点连接；同时传 `host` 与 `config` 会抛 `TypeError`。
 - 工厂方法阻塞至连接建立，失败抛 `FabotError`（连接类问题的排查见 [故障排除](../troubleshooting.md)）。
 - 工厂方法与 `close()` 不得在事件回调（SDK I/O 线程）中调用，否则抛 `ClientThreadError`。
 - `from_backend(backend, options)` 接入自定义传输后端，属高级用法；`Robot.mock()` 返回无需真实机器人的 `MockRobot`，见 [Mock 测试](mock.md)。
@@ -55,6 +60,7 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 | `resolve_cache_capacity` | `int` | `256` | 解析缓存容量 |
 | `completion_executor` | — | `None` | 异步回调的完成执行器 |
 | `channel_renew_threads` | `int` | `2` | 通道续租工作线程数（全客户端共享，与通道数量无关） |
+| `preview_host` | `str` | `""` | 由 `from_endpoint` 记录的路由器主机，用于改写回环预览地址 |
 
 ## 等待就绪
 
@@ -65,7 +71,7 @@ robot.wait_ready()                       # 全部已绑定槽位
 robot.wait_ready(["left_arm", "io"])     # 只等指定槽位
 ```
 
-语义：读取当前槽位配置，只对**已启用（enabled）、必需（required）且已绑定 adapter** 的目标槽位阻塞解析；未绑定、被禁用或 `required=False` 的槽位直接跳过，不予等待。单个槽位的解析超时由 `ClientOptions.resolve_timeout_ms` 控制，解析失败抛异常。
+语义：读取当前槽位配置，只对**已启用（`enabled`）、必需（`essential`）且已绑定 adapter** 的目标槽位阻塞解析；未绑定、被禁用或非必需的槽位直接跳过，不予等待。单个槽位的解析超时由 `ClientOptions.resolve_timeout_ms` 控制，解析失败抛异常。
 
 ## 连接状态
 
@@ -75,6 +81,8 @@ robot.wait_ready(["left_arm", "io"])     # 只等指定槽位
 if robot.connection.is_connected():
     print("connected")
 
+print(robot.connection.connected)     # 与 is_connected() 等价的属性
+
 def on_connection(state):
     print("connected:", state.connected)
 
@@ -83,13 +91,14 @@ token = robot.connection.subscribe(on_connection)
 token.close()    # 退订；robot.close() 会统一关闭全部订阅
 ```
 
-- `is_connected()`：当前是否已连上控制面。
+- `is_connected()`：当前是否已连上控制面。已缓存为「已连接」时直接返回；否则主动确认一次。
+- `connected`：与 `is_connected()` 等价的只读属性。
 - `subscribe(callback)`：回调接收 `ConnectionState`（仅一个字段 `connected: bool`）；订阅时立即以当前状态回调一次，之后每次连接状态变化再回调。返回 `SubscriptionToken`，用 `token.close()` 退订。
 - 回调在 SDK I/O 线程执行，须保持轻量，禁止在回调内调用阻塞 API。订阅本身也不得在回调线程中发起。
 
 ## 能力槽位
 
-能力以**只读属性**按槽位暴露，共 23 个槽位：
+能力以**只读属性**按槽位暴露，共 23 个槽位；`robot.slots` 返回槽位 id 到 Proxy 的字典：
 
 | 槽位属性 | 能力模块 | 槽位属性 | 能力模块 |
 |----------|----------|----------|----------|
@@ -102,7 +111,7 @@ token.close()    # 退订；robot.close() 会统一关闭全部订阅
 | `power_1` / `power_2` | power | `voice` | voice |
 | `head_camera` / `chest_camera` / `waist_camera` | camera | `left_wrist_camera` / `right_wrist_camera` | camera |
 
-- 槽位未绑定 adapter 时，访问其能力方法会抛 `AdapterUnbound`（属 `NotFound` 类别）；先用 `has_adapter`（只读属性）判断：
+- 槽位未绑定 adapter 时，能力方法仍会下发（平台侧返回失败或超时）；`as_adapter()` 与 `get_config()` 会抛 `AdapterUnbound`（属 `NotFound` 类别）。需要严格判断时先用 `has_adapter`（只读属性）：
 
   ```python
   from fabot.capabilities.io import PinDirection
@@ -112,18 +121,21 @@ token.close()    # 退订；robot.close() 会统一关闭全部订阅
       robot.io.set_level(pin=17, value=True)
   ```
 
-- 需要访问具体 adapter 实现的强类型配置/扩展时，用 `proxy.as_adapter(FabotIo)`（`fabot.adapters` 下的强类型视图）；槽位未绑定抛 `AdapterUnbound`，绑定的 adapter 类型不符抛 `AdapterMismatch`。两类错误的处理见 [错误处理](errors.md)。
+- 需要访问具体 adapter 实现的强类型配置 / 扩展时，用 `proxy.as_adapter(Io)`（`fabot.adapters` 下的强类型视图）；槽位未绑定抛 `AdapterUnbound`，绑定的 adapter 类型不符抛 `AdapterMismatch`。两类错误的处理见 [错误处理](errors.md)。
 
-各槽位 Proxy 的能力 API 见 [Python API 参考](../reference/python/index.md)。
+每个槽位 Proxy 还有一组公共成员：`slot_id`、`handle`、`events`、`health()`、`lifecycle()`、`faults()`、`ping()` 与配置读写，见 [能力接口概述](../reference/python/index.md)。各槽位的能力 API 见 [Python API 参考](../reference/python/index.md)。
 
 ## 整机级入口
 
 - `state()` / `status()` / `faults()` / `version()` / `sdk_version`：整机状态聚合，详见 [状态、故障与生命周期](status-faults.md)。
-- `estop`：急停触发与解除（`engage` / `release` / `state`）。
-- `events`：整机事件订阅（急停、运行状态、配置、故障等变化），见 [事件与数据通道](events-channels.md)。
+- `estop`：急停触发与解除（`engage` / `release` / `state` / `is_asserted`）。
+- `events`：整机事件订阅与自定义事件上报，见 [事件与数据通道](events-channels.md)。
+- `logs` / `metrics`：结构化日志与指标的订阅、历史查询、自定义上报与冻结，见 [日志、指标与可观测性](observability.md)。
+- `frames`：坐标系查询与变换，见 [坐标系与变换](frames.md)。
 - `configuration`：槽位绑定与配置读写，见 [配置管理](configuration.md)。
 - `services`：平台服务管理，见 [平台服务管理](services.md)。
-- `logs`：日志流订阅。
+- `skills`：技能入口（`camera_sync` / `voice_aiui`），见 [技能与扩展](skills.md)。
+- `slots`：槽位 id 到 Proxy 的字典。
 
 ## 离线开发与测试
 

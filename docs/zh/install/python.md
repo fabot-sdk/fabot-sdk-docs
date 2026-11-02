@@ -2,7 +2,7 @@
 title: 安装 Python SDK
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-11-02
 ---
 
 # 安装 Python SDK
@@ -31,11 +31,15 @@ $ pip install fabot-sdk
 
 | 依赖 | 版本约束 | 说明 |
 |------|----------|------|
-| `flatbuffers` | 精确锁定（`==23.5.26`） | 数据通道的序列化格式 |
+| `flatbuffers` | 精确锁定（`==23.5.26`） | 请求 / 响应与通道帧的序列化格式 |
 | `eclipse-zenoh` | 精确锁定（`==1.6.2`） | 与机器人控制面通信，必须与机器人端同版本家族 |
 | `PyYAML` | 不锁定 | 配置文件读写（`from_yaml` / `to_yaml`） |
 
 `eclipse-zenoh` 版本与机器人端不匹配会导致连接失败，升级 SDK 时参见 [版本配套](compatibility.md)。
+
+:::note numpy 是可选依赖
+`robot.frames` 的点云相关函数（`deproject_depth_to_points` 等）与 `transform_points` 在装了 `numpy` 时返回 `ndarray` 并走矩阵加速；没装时退化为纯 Python 实现（返回列表、逐点计算），功能可用但明显更慢。处理点云时建议自行安装 `numpy`。
+:::
 
 ## 验证安装
 
@@ -54,9 +58,18 @@ with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready()
     print("SDK 版本:", robot.sdk_version)
     print("平台版本:", robot.version())
+    print("运行模式:", robot.state().mode, "健康度:", robot.state().health)
 ```
 
-没有机器人时，可用 [Mock 测试](../usage/mock.md) 中的 `Robot.mock()` 离线验证安装与开发代码。
+没有机器人时，可用 [Mock 测试](../usage/mock.md) 中的 `Robot.mock()` 离线验证安装与开发代码：
+
+```python
+from fabot import Robot
+
+robot = Robot.mock()
+print(robot.connection.is_connected())     # True
+print(robot.chassis.get_pose())
+```
 
 ## 下一步
 

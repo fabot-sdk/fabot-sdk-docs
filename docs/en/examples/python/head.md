@@ -2,85 +2,81 @@
 title: Head Motion
 status: draft
 owner: fabot-core
-updated: 2026-09-09
+updated: 2026-11-02
 ---
 
 # Head Motion
 
-Control the head pitch / yaw joints and track motion progress. See [Commands & Operations](../../usage/commands-operations.md) for the long-running task model and [Head](../../reference/python/head.md) for the API.
+Control head yaw / pitch joints and track motion progress. The long-running task model is in [Commands & Operations](../../usage/commands-operations.md), the API in [Head](../../reference/python/head.md).
 
-## Move the Head to Target Joint Angles
+## Move to target joint angles
 
-`move_joints` returns a long-running Operation: poll progress snapshots via `events()` and read the result once a terminal state is reached. `positions` is a list of target joint angles in radians; with `wait=True` the task finishes only after arriving or timing out. Motion speed is governed by the interpolation duration: set it first with `set_move_duration` (seconds — larger means slower); it applies persistently to all subsequent motions.
+`move_joint` returns a long-running Operation: stream progress with `events()` and read the result once terminal. Joint order is fixed as `[yaw, pitch]` in radians.
 
 ```python
 from fabot import Robot
-from fabot.core.types import OperationState
+from fabot.capabilities.head import HeadMode
+from fabot.core import OperationState
+from fabot.types import JointPositions
 
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready(["head"])
 
-    applied = robot.head.set_move_duration(move_duration=2.0)
-    print("interpolation duration applied:", applied.appliedMoveDuration, "s")
+    print("current mode:", robot.head.get_mode())
+    print("current joints:", robot.head.get_joint().positions)
 
-    target = [0.3, 0.5]   # target joint angles (radians)
-    op = robot.head.move_joints(positions=target, wait=True)
-    for snap in op.events(poll_timeout_ms=200, timeout_ms=30000):
-        if snap.feedback is not None:
-            print("progress:", snap.feedback.progress, snap.feedback.statusMessage)
-        if snap.terminal:
-            break
-
-    if snap.state == OperationState.Succeeded:
-        print("Arrived:", snap.result.statusMessage)
-    else:
-        print("Failed:", snap.error)
+    op = robot.head.move_joint(JointPositions(positions=[0.3, -0.2]), duration=1.5)
+    snap = op.get(timeout=10.0)
+    if snap.state is not OperationState.Succeeded:
+        print("failed:", snap.error)
 ```
 
-Notes:
+Head motion Operations share the `head` resource with policy `queue`.
 
-- The snapshot's `feedback` is a `ProgressT` (`progress` / `statusMessage`) and may be `None` right after the task starts.
-- The terminal snapshot's `result` is an `OutcomeT` (`success` / `statusMessage`); read `error` for the failure reason — see [Error Handling](../../usage/errors.md).
-- `move_joints` occupies the head motion resource: new tasks on the same slot queue and never run concurrently.
+## Head modes
 
-## Subscribe to the Joint Position Stream
-
-While the head moves, you can subscribe to the `joints()` channel to watch joint angles in real time; general channel conventions are in [Events & Channels](../../usage/events-channels.md).
+`HeadMode` decides how the head behaves under whole-body control: `DISABLE` turns the head task off, `FORWARD` locks it forward, `TRACKING` follows a 6D goal, and in `GAZE` the pose position is the gaze point.
 
 ```python
-with Robot.connect("192.168.1.10", 7557) as robot:
-    robot.wait_ready(["head"])
+robot.head.set_mode(HeadMode.TRACKING)
+print(robot.head.get_mode())
 
-    ch = robot.head.joints(qos_profile="latest")
-    try:
-        for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-            print(frame.sequence, frame.payload.positions)
-    finally:
-        ch.close()
+# Gaze at a point in space (under GAZE the Pose3d position is the gaze point)
+from fabot.types import Pose3d
+robot.head.set_mode(HeadMode.GAZE)
+robot.head.servo_pose(Pose3d(x=1.0, y=0.2, z=1.2, qw=1.0))
 ```
 
-Notes:
+## Pose motion
 
-- `qos_profile` is a string (`"latest"` / `"realtime"` / `"reliable"`), not an enum.
-- The frame `payload` is a `JointPositionsT`; `payload.positions` is the joint angle list in radians. Iteration ends naturally when `timeout_ms` expires — remember to `close()` the channel.
-
-## Query Joint Angles and Check Arrival
-
-`get_joints` reads the current joint angles and `check_arrive` checks whether the target has been reached:
+`move_pose` moves the head by end-effector pose; `servo_pose` is the short-cycle servo and also accepts individual components:
 
 ```python
-positions = robot.head.get_joints()
-print("current joint angles:", positions)
-print("current interpolation duration:", robot.head.get_move_duration(), "s")
+robot.head.move_pose(
+    Pose3d(x=0.1, y=0.0, z=0.05, qw=1.0, frame_id="base_link"),
+    duration=1.0,
+).wait(timeout=10.0)
 
-arrived = robot.head.check_arrive(threshold=0.05, target_joints=[])
-print("arrived:", arrived)
+robot.head.servo_pose(y=0.1)
 ```
 
-`threshold` is the joint-space L2 tolerance in radians; passing an empty `target_joints` list checks against the target most recently issued by `move_joints`.
+## Tune speed and arrival thresholds
 
-## Related Links
+```python
+robot.head.set_joint_velocity_limit(1.5)      # rad/s
+robot.head.set_joint_acceleration_limit(5.0)  # rad/s²
 
-- [Head API Reference](../../reference/python/head.md)
-- [Commands & Operations](../../usage/commands-operations.md)
-- [Events & Channels](../../usage/events-channels.md)
+applied = robot.head.set_arrival_thresholds(joint_tolerance=0.01, max_timeout_s=3.0)
+print(applied.outcome.success)
+```
+
+## Subscribe to the joint stream
+
+```python
+ch = robot.head.joint(qos_profile="latest")
+try:
+    for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
+        print(frame.sequence, frame.payload.positions)   # [yaw, pitch]
+finally:
+    ch.close()
+```

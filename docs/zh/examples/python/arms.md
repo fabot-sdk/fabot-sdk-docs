@@ -2,86 +2,99 @@
 title: 双臂运动
 status: draft
 owner: fabot-core
-updated: 2026-09-09
+updated: 2026-11-02
 ---
 
 # 双臂运动
 
-控制双臂按关节角或末端位姿运动，并订阅关节位置流。长时任务模型见 [命令与长时操作](../../usage/commands-operations.md)，通道用法见 [事件与数据通道](../../usage/events-channels.md)，接口见 [双臂](../../reference/python/arms.md)。
+控制双臂按关节角或末端位姿协同运动，切换耦合与导纳模式，并订阅关节流。长时任务模型见 [命令与长时操作](../../usage/commands-operations.md)，通道用法见 [事件与数据通道](../../usage/events-channels.md)，接口见 [双臂](../../reference/python/arms.md)。
 
 ## 关节运动到目标角度
 
-先读取当前关节角，微调其中一个关节后下发 `move_joints`，通过 `events()` 轮询进度直至终态。`positions` 为左臂 + 右臂关节角依次拼接（常见 14 个），单位弧度。
+先读取当前双臂关节角，微调后下发 `move_joint`，通过 `events()` 轮询进度直至终态。`DualJoints` 的 `left` / `right` 各是一个 `JointPositions`（弧度）。
 
 ```python
 from fabot import Robot
-from fabot.core.types import OperationState
+from fabot.capabilities.arms import DualJoints
+from fabot.core import OperationState
+from fabot.types import JointPositions
 
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready(["arms"])
 
-    positions = robot.arms.get_joints()
-    print("当前关节角:", positions)
-    positions[1] += 0.2  # 左臂第 2 个关节转动 0.2 弧度
+    state = robot.arms.get_joint()
+    left = list(state.left.positions)
+    right = list(state.right.positions)
+    left[1] += 0.1
 
-    op = robot.arms.move_joints(positions=positions, wait=True)
+    op = robot.arms.move_joint(
+        DualJoints(left=JointPositions(positions=left), right=JointPositions(positions=right)),
+        duration=3.0,
+    )
     for snap in op.events(poll_timeout_ms=200, timeout_ms=30000):
-        if snap.feedback is not None:
-            print("进度:", snap.feedback.progress, snap.feedback.statusMessage)
         if snap.terminal:
             break
 
-    if snap.state == OperationState.Succeeded:
-        print("到位:", snap.result.statusMessage)
+    if snap.state is OperationState.Succeeded:
+        print("到位")
     else:
         print("失败:", snap.error)
 ```
 
-注意：
+注意：双臂所有运动 Operation 共享资源 `arms`，策略 `queue`。
 
-- `wait=True` 表示任务等到到位或超时才结束。
-- 进度快照的 `feedback` 为 `ProgressT`（`progress` / `statusMessage`），任务刚启动时可能为 `None`；终态 `result` 为 `OutcomeT`（`success` / `statusMessage`），失败原因读 `error`，见 [错误处理](../../usage/errors.md)。
-- `move_joints` / `move_dual_arm_pose` / `move_dual_arm_path` 共享同一资源，新任务排队执行。
+## 关节与末端位姿伺服
 
-## 双臂末端运动到指定位姿
-
-`move_dual_arm_pose` 让两臂末端同时平滑到位：`poses` 长度必须为 2（依次左臂、右臂），`frame_id` 指定参考坐标系（`arm_base` / `base_footprint` / `body_link4`）。这里基于 `get_pose()` 读到的当前位姿整体抬高 5 厘米，并用 `get()` 一次等终态：
+需要高频外环时用 `servo_pose`（短命令），一次一个目标，返回实际生效位姿：
 
 ```python
-current = robot.arms.get_pose()
-print("参考系:", current.frameId)
-left, right = current.poses
-print("左臂末端:", left.x, left.y, left.z)
+from fabot.types import Pose3d
 
-left.z += 0.05   # 左臂末端抬高 5 厘米
-right.z += 0.05
-op = robot.arms.move_dual_arm_pose(poses=[left, right], wait=True, frame_id="arm_base")
-snap = op.get(timeout_ms=30000)
-if snap.result is not None:
-    print(snap.state, snap.result.success, snap.result.statusMessage)
-else:
-    print(snap.state, snap.error)
+left_goal = Pose3d(x=0.35, y=0.15, z=0.30, qw=1.0, frame_id="torso_link")
+right_goal = Pose3d(x=0.35, y=-0.15, z=0.30, qw=1.0, frame_id="torso_link")
+applied = robot.arms.servo_pose(left=left_goal, right=right_goal)
+print(applied.left, applied.right)
 ```
 
-末端位姿为 `Pose3dT`：`x` / `y` / `z` 单位米，`qx` / `qy` / `qz` / `qw` 为姿态四元数。双臂笛卡尔运动只走 `move_dual_arm_*`，不要与单臂的 `smooth_move_pose` / `direct_move_pose` 并行使用。
+## 耦合模式与导纳拖拽
 
-## 订阅关节位置流
-
-`joints()` 打开双臂关节位置通道，用 `frames()` 迭代帧，用完 `close()`：
+`ArmsMode.COUPLED` 保持开启耦合那一刻的相对末端位姿；`ImpedanceMode` 用于导纳拖拽示教，`DISABLED` 回到刚性位置控制。
 
 ```python
-ch = robot.arms.joints(qos_profile="latest")
+from fabot.capabilities.arms import ArmsMode, ImpedanceMode
+
+robot.arms.set_mode(ArmsMode.COUPLED)        # 锁定相对位姿
+# ... 双臂一起运动 ...
+
+robot.arms.set_impedance(ImpedanceMode.LOW)  # 轻导纳，可手动拖动示教
+# ... 手动拖拽 ...
+robot.arms.set_impedance(ImpedanceMode.DISABLED)
+
+robot.arms.set_mode(ArmsMode.INDEPENDENT)    # 回到各自独立
+```
+
+## 抱闸与限速
+
+`set_brake(open=True)` 同时松开两侧抱闸，返回 `DualBrakeState`（`left_open` / `right_open`）。速度与加速度上限按整套双臂生效：
+
+```python
+brakes = robot.arms.set_brake(open=True)
+print(brakes.left_open, brakes.right_open)
+
+robot.arms.set_joint_velocity_limit(1.0)     # 弧度/秒
+robot.arms.set_linear_velocity_limit(0.2)    # 米/秒
+print(robot.arms.get_joint_velocity_limit(), robot.arms.get_linear_velocity_limit())
+```
+
+## 订阅关节流
+
+`joint()` 通道推送 `DualJointState`（`left` / `right` 共用同一时间戳）；`pose()` 推送 `DualPose`：
+
+```python
+ch = robot.arms.joint(qos_profile="latest")
 try:
     for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-        print(frame.sequence, frame.payload.positions)
+        print(frame.sequence, frame.payload.left.positions, frame.payload.right.positions)
 finally:
     ch.close()
 ```
-
-`payload` 为 `JointPositionsT`，`payload.positions` 是左臂 + 右臂拼接的关节角（弧度）。位姿流用 `pose()` 通道，帧结构见 [双臂](../../reference/python/arms.md)。
-
-## 相关链接
-
-- [双臂 API 参考](../../reference/python/arms.md)
-- [命令与长时操作](../../usage/commands-operations.md)
-- [事件与数据通道](../../usage/events-channels.md)

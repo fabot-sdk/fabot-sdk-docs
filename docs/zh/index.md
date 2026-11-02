@@ -2,7 +2,7 @@
 title: fabot SDK 文档
 status: draft
 owner: fabot-core
-updated: 2026-10-26
+updated: 2026-11-02
 ---
 
 # fabot SDK 文档
@@ -20,7 +20,7 @@ from fabot import Robot
 
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready()
-    robot.screen.show_text(text="Hello, fabot!")
+    robot.screen.show_text("Hello, fabot!")
 ```
 
 没有机器人也可以先离线开发：`Robot.mock()` 提供无需硬件的仿真入口，见 [Mock 测试](usage/mock.md)。
@@ -31,12 +31,12 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 |------|------|----------|
 | [概述与架构](overview.md) | SDK 在系统中的位置、术语、两层 API | 所有读者 |
 | [安装与配置](install/index.md) | 环境要求、Python 安装、版本配套 | 所有读者，从这里开始 |
-| [常规操作](usage/index.md) | 连接、Command / Operation、事件与通道、状态与故障、配置、错误处理、Mock | 所有读者 |
+| [常规操作](usage/index.md) | 连接、Command / Operation、事件与通道、状态与故障、日志与指标、坐标系、配置、错误处理、文本目录、Mock、技能 | 所有读者 |
 | [第一个程序（Python）](tutorials/python.md) | 跑通第一个 Python 程序 | 所有读者 |
 | [Python 示例](examples/python/index.md) | 按能力的完整 Python 示例 | 应用开发 |
-| [能力接口概述](reference/python/index.md) | 每个能力模块的 Python 接口参考 | 应用开发 |
-| [故障排除](troubleshooting.md) | 连不上、`wait_ready`、Operation 失败、急停后恢复 | 所有读者 |
-| [更新日志](changelog.md) | 各版本新增、修复与兼容性说明 | 升级前查阅 |
+| [能力接口概述](reference/python/index.md) | Robot 入口、文本目录、通用类型与各能力模块的接口参考 | 应用开发 |
+| [故障排除](troubleshooting.md) | 连不上、`wait_ready`、Operation 失败、急停恢复、坐标系与抓帧问题 | 所有读者 |
+| [更新日志](changelog.md) | 各版本新增、变更、修复与兼容性说明 | 升级前查阅 |
 
 ## 版本配套
 

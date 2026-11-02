@@ -2,7 +2,7 @@
 title: 头部运动
 status: draft
 owner: fabot-core
-updated: 2026-09-09
+updated: 2026-11-02
 ---
 
 # 头部运动
@@ -11,76 +11,72 @@ updated: 2026-09-09
 
 ## 转动头部到目标关节角
 
-`move_joints` 返回长时 Operation：通过 `events()` 持续取进度快照，终态后读取结果。目标关节角 `positions` 为弧度列表；`wait=True` 时任务等到到位或超时再结束。运动快慢由插值时长决定：先用 `set_move_duration` 设置（秒，越大越慢），对所有后续运动持久生效。
+`move_joint` 返回长时 Operation：通过 `events()` 持续取进度快照，终态后读取结果。关节顺序固定为 `[yaw, pitch]`（弧度）。
 
 ```python
 from fabot import Robot
-from fabot.core.types import OperationState
+from fabot.capabilities.head import HeadMode
+from fabot.core import OperationState
+from fabot.types import JointPositions
 
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready(["head"])
 
-    applied = robot.head.set_move_duration(move_duration=2.0)
-    print("插值时长已生效:", applied.appliedMoveDuration, "s")
+    print("当前模式:", robot.head.get_mode())
+    print("当前关节:", robot.head.get_joint().positions)
 
-    target = [0.3, 0.5]   # 目标关节角（弧度）
-    op = robot.head.move_joints(positions=target, wait=True)
-    for snap in op.events(poll_timeout_ms=200, timeout_ms=30000):
-        if snap.feedback is not None:
-            print("进度:", snap.feedback.progress, snap.feedback.statusMessage)
-        if snap.terminal:
-            break
-
-    if snap.state == OperationState.Succeeded:
-        print("到位:", snap.result.statusMessage)
-    else:
+    op = robot.head.move_joint(JointPositions(positions=[0.3, -0.2]), duration=1.5)
+    snap = op.get(timeout=10.0)
+    if snap.state is not OperationState.Succeeded:
         print("失败:", snap.error)
 ```
 
-注意：
+头部运动 Operation 共享资源 `head`，策略 `queue`。
 
-- 进度快照的 `feedback` 为 `ProgressT`（`progress` / `statusMessage`），任务刚启动时可能为 `None`。
-- 终态快照的 `result` 为 `OutcomeT`（`success` / `statusMessage`）；失败原因读 `error`，错误处理见 [错误处理](../../usage/errors.md)。
-- `move_joints` 占用头部运动资源，同一槽位上的新任务排队执行，不并发。
+## 头部模式
 
-## 订阅关节位置流
-
-运动过程中可订阅 `joints()` 通道实时观察关节角变化；通用通道约定见 [事件与数据通道](../../usage/events-channels.md)。
+`HeadMode` 决定全身控制下头部如何工作：`DISABLE` 关闭头部任务，`FORWARD` 锁定正前方，`TRACKING` 跟踪 6D 目标，`GAZE` 时位姿位置即空间注视点。
 
 ```python
-with Robot.connect("192.168.1.10", 7557) as robot:
-    robot.wait_ready(["head"])
+robot.head.set_mode(HeadMode.TRACKING)
+print(robot.head.get_mode())
 
-    ch = robot.head.joints(qos_profile="latest")
-    try:
-        for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-            print(frame.sequence, frame.payload.positions)
-    finally:
-        ch.close()
+# 注视一个空间点（GAZE 模式下 Pose3d 的位置就是注视点）
+from fabot.types import Pose3d
+robot.head.set_mode(HeadMode.GAZE)
+robot.head.servo_pose(Pose3d(x=1.0, y=0.2, z=1.2, qw=1.0))
 ```
 
-注意：
+## 位姿运动
 
-- `qos_profile` 是字符串（`"latest"` / `"realtime"` / `"reliable"`），不是枚举。
-- 帧的 `payload` 为 `JointPositionsT`，`payload.positions` 是关节角列表（弧度）；`timeout_ms` 到期后迭代自然结束，记得 `close()` 释放通道。
-
-## 查询关节角与到位检查
-
-`get_joints` 读取当前关节角，`check_arrive` 检查是否到达目标：
+`move_pose` 让头部按末端位姿运动；`servo_pose` 是短周期伺服，也可只给分量：
 
 ```python
-positions = robot.head.get_joints()
-print("当前关节角:", positions)
-print("当前插值时长:", robot.head.get_move_duration(), "s")
+robot.head.move_pose(
+    Pose3d(x=0.1, y=0.0, z=0.05, qw=1.0, frame_id="base_link"),
+    duration=1.0,
+).wait(timeout=10.0)
 
-arrived = robot.head.check_arrive(threshold=0.05, target_joints=[])
-print("已到位:", arrived)
+robot.head.servo_pose(y=0.1)
 ```
 
-`threshold` 是关节空间 L2 容差（弧度）；`target_joints` 传空列表时使用最近一次 `move_joints` 下发的目标。
+## 调整速度与到位阈值
 
-## 相关链接
+```python
+robot.head.set_joint_velocity_limit(1.5)      # 弧度/秒
+robot.head.set_joint_acceleration_limit(5.0)  # 弧度/秒²
 
-- [头部 API 参考](../../reference/python/head.md)
-- [命令与长时操作](../../usage/commands-operations.md)
-- [事件与数据通道](../../usage/events-channels.md)
+applied = robot.head.set_arrival_thresholds(joint_tolerance=0.01, max_timeout_s=3.0)
+print(applied.outcome.success)
+```
+
+## 订阅关节流
+
+```python
+ch = robot.head.joint(qos_profile="latest")
+try:
+    for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
+        print(frame.sequence, frame.payload.positions)   # [yaw, pitch]
+finally:
+    ch.close()
+```

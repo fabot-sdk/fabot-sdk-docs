@@ -2,84 +2,77 @@
 title: 躯干
 status: draft
 owner: fabot-core
-updated: 2026-09-10
+updated: 2026-11-02
 ---
 
 # 躯干
 
-控制躯干关节与腰部升降 / 旋转。长时任务模型见 [命令与长时操作](../../usage/commands-operations.md)，通道用法见 [事件与数据通道](../../usage/events-channels.md)，接口见 [躯干 Body](../../reference/python/body.md)。
+控制躯干关节与腰部升降 / 前探 / 俯仰。长时任务模型见 [命令与长时操作](../../usage/commands-operations.md)，通道用法见 [事件与数据通道](../../usage/events-channels.md)，接口见 [躯干 Body](../../reference/python/body.md)。
 
-## 腰部相对升降
+## 腰部位姿运动
 
-`move_waist` 返回长时 Operation：`mode=RELATIVE` 表示相对增量，纯升降时 `x=0, phi=0`，只给 `z`（米）；`wait=True` 时任务等到到位或超时再结束。通过 `events()` 轮询进度快照，终态后读 `result` / `error`。
+`move_waist` 用 `WaistPose` 描述腰部：`x` 是水平前探、`z` 是升降、`phi` 是俯仰（弧度），三者都是绝对目标（米 / 米 / 弧度）。增量运动用 `move_waist_relative`。
 
 ```python
 from fabot import Robot
-from fabot.capabilities.body import WaistMoveMode
-from fabot.core.types import OperationState
+from fabot.capabilities.body import WaistPose
+from fabot.core import OperationState
 
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready(["body"])
 
-    op = robot.body.move_waist(
-        mode=WaistMoveMode.RELATIVE, x=0.0, z=0.05, phi=0.0, wait=True,
-    )
-    for snap in op.events(poll_timeout_ms=200, timeout_ms=30000):
-        if snap.feedback is not None:
-            print("进度:", snap.feedback.progress, snap.feedback.statusMessage)
-        if snap.terminal:
-            break
-
-    if snap.state == OperationState.Succeeded:
-        print("到位:", snap.result.statusMessage)
-    else:
+    op = robot.body.move_waist(WaistPose(x=0.05, z=0.10, phi=0.0), duration=3.0)
+    snap = op.get(timeout=15.0)
+    if snap.state is not OperationState.Succeeded:
         print("失败:", snap.error)
+    else:
+        print("腰部位姿:", robot.body.get_pose().z)
 ```
 
-注意：
+躯干的所有运动 Operation 共享资源 `body`，策略 `queue`，默认时限 60 秒。
 
-- 快照 `feedback` 为 `ProgressT`（`progress` / `statusMessage`），任务刚启动时可能为 `None`；终态 `result` 为 `OutcomeT`（`success` / `statusMessage`）。
-- `mode=ABSOLUTE` 时 `x` / `z` 是 `base_footprint` 下的绝对位姿、`phi` 为躯干朝向角（弧度）。
-- `move_joints` / `move_waist` 共享同一躯干资源，新任务排队执行，见 [躯干 Body](../../reference/python/body.md)。
+## 腰部速度伺服
 
-## 速度比例控制升降
-
-`lift_waist` 按归一化比例 `[-1, 1]` 驱动腰部升降：正上升、负下降，松手后发 `0` 停止。返回 `LiftWaistVelocityAppliedT`，可读取实际生效值。
+需要连续调速时用 `servo_waist_twist`：`lift` / `turn` / `pitch` 都是归一化速度比例，取值 [-1, 1]，正值分别为向上、左旋、前倾。
 
 ```python
-with Robot.connect("192.168.1.10", 7557) as robot:
-    robot.wait_ready(["body"])
-
-    applied = robot.body.lift_waist(velocity_scale=0.5)
-    print("生效:", applied.outcome.success, "速度比例:", applied.appliedVelocityScale)
-
-    # ... 到达目标高度后停止
-    stop = robot.body.lift_waist(velocity_scale=0.0)
-    print(stop.outcome.statusMessage)
+robot.body.servo_waist_twist(lift=0.2, turn=0.0, pitch=0.0)
+robot.body.servo_waist_twist(lift=0.0, turn=0.0, pitch=0.0)     # 停
 ```
 
-腰部旋转用 `turn_waist`，参数与返回字段相同；关节插值时长用 `set_move_duration`（秒，越大运动越慢）。
+## 躯干关节运动
 
-## 订阅关节位置流
-
-`joints()` 打开关节位置通道，用 `frames()` 迭代帧，用完 `close()` 释放。帧的 `payload.positions` 为各关节角（弧度）。
+`move_joint` 的目标是 4 自由度躯干关节角（`JointPositions`，弧度）；`move_joint_path` 走关节路点序列。
 
 ```python
-with Robot.connect("192.168.1.10", 7557) as robot:
-    robot.wait_ready(["body"])
+from fabot.types import JointPositions
 
-    ch = robot.body.joints(qos_profile="latest")
-    try:
-        for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-            print(frame.sequence, frame.payload.positions)
-    finally:
-        ch.close()
+joints = list(robot.body.get_joint().positions)
+joints[1] += 0.05
+robot.body.move_joint(JointPositions(positions=joints), duration=2.0).wait(timeout=30.0)
 ```
 
-帧字段（`channel_id` / `sequence` / `timestamp_us` / `payload`）与 `qos_profile` 取值（`"latest"` / `"realtime"` / `"reliable"`）见 [躯干 Body joints](../../reference/python/body.md#joints)。
+## 躯干约束模式
 
-## 相关链接
+全身控制下躯干可以自由跟随、保持相对姿态、显式跟踪、锁定或与头部耦合：
 
-- [命令与长时操作](../../usage/commands-operations.md)
-- [事件与数据通道](../../usage/events-channels.md)
-- [躯干 Body API 参考](../../reference/python/body.md)
+```python
+from fabot.capabilities.body import BodyMode
+
+robot.body.set_mode(BodyMode.TRACKING)    # 显式跟踪 6D 目标
+robot.body.set_mode(BodyMode.FREE)        # 回到冗余自由度
+print(robot.body.get_mode())
+```
+
+## 订阅位姿流
+
+`joint()` 推送 `JointState`，`pose()` 推送 `Pose3d`：
+
+```python
+ch = robot.body.pose(qos_profile="latest")
+try:
+    for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
+        print(frame.sequence, frame.payload.z)
+finally:
+    ch.close()
+```

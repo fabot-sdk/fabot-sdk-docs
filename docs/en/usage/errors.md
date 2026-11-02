@@ -2,108 +2,104 @@
 title: Error Handling
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-11-02
 ---
 
 # Error Handling
 
-All SDK call failures are raised as `FabotError` and its subclasses. This page covers the exception hierarchy, error fields and codes, how errors surface from Commands / Operations, and retry policy. Localized display text for HMIs is covered in [Localized Text (Catalogs)](catalogs.md).
+Every failed SDK call raises `FabotError` or a subclass. This page covers the hierarchy, error fields and diagnostic codes, how Commands and Operations surface failures, and retry guidance. Localized text is in [Catalogs](catalogs.md).
 
-## Exception Hierarchy & Error Fields
+## Hierarchy and fields
 
-`FabotError` is the base class of all SDK errors (defined in `fabot.core.error`, importable from the `fabot` top level). Every error instance carries five fields:
+`FabotError` is the base of every SDK error (defined in `fabot.core.error`, importable from `fabot`). Each instance carries:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `code` | `int` | Globally unique error code (ranges below) |
-| `category` | `ErrorCategory` | Error category (ten categories, see the table below) |
-| `message` | `str` | English technical description, for logs and troubleshooting |
-| `retryable` | `bool` | Whether the call can be safely retried |
-| `trace_id` | `str` | Trace ID, for correlating with robot-side logs |
+| `code` | `int` | 32-bit diagnostic code, usually shown as `0x` hex |
+| `category` | `ErrorCategory \| None` | Construction tag used to pick the concrete subclass; **not carried on the wire**, so decoded errors may have `None` |
+| `message` | `str` | Local technical text, produced only on this host and never transmitted |
+| `retryable` | `bool` | Whether the call may safely be repeated; derived from the concrete type |
+| `trace_id` | `str` | Trace id for correlating with robot-side logs |
 
-Errors fall into the ten `ErrorCategory` categories, each with a corresponding `FabotError` subclass. Errors returned by the robot are automatically mapped to the matching subclass instance by `category`, so you can either catch a specific subclass or catch the base class uniformly:
+`retryable` is `True` for `Timeout`, `ResourceConflict`, `TransportError` and `Unavailable`. `message` is local only: errors coming back from the robot carry a diagnostic code and the text is rendered from [Catalogs](catalogs.md), so never branch on the `message` text.
+
+## Categories
+
+`ErrorCategory` is a construction tag; `FabotError.__new__` dispatches on it to a concrete subclass. So you can catch either the precise subclass or the base:
+
+| Category | Subclass | Typical case |
+|----------|----------|--------------|
+| `InvalidArgument` | `InvalidArgument` | Invalid parameters |
+| `NotFound` | `NotFound` | Missing slot or resource (`AdapterUnbound`) |
+| `Timeout` | `Timeout` | Call timed out (also a built-in `TimeoutError`) |
+| `ResourceConflict` | `ResourceConflict` | Resource busy; `ConfigurationConflict` |
+| `Canceled` | `Canceled` | Operation canceled |
+| `TransportError` | `TransportError` | Transport failure |
+| `ProtocolIncompatible` | `ProtocolIncompatible` | Incompatible protocol version |
+| `Unavailable` | `Unavailable` | Peer unavailable |
+| `Unauthorized` | `Unauthorized` | Authentication failed |
+| `Internal` | `Internal` | Server-side internal error |
 
 ```python
 from fabot import FabotError
-from fabot.core.error import Timeout, NotFound
 
 try:
-    robot.chassis.stop(timeout_ms=500)
-except Timeout as e:
-    print(e.code, e.retryable, e.trace_id)
-except FabotError as e:
-    print(e.category, e.message)
+    robot.chassis.servo_twist(vx=0.3, vy=0.0, timeout_ms=500)
+except FabotError as err:
+    print(hex(err.code), err.category, err.retryable, err.trace_id)
 ```
 
-Beyond the ten category subclasses, there are four dedicated subclasses (`fabot.errors` / `fabot.core.error`):
+### Specialized subclasses
 
-| Exception | Subclass of | code | Raised when |
-|-----------|-------------|------|-------------|
-| `ConfigurationConflict` | `ResourceConflict` | 81001 | Configuration CAS conflict; see [Configuration](configuration.md) |
-| `AdapterUnbound` | `NotFound` | 6002 | Slot has no bound adapter; see [Connection & Robot Entry](connection.md) |
-| `AdapterMismatch` | `InvalidArgument` | 6003 | `as_adapter()` target type does not match the bound adapter |
-| `ClientThreadError` | `InvalidArgument` | 6003 | A blocking API was called on the SDK I/O thread (an event callback); see [Events & Data Channels](events-channels.md) |
+| Exception | Inherits | When |
+|-----------|----------|------|
+| `ClientThreadError` | `InvalidArgument` | A blocking API called on the SDK I/O thread, see [Events & Data Channels](events-channels.md) |
+| `AdapterUnbound` | `NotFound` | Slot has no adapter bound, see [Connection & Robot Entry](connection.md) |
+| `AdapterMismatch` | `InvalidArgument` | `as_adapter()` target does not match the bound adapter |
+| `ConfigurationConflict` | `ResourceConflict` | Config CAS conflict, see [Configuration](configuration.md) |
+| `FrameError` family | `FabotError` plus mixins | Coordinate-frame failures, see [Frames & Transforms](frames.md) |
 
-## Error Categories
+`FrameError` subclasses also inherit a semantic base: `FrameNotFoundError` / `FrameConnectivityError` are `NotFound`, `FrameMismatchError` / `FrameCycleError` / `InvalidFrameNameError` / `InvalidQuaternionError` are `InvalidArgument`, and `FrameTimeoutError` is `Timeout`. Catching the semantic base therefore covers the analogous frame failures too.
 
-All call failures fall into the ten `ErrorCategory` categories. The SDK raises the corresponding `FabotError` subclass, so you can catch by category:
+## Diagnostic codes
 
-| Category | Exception | Typical scenario |
-|----------|------------------|------------------|
-| `InvalidArgument` | `InvalidArgument` | Illegal argument |
-| `NotFound` | `NotFound` | Slot/resource does not exist (`AdapterUnbound`, 6002) |
-| `Timeout` | `Timeout` | Call timed out |
-| `ResourceConflict` | `ResourceConflict` | Resource occupied; `ConfigurationConflict` (81001) |
-| `Canceled` | `Canceled` | Task was canceled |
-| `TransportError` | `TransportError` | Transport-layer failure |
-| `ProtocolIncompatible` | `ProtocolIncompatible` | Protocol version incompatible |
-| `Unavailable` | `Unavailable` | Peer unavailable |
-| `Unauthorized` | `Unauthorized` | Authentication failed |
-| `Internal` | `Internal` | Server internal error |
-
-## Error Codes
-
-Error codes are globally unique and allocated in ranges:
-
-| Range | Owner |
-|-------|-------|
-| 6xxx | SDK client-side local errors (`AdapterUnbound` 6002, `AdapterMismatch` / `ClientThreadError` 6003, transport-layer 6112–6114, etc.) |
-| 8xxxx | Platform errors (e.g. `ConfigurationConflict` 81001) |
-| 9xxxx | Capability-private errors |
-
-In program logic, match on `code` / `category` — never on the `message` text. For human-readable text, use Catalogs; see [Localized Text (Catalogs)](catalogs.md).
-
-## How Errors Surface from Commands & Operations
-
-- **Command** (synchronous request-response): failures raise a `FabotError` subclass immediately. A timeout raises `Timeout`; default timeouts are documented per capability and can be overridden by `ClientOptions.command_timeout_ms` and the per-call `timeout_ms`.
-- **Operation** (long-running task): the returned handle does not block. If the submission itself is rejected (illegal argument, resource conflict, etc.), the error is raised at the call site. Runtime failures **do not raise** — read them from the terminal snapshot: when `snapshot.state` is `Failed` / `Canceled` / `Timeout`, get the `FabotError` from `snapshot.error`:
+Diagnostic codes are 32-bit integers segmented by the high byte (`0x01` platform and runtime, `0x07` SDK client, …); the code-to-text mapping lives in the catalog. Judge failures by `code` or `category`, never by `message`; render text with `Catalogs.format_error`, see [Catalogs](catalogs.md).
 
 ```python
-from fabot.capabilities.chassis import NavigationMode
-from fabot.core.types import OperationState
-
-op = robot.chassis.navigate_to_station(station_id=1, mode=NavigationMode.AUTONOMOUS)
-snapshot = op.get(timeout_ms=30000)
-if snapshot.state == OperationState.Failed:
-    err = snapshot.error            # FabotError: the failure reason
-    print(err.code, err.category, err.message)
+print(hex(err.code))                    # diagnostic code
+print(catalogs.format_error(err))       # localized text
+print(err.localized("zh-CN"))           # same logic
 ```
 
-For the Command / Operation model itself, see [Commands & Operations](commands-operations.md).
+## Commands versus Operations
 
-## Retry Policy
+- **Command** (synchronous request/response): a failure raises a `FabotError` subclass immediately. Timeouts raise `Timeout`; the default comes from each capability page and can be overridden by `ClientOptions.command_timeout_ms` and the per-call `timeout_ms`.
+- **Operation** (long-running): the handle returns immediately. Submission failures (invalid parameters, resource conflicts, `reject`-policy contention) raise at the call site; runtime failures **do not raise** and are read from the terminal snapshot — when `snapshot.state` is `Failed` / `Canceled` / `Timeout`, read `snapshot.error`:
 
-- Errors with `retryable == True` (e.g. transport-layer `Timeout` / `Unavailable` / `TransportError`) can be retried with exponential backoff, bounded by a total time or attempt limit.
-- `InvalidArgument`, `ProtocolIncompatible`, etc. are not retryable — fix the call arguments, or check the SDK/robot version pairing (see [Version Compatibility](../install/compatibility.md)).
-- `ConfigurationConflict` is a special case: `retryable` is `False`, but the semantic handling is exactly a retry — `get()` again, merge your changes (`merge_touched`), then `apply()` again; see [Configuration](configuration.md).
+```python
+from fabot.core import OperationState
 
-## Localized Error Text (Catalogs)
+op = robot.chassis.move_station(1)
+snapshot = op.get(timeout=30.0)
+if snapshot.state == OperationState.Failed:
+    err = snapshot.error            # FabotError describing the failure
+    print(hex(err.code), err.message, err.trace_id)
+```
 
-Use `Catalogs.format_error` / `format_log` / `format_fault` for human-readable error / log / fault text — do not match on `message`. Loading, locale fallback, and miss rules are in [Localized Text (Catalogs)](catalogs.md); signatures are in [Catalogs](../reference/python/catalogs.md).
+`op.wait()` is the other style: it blocks to the terminal state and raises on failure (`Failed` raises `FabotError`, `Canceled` raises `Canceled`, `Timeout` raises `Timeout`), returning `result` on success.
 
-## Common Local Errors
+The Command / Operation model itself is in [Commands & Operations](commands-operations.md).
 
-- `AdapterUnbound` (6002) / `AdapterMismatch` (6003): the slot is unbound, or the `as_adapter()` target type does not match the bound adapter; see [Connection & Robot Entry](connection.md).
-- `ClientThreadError` (6003): a blocking API was called from the SDK I/O thread (an event callback); see [Events & Data Channels](events-channels.md).
-- Transport-layer errors: `Unavailable` (6112, session closed), `TransportError` (6113), `Timeout` (6114, query deadline exceeded) — all `retryable=True`; for connection problems see [Troubleshooting](../troubleshooting.md).
-- `ConfigurationConflict` (81001): configuration CAS conflict; handle with the retry policy above, see [Configuration](configuration.md).
+## Retry strategy
+
+- Errors with `retryable == True` (`Timeout` / `Unavailable` / `TransportError` / `ResourceConflict`) can be retried with exponential backoff, bounded by total time or attempt count.
+- `InvalidArgument`, `ProtocolIncompatible` and friends are not retryable: fix the call, or check SDK and platform version compatibility (see [Version Compatibility](../install/compatibility.md)).
+- `ConfigurationConflict` is a special case: `retryable` is `False`, but the correct handling *is* to retry — re-`get()`, merge your change (`merge_touched`) and `apply()` again, see [Configuration](configuration.md).
+- Stale-slot errors (for example an instance replaced underneath you) trigger one internal re-resolve in the SDK; the application should not repeat that.
+
+## Common local errors
+
+- `ClientThreadError`: a blocking API called on the SDK I/O thread (event callback), see [Events & Data Channels](events-channels.md).
+- `AdapterUnbound` / `AdapterMismatch`: `as_adapter()` / `get_config()` hit an unbound slot, or the requested adapter type differs from the bound one, see [Connection & Robot Entry](connection.md).
+- Transport errors: `Unavailable` / `TransportError` / `Timeout`, all `retryable=True`; see [Troubleshooting](../troubleshooting.md) for connection problems.
+- Frame errors: `FrameNotFoundError` / `FrameConnectivityError` and friends, see [Frames & Transforms](frames.md).

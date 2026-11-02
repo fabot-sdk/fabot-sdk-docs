@@ -4,9 +4,12 @@
   "commands-operations",
   "events-channels",
   "status-faults",
+  "observability",
+  "frames",
   "errors",
   "catalogs",
   "mock",
+  "skills",
   "configuration",
   "services"
 ]

@@ -2,7 +2,7 @@
 title: 遥操作
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-11-02
 ---
 
 # 遥操作
@@ -15,41 +15,43 @@ updated: 2026-09-04
 
 ```python
 from fabot import Robot
-from fabot.core.types import OperationState
+from fabot.core import OperationState
 
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready(["teleop"])
 
     op = robot.teleop.start_joystick_control()
+    print("会话 id:", op.id)
+
     for snap in op.events(poll_timeout_ms=500, timeout_ms=60000):
-        if snap.feedback is not None:
-            print("进度:", snap.feedback.progress, snap.feedback.statusMessage)
+        print(snap.state, snap.feedback)
         if snap.terminal:
             break
 
-    if snap.state == OperationState.Succeeded:
-        print("会话正常结束:", snap.result.statusMessage)
-    else:
-        print("会话异常结束:", snap.error)
+    print(snap.state is OperationState.Succeeded, snap.result)
 ```
 
 注意：
 
-- 快照的 `feedback` 为 `ProgressT`（`progress` / `statusMessage`），会话刚建立时可能为 `None`。
-- 终态快照的 `result` 为 `OutcomeT`（`success` / `statusMessage`）；失败原因读 `error`，错误处理见 [错误处理](../../usage/errors.md)。
-- 会话有默认时限，到时任务自动进入终态；遥操作是独占资源，同一时间只允许一个会话，见 [遥操作](../../reference/python/teleop.md)。
+- 会话有 45 秒默认时限，到时任务自动进入终态。
+- 资源 `joystick_control` 的策略是 `reject`：会话进行中再次 `start_joystick_control()` 会被立即拒绝（抛 `ResourceConflict`），不排队。
 
-## 停止遥操作会话
+## 取消会话
 
-需要主动结束会话时调用 `stop_joystick_control`，它是一条 Command，直接返回结果：
+```python
+op = robot.teleop.start_joystick_control()
+# ... 手柄操作 ...
+snap = op.cancel()
+print(snap.state)          # OperationState.Canceled
+```
+
+`cancel()` 是尽力而为：若会话已自然结束，返回的快照会是 `Succeeded` 等终态。
+
+## 主动停止
+
+`stop_joystick_control()` 是短命令，返回 `Outcome`：
 
 ```python
 outcome = robot.teleop.stop_joystick_control()
-print(outcome.success, outcome.statusMessage)
+print(outcome.success, outcome.status_message)
 ```
-
-注意：
-
-- 会话进行中再次调用 `start_joystick_control` 会被直接拒绝（不排队），须先 `stop_joystick_control` 或等会话结束再发起。
-- 持有 Operation 句柄时也可以用 `op.cancel()` 结束会话，返回的终态快照中 `state` 为 `OperationState.Canceled`。
-- 本模块没有数据通道；会话的生命周期变化可订阅 `robot.teleop.events.lifecycle_changed`，用法见 [事件与数据通道](../../usage/events-channels.md)。

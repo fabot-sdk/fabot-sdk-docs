@@ -2,107 +2,108 @@
 title: Mock
 status: draft
 owner: fabot-core
-updated: 2026-09-07
+updated: 2026-11-02
 ---
 
 # Mock
 
-Use `Robot.mock()` to develop, debug, and unit-test without a real robot. For the mechanism and its boundaries, see [Mock Testing](../../usage/mock.md).
+Use `Robot.mock()` to develop, integrate and unit test without a real robot. Mechanics and limits are in [Mock Testing](../../usage/mock.md).
 
-## Quick Start
+## Quick start
 
-`Robot.mock()` returns a `MockRobot` (a subclass of `Robot`) whose slot attributes have the same names as on a real `Robot`. It is ready immediately — no `connect` / `wait_ready` needed:
+`Robot.mock()` returns a `MockRobot` (a `Robot` subclass) whose slot properties match the real `Robot`; it is usable immediately, with no `connect` / `wait_ready`:
 
 ```python
 from fabot import Robot
 
 robot = Robot.mock()
 
-# Inject command behavior: on_<command> hooks
-robot.screen.on_show_text = lambda text: print("mock show_text:", text)
-
-robot.screen.show_text(text="hello")   # hits the hook, prints mock show_text: hello
-robot.close()
+print(robot.connection.is_connected())      # True
+print(robot.state())                        # empty snapshot
+print(robot.chassis.get_pose())             # default Pose2d(0, 0, 0)
 ```
 
-## Command Hooks
+## Injecting command responses
 
-Every Command / Operation has a matching `on_<method>` hook. The hook receives the request fields as keyword arguments; returning a response object makes it the result of that call, while returning `None` (or nothing) falls back to the default response:
-
-```python
-from fabot.types.Outcome import OutcomeT
-
-def blocked(vx, vy, vtheta):
-    outcome = OutcomeT()
-    outcome.success = False
-    outcome.statusMessage = "blocked by obstacle"
-    return outcome
-
-robot.chassis.on_move = blocked
-result = robot.chassis.move(vx=0.2, vy=0.0, vtheta=0.0)
-print(result.success, result.statusMessage)   # False blocked by obstacle
-
-robot.chassis.on_move = None          # restore the default behavior
-```
-
-If the hook raises, the call raises `FabotError` (`category` is `Internal`, `detail` carries the exception message) — useful for exercising the application's error-handling paths:
-
-```python
-def boom(vx, vy, vtheta):
-    raise RuntimeError("boom")
-
-robot.chassis.on_move = boom
-# robot.chassis.move(...) will raise FabotError: Internal, boom
-```
-
-For the error model see [Error Handling](../../usage/errors.md); for Command signatures see each capability's API reference (e.g. [Chassis](../../reference/python/chassis.md), [Screen](../../reference/python/screen.md)).
-
-## Operation Default Behavior
-
-Without an injected hook, an Operation completes immediately with the terminal state `Succeeded`:
-
-```python
-op = robot.chassis.move_relative(dx=1.0, dy=0.0, dtheta=0.0)
-snap = op.get()
-print(snap.state, snap.terminal)   # OperationState.Succeeded True
-```
-
-Injecting hooks such as `on_move_relative` lets you observe the request arguments or customize the returned `result`. For the Operation model see [Commands and Operations](../../usage/commands-operations.md).
-
-## Estop and Robot State
-
-The mock keeps a real in-memory estop state, so you can rehearse estop flows:
-
-```python
-robot.estop.engage(reason="self check")
-print(robot.estop.state().asserted)   # True
-robot.estop.release()
-```
-
-Note the boundaries of the mock:
-
-- `engage` / `release` only change the mock's internal state; they do not push `estop_changed` events or make other APIs fail.
-- `robot.state()` returns the default snapshot (`RobotRunState.Unknown`).
-- `status()` on `power_1` / `power_2` / `screen` / `voice` has no default data and raises `RuntimeError("empty status payload")`.
-- Data channels are unavailable by default: opening one (e.g. `robot.left_arm.joints()`) fails with `NotFound` (`not stubbed`); to feed channel frames, use the `MockBackend` below.
-
-## Low-Level Control: MockBackend
-
-For custom event pushes, channel data, or handlers, use `MockBackend` together with `Robot.from_backend()`:
+Hook names are `on_` plus the method name; the return value is the response. Returning `None` keeps the default empty response, and raising makes the caller receive a `FabotError`.
 
 ```python
 from fabot import Robot
-from fabot.core.mock_backend import MockBackend
+from fabot.types import Pose2d
 
-backend = MockBackend()
-robot = Robot.from_backend(backend)
-# backend.set_command_handler(...) / set_operation_handler(...)
-# backend.set_subscribe_handler(...) + backend.push_frame(...)
-# backend.push_event(...)
+robot = Robot.mock()
+
+# Fixed response
+robot.chassis.on_get_pose = lambda: Pose2d(x=1.5, y=2.0, theta=0.3)
+
+# Record arguments
+sent = []
+robot.chassis.on_servo_twist = lambda **kwargs: sent.append(kwargs)
+
+robot.chassis.servo_twist(vx=0.2, vy=0.0, vtheta=0.1)
+print(robot.chassis.get_pose(), sent)
 ```
 
-`Robot.mock()` assembles exactly this internally, additionally installing default handlers and `on_*` hooks for every slot.
+## Injecting failures
 
-:::note
-Mock only simulates SDK-side behavior; it does not validate server-side constraints (resource queuing, real error codes, event timing, etc.). Integration tests that depend on real server-side behavior still require a real robot or a platform-side test environment.
+Use a hook that raises to exercise error branches:
+
+```python
+robot.screen.on_show_text = lambda text: (_ for _ in ()).throw(RuntimeError("screen offline"))
+
+from fabot import FabotError
+try:
+    robot.screen.show_text("hi")
+except FabotError as err:
+    print("caught:", type(err).__name__, err)
+```
+
+## Injecting Operation results
+
+An Operation hook's return value becomes the terminal `result`; by default it is `Succeeded` immediately:
+
+```python
+from fabot.core import OperationState
+from fabot.types import Outcome
+
+robot.chassis.on_move_station = lambda station_id, **kwargs: Outcome(success=True, status_message="arrived")
+
+snap = robot.chassis.move_station(3).get()
+print(snap.state is OperationState.Succeeded, snap.result.status_message)
+```
+
+## Exercising configuration and services
+
+The mock's `services` control calls succeed and `configuration` keeps an in-memory config with a revision:
+
+```python
+robot.services.ocs2.start()
+print(robot.services.ocs2.is_running())
+
+cfg = robot.configuration.get()
+print(cfg.revision)
+```
+
+Note: slots start **unbound** in the mock, so `robot.left_arm.get_config()` raises `AdapterUnbound` — the same behaviour a real robot shows before its configuration is ready, which makes it easy to test that branch.
+
+## Controlling the low level with MockBackend
+
+Use `MockBackend` when you need to inject events, channel frames or simulate a disconnect:
+
+```python
+from fabot import Robot
+from fabot.core import MockBackend
+
+backend = MockBackend()
+backend.set_manager_connected(True)
+robot = Robot.from_backend(backend)
+
+seen = []
+robot.connection.subscribe(lambda st: seen.append(st.connected))
+backend.set_manager_connected(False)
+print(seen)          # [True, False]
+```
+
+:::warning
+`Robot.from_backend(MockBackend())` registers no default handlers, so unregistered calls fail with `NotFound` ("not stubbed"). For "default success with a few overrides", use `Robot.mock()`.
 :::

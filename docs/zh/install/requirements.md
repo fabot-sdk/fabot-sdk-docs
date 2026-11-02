@@ -2,7 +2,7 @@
 title: 环境要求
 status: draft
 owner: fabot-core
-updated: 2026-09-04
+updated: 2026-11-02
 ---
 
 # 环境要求

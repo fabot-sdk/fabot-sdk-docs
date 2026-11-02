@@ -2,69 +2,63 @@
 title: Mock Testing
 status: draft
 owner: fabot-core
-updated: 2026-10-26
+updated: 2026-11-02
 ---
 
 # Mock Testing
 
-The SDK ships a built-in Mock backend, so you can develop, debug, and unit-test without a real robot. Two ways to use it:
+The SDK ships a mock backend so you can develop, integrate and unit test without a robot. Two styles:
 
-- `Robot.mock()`: one call creates a `MockRobot` with all slots available, and you inject behavior hooks as needed (recommended, covers most scenarios).
-- `MockBackend` + `Robot.from_backend()`: full manual control over low-level behavior, including injecting events, channel frames, and connection changes (advanced).
+- `Robot.mock()`: one line for a `MockRobot` with every slot available, plus behaviour hooks (recommended; covers most cases).
+- `MockBackend` + `Robot.from_backend()`: full manual control of the low level, including events, channel frames and connection changes (advanced).
 
-## Quick Start: `Robot.mock()`
+## Quick start: `Robot.mock()`
 
 ```python
 from fabot import Robot
 
-robot = Robot.mock()                     # MockRobot: a subclass of Robot
-robot.connection.is_connected()          # True: connected on creation, no connect()/wait_ready() needed
+robot = Robot.mock()                     # MockRobot, a Robot subclass
+robot.connection.is_connected()          # True: connected from the start, no connect()/wait_ready()
 ```
 
-- `MockRobot` exposes the same 23 slot attributes as `Robot`, so application code needs no distinction; each proxy is simply the corresponding Mock proxy (e.g. `ChassisMockProxy`, which inherits `ChassisProxy`) with an extra set of `on_<command>` hooks. See [Connection & the Robot Entry Point](connection.md) for the slot list.
-- Every Command / Operation has a corresponding hook attribute covering all calls of that capability.
+- `MockRobot` exposes the same 23 slot properties as `Robot`, so application code does not branch; each proxy is the matching mock proxy (for example `ChassisMockProxy`, a `ChassisProxy` subclass) with extra `on_<command>` hooks.
+- Skills have mock proxies too: `robot.skills.camera_sync` / `robot.skills.voice_aiui` report `is_available == True`.
+- `robot.services`, `robot.metrics`, `robot.logs` and `robot.frames` work as with a real connection (service control merely succeeds and keeps the previous state).
 
-## Injecting Command Behavior
+## Injecting Command behaviour
 
-A hook's signature matches the parameters of the corresponding call (passed as keyword arguments), and its return value decides the behavior:
+Hook names are `on_` plus the method name (`on_get_pose`, `on_show_text`, `on_move_joint`, …) with the same signature as the call. The return value decides the behaviour:
 
-- Returning `None` (or nothing): the default success response is used (an empty shell object with default field values);
-- Returning a response object: replaces the default response;
-- Raising an exception: the call fails with a `FabotError` (`Internal`) — useful for testing error-handling paths.
+- `None` (or no return): use the default success response (an empty object with default fields);
+- a response object: replace the default;
+- raising: the call fails with a `FabotError` (`Internal`) — perfect for exercising error paths.
 
 ```python
 from fabot import Robot
-from fabot.capabilities.chassis import StationInfoT, StationListT
+from fabot.types import Pose2d
 
 robot = Robot.mock()
 
-# Record arguments; returning None -> default success response
+# Return a custom response
+robot.chassis.on_get_pose = lambda: Pose2d(x=1.5, y=2.0)
+
+# Record arguments; returning None keeps the default success response
 calls = []
-robot.chassis.on_move = lambda vx, vy, vtheta: calls.append((vx, vy, vtheta))
-robot.chassis.move(vx=0.2, vy=0.0, vtheta=0.0)
+robot.chassis.on_servo_twist = lambda **kwargs: calls.append(kwargs)
 
-# Custom response
-def fake_stations():
-    station = StationInfoT()
-    station.stationId = 7
-    station.name = "charging"
-    resp = StationListT()
-    resp.stations = [station]
-    return resp
+robot.chassis.servo_twist(vx=0.2, vy=0.0, vtheta=0.0)
+print(robot.chassis.get_pose(), calls)
 
-robot.chassis.on_list_stations = fake_stations
-print(robot.chassis.list_stations().stations[0].stationId)   # 7
-
-# Inject failure: raising in the hook -> caller receives a FabotError
+# Inject a failure: the hook raises, the caller gets a FabotError
 def broken_show_text(text):
     raise RuntimeError("screen offline")
 
 robot.screen.on_show_text = broken_show_text
 ```
 
-## Injecting Operation Behavior
+## Injecting Operation behaviour
 
-Operation hooks (e.g. `on_move_relative` / `on_navigate_to_station`) work the same way: the hook's return value becomes the terminal `result`. By default an Operation reaches the `Succeeded` terminal state immediately after starting (no intermediate `Running` phase or progress feedback), and its `operation_id` is generated automatically:
+Operation hooks (such as `on_move_station` / `on_move_joint` / `on_listen`) work the same way: the return value becomes the terminal `result`. By default an Operation reaches `Succeeded` immediately (no `Running` phase, no progress feedback) with a generated `operation_id`:
 
 ```python
 from fabot import Robot
@@ -72,27 +66,32 @@ from fabot.core import OperationState
 
 robot = Robot.mock()
 
-op = robot.chassis.move_relative(dx=1.0, dy=0.0, dtheta=0.0)
+op = robot.chassis.move_station(3)
 snap = op.get()
 assert snap.state == OperationState.Succeeded and snap.terminal
 ```
 
-For full snapshot control (failure, intermediate states, etc.), use `MockBackend.set_operation_handler` (see below).
+For custom terminal states or intermediate snapshots use `MockBackend.set_operation_handler` (below).
 
-## Default Behavior at a Glance
+## Default behaviour
 
-| Aspect | Default behavior |
-|--------|------------------|
-| Command | Successful empty-shell response (default field values) |
-| Operation | Immediately `Succeeded`, with an empty-shell `result` |
-| Channel | No frames are pushed |
-| Events | None are produced spontaneously |
-| Robot-wide state | `state()` / `status()` / `faults()` return empty snapshots |
-| Estop / configuration / services | Work in memory: `estop` engage/release updates the `EstopState`; `configuration` get/apply maintains the in-memory config and revision; `services` control operations succeed while the run state stays `Unknown` |
+| Surface | Default |
+|---------|---------|
+| Command | Success with an empty response (default fields) |
+| Operation | Immediate `Succeeded` with an empty `result` |
+| Channel | Opening a channel fails with `NotFound` ("not stubbed"): the mock registers no default channel handler |
+| Events | Nothing is emitted |
+| Robot state | `state()` / `status()` / `faults()` return empty snapshots |
+| E-stop / config / services | `engage` / `release` update an in-memory `EstopState`; `configuration` `get` / `apply` maintain an in-memory config and revision; service control succeeds while state stays `Unknown` |
+| Skills | Skill proxies are available and `is_available` is `True` |
+
+:::note Slots start unbound
+Whether a slot "has an adapter" in the mock comes from the in-memory configuration, and by default none is bound. So `robot.<slot>.get_config()` raises `AdapterUnbound`, matching a real robot whose configuration is not ready yet — a path worth testing.
+:::
 
 ## Advanced: `MockBackend`
 
-To inject events or channel frames, or to simulate connection loss, use `fabot.core.MockBackend` directly:
+To inject events, channel frames or simulate a disconnect, use `fabot.core.MockBackend` directly:
 
 ```python
 from fabot import Robot
@@ -102,32 +101,32 @@ backend = MockBackend()
 backend.set_manager_connected(True)
 robot = Robot.from_backend(backend)
 
-# Simulate Manager disconnect/reconnect: triggers connection.subscribe callbacks
+# Simulate the manager dropping and returning: fires connection.subscribe callbacks
 backend.set_manager_connected(False)
 ```
 
-Main injection points:
+Injection points:
 
-- `set_command_handler` / `set_operation_handler` / `set_subscribe_handler`: register low-level handlers by (slot or capability, method name); payloads are `BytesPayload`, encoded/decoded with `encode_flatbuffer` / `decode_flatbuffer`;
-- `push_event(event)`: deliver an `Event` to event subscriptions whose selector matches (see [Events & Channels](events-channels.md) for the subscription model);
-- `push_frame(channel_id, frame)`: deliver one `ChannelFrame` to channel watchers;
-- `set_manager_connected(bool)`: simulate connection state changes.
+- `set_command_handler(slot_or_cap, method, handler)` / `set_operation_handler(...)` / `set_subscribe_handler(...)`: register low-level handlers per (slot or capability, method); payloads are `BytesPayload`, paired with `encode_flatbuffer` / `decode_flatbuffer`;
+- `push_event(event)`: deliver an `Event` to matching event subscriptions (see [Events & Data Channels](events-channels.md));
+- `push_frame(channel_id, frame)`: deliver a `ChannelFrame` to channel watchers;
+- `set_manager_connected(bool)`: simulate connection changes.
 
 :::warning
-`Robot.from_backend(MockBackend())` registers no default handlers: any unregistered Command / Operation / Channel call fails with `NotFound` ("not stubbed"). For a "success by default + manual injection" setup, register handlers on the backend yourself.
+`Robot.from_backend(MockBackend())` registers no default handlers: unregistered Command / Operation / Channel calls fail with `NotFound` ("not stubbed"). For "default success with a few overrides", use `Robot.mock()` and replace individual hooks.
 :::
 
-## Limitations
+## Limits
 
-- Mock only simulates SDK-side behavior; it does not validate server-side constraints (argument validity, resource conflicts, real error codes, etc.).
-- Events and channels produce no data on their own; Operations have no real asynchronous progression (no progress feedback, immediately terminal).
-- Integration tests involving real server-side behavior still require a real robot or a platform-side test environment.
+- The mock models SDK-side behaviour only; it does not enforce server constraints (argument validation, resource conflicts, real diagnostic codes).
+- Events and channels never produce data spontaneously; Operations have no real asynchronous progression (no progress feedback, immediately terminal).
+- Integration tests that depend on real server behaviour still need a robot or a platform test environment.
 
-## See Also
+## Related pages
 
-- [Connection & the Robot Entry Point](connection.md) — slot list, `Robot.from_backend`
-- [Commands & Operations](commands-operations.md) — the Command / Operation model
-- [Events & Channels](events-channels.md) — event subscriptions and data channels
+- [Connection & Robot Entry](connection.md) — slot list, `Robot.from_backend`
+- [Commands & Operations](commands-operations.md) — Command / Operation model
+- [Events & Data Channels](events-channels.md) — subscriptions and channels
 - [Error Handling](errors.md) — the `FabotError` hierarchy
 - [Example: Mock](../examples/python/mock.md)
-- [Robot Reference](../reference/python/robot.md)
+- [Robot reference](../reference/python/robot.md)

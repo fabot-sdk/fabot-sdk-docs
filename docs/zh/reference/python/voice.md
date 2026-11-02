@@ -2,7 +2,7 @@
 title: 语音 Voice
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-11-02
 ---
 
 # 语音 Voice
@@ -10,508 +10,397 @@ updated: 2026-09-03
 ## 模块概述
 
 - 能力 id：`voice`；槽位：`robot.voice`
-- 语音交互：唤醒、转写、意图识别走数据通道（输入侧）；语音合成播报、音频播放与音量 / 静音 / 语速 / 发音人控制走方法与 Operation（输出侧）。
+- 能力域：`interaction`；能力版本：`1.1.0`
+- 语音硬件能力：状态与音量、唤醒词、麦克风采集会话与扬声器播放会话，都是流式接口。
+- 采集用 `listen` + `capture()` 通道，播放用 `play_audio` / `begin_playback` + `write_audio` + `playback()` 通道。
+
+语义能力（转写、意图识别、语义播报）在技能 `robot.skills.voice_aiui`，不在本模块；见 [技能与扩展](../../usage/skills.md)。
 
 ## API 总览
 
-| 方法 | 请求 | 响应 | 类型 |
+| 方法 | 请求 | 响应 | 默认超时 |
 |------|------|------|------|
-| `stop` | — | `VoiceStatusAppliedT` | Command |
-| `set_volume` | `volume` | `VoiceStatusAppliedT` | Command |
-| `set_mute` | `muted` | `VoiceStatusAppliedT` | Command |
-| `set_speaker` | `speaker_id` | `VoiceStatusAppliedT` | Command |
-| `list_speakers` | — | `SpeakerListT` | Command |
-| `set_speaking_rate` | `speaking_rate` | `VoiceStatusAppliedT` | Command |
-| `set_wakeword_enabled` | `enabled` | `VoiceStatusAppliedT` | Command |
-| `get_status` | — | `VoiceStatusAppliedT` | Command |
-| `speak` | `text`, `speaker_id` | `SpeakOperation` | Operation |
-| `play_audio` | `uri` | `PlayAudioOperation` | Operation |
+| `stop` | `Empty` | `VoiceStatusApplied` | 1000 ms |
+| `set_volume` | `Volume` | `VoiceStatusApplied` | 3000 ms |
+| `set_mute` | `Mute` | `VoiceStatusApplied` | 1000 ms |
+| `set_wakeword_enabled` | `Wakeword` | `VoiceStatusApplied` | 1000 ms |
+| `get_status` | `Empty` | `VoiceStatusApplied` | 1000 ms |
+| `stop_capture` | `CaptureControl` | `CaptureAccepted` | 3000 ms |
+| `begin_playback` | `PlaybackOptions` | `PlaybackAccepted` | 3000 ms |
+| `write_audio` | `PlaybackChunk` | `PlaybackAccepted` | 3000 ms |
 
-Command 默认 `timeout_ms`：`set_volume` / `list_speakers` 为 3000，其余 Command 为 1000（均可覆盖）。`speak` / `play_audio` 默认超时 30000 ms、可取消。参数均为关键字参数。
+以上均为 Command（同步请求-响应），`timeout_ms` 可逐次覆盖。
+
+| 方法 | 请求 | 类型 | 资源 | 默认时限 |
+|------|------|------|------|------|
+| `listen` | `CaptureOptions` | Operation | speaker, microphone | 60000 ms |
+| `play_audio` | `AudioPlayback` | Operation | speaker | 30000 ms |
+
+Operation 立即返回句柄，进度与结果通过快照获取；通用用法见 [命令与长时操作](../../usage/commands-operations.md)。
 
 | 通道 | 内容 |
 |------|------|
-| `wake()` | 唤醒事件流（`WakeEventT`） |
-| `transcript()` | 语音转写流（`TranscriptEventT`） |
-| `intent()` | 意图识别流（`IntentEventT`） |
+| `wake()` | `WakeEvent` |
+| `capture()` | `CaptureChunk` |
+| `playback()` | `PlaybackEvent` |
+
+本页方法用到的枚举：
+
+**`CaptureEnd` 枚举**
+
+| 取值 | 说明 |
+|------|------|
+| `SILENCE` | 静音超时结束 |
+| `MAX_DURATION` | 达到最长时长 |
+| `NO_SPEECH` | 未检测到人声 |
+| `STOPPED` | 被调用方停止 |
+| `FAILED` | 失败 |
+
+**`PlaybackState` 枚举**
+
+| 取值 | 说明 |
+|------|------|
+| `STARTED` | 开始播放 |
+| `FINISHED` | 播放完成 |
+| `INTERRUPTED` | 被打断 |
+| `FAILED` | 失败 |
 
 ## 方法
 
-以下均为关键字参数。Command 超时与 Operation 轮询、取消见 [命令与长时操作](../../usage/commands-operations.md)，各节不重复展开。
+参数名与默认值以本节签名块为准；未标 `*` 的参数可按位置或关键字传入，`*` 之后的只能按关键字传入。字段名用小写下划线写法（如 `frame_id`），生成类型同时接受原样的驼峰别名。
 
 ### stop
 
-打断当前语音输出，使正在进行的 `speak` / `play_audio` 任务结束。
+停止当前播放或采集。
 
 ```python
-stop(*, timeout_ms: int = 1000) -> VoiceStatusAppliedT
+stop(*, timeout_ms: int = 1000) -> VoiceStatusApplied
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
+| `timeout_ms` | `int` | `1000` | 调用超时（毫秒） |
 
-**返回**
-
-`VoiceStatusAppliedT`（各写命令与 `get_status` 共用）：
+**返回** `VoiceStatusApplied`
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `outcome` | `OutcomeT` | `success` / `statusMessage` |
-| `status` | `VoiceStatusT` | 应用后的语音状态快照 |
-
-`VoiceStatusT` 字段：
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `activity` | `int`（`VoiceActivity`） | 当前活动：`UNKNOWN` / `IDLE` / `LISTENING` / `SPEAKING` |
-| `volume` | `float` | 线性增益，[0.0, 1.0] |
-| `muted` | `bool` | 是否静音 |
-| `speakerId` | `str` | 当前发音人 id；空串表示未设置 |
-| `speakingRate` | `float` | 语速倍率，1.0 为默认 |
-| `wakewordEnabled` | `bool` | 唤醒词检测是否开启 |
-
-```python
-applied = robot.voice.stop()
-print(applied.outcome.success, applied.status.activity)
-```
+| `outcome` | `Outcome` | 调用结果 |
+| `status` | `VoiceStatus` | 状态快照 |
 
 ### set_volume
 
-设置音量（线性增益）。音量与静音相互独立：音量 0.0 不等于静音。
+设置音量，取值 0–1。
 
 ```python
-set_volume(*, volume: float, timeout_ms: int = 3000) -> VoiceStatusAppliedT
+set_volume(volume: float, *, timeout_ms: int = 3000) -> VoiceStatusApplied
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `volume` | `float` | （必填） | 线性增益，合法范围 [0.0, 1.0]，越界抛 `InvalidArgument` |
-| `timeout_ms` | `int` | `3000` | Command 超时（毫秒） |
+| `volume` | `float` | （必填） | 音量，0–1 |
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
 
-**返回**
+**返回** `VoiceStatusApplied`
 
-`VoiceStatusAppliedT`：`outcome` / `status`，字段见 [stop](#stop)。
-
-```python
-applied = robot.voice.set_volume(volume=0.6)
-print(applied.outcome.success, applied.status.volume)
-```
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `outcome` | `Outcome` | 调用结果 |
+| `status` | `VoiceStatus` | 状态快照 |
 
 ### set_mute
 
-静音或取消静音；取消静音恢复静音前的音量。
+静音或取消静音。
 
 ```python
-set_mute(*, muted: bool, timeout_ms: int = 1000) -> VoiceStatusAppliedT
+set_mute(muted: bool, *, timeout_ms: int = 1000) -> VoiceStatusApplied
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `muted` | `bool` | （必填） | `True` 静音，`False` 取消静音 |
-| `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
+| `muted` | `bool` | （必填） | 是否静音 |
+| `timeout_ms` | `int` | `1000` | 调用超时（毫秒） |
 
-**返回**
-
-`VoiceStatusAppliedT`：`outcome` / `status`，字段见 [stop](#stop)。
-
-```python
-applied = robot.voice.set_mute(muted=True)
-print(applied.outcome.success, applied.status.muted)
-```
-
-### set_speaker
-
-切换当前发音人。可用发音人见 `list_speakers()`。
-
-```python
-set_speaker(*, speaker_id: str, timeout_ms: int = 1000) -> VoiceStatusAppliedT
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `speaker_id` | `str` | （必填） | 发音人 id |
-| `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
-
-**返回**
-
-`VoiceStatusAppliedT`：`outcome` / `status`，字段见 [stop](#stop)。
-
-```python
-applied = robot.voice.set_speaker(speaker_id="zh-CN-female-1")
-print(applied.outcome.success, applied.status.speakerId)
-```
-
-### list_speakers
-
-列出可选发音人。
-
-```python
-list_speakers(*, timeout_ms: int = 3000) -> SpeakerListT
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `timeout_ms` | `int` | `3000` | Command 超时（毫秒） |
-
-**返回**
-
-`SpeakerListT`：
+**返回** `VoiceStatusApplied`
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `speakers` | `list[SpeakerInfoT]` | 发音人列表；每项含 `speakerId` / `locale`（如 `zh-CN`）/ `gender`，后两者空串表示未知 |
-| `outcome` | `OutcomeT` | `success` / `statusMessage` |
-
-```python
-result = robot.voice.list_speakers()
-for spk in result.speakers:
-    print(spk.speakerId, spk.locale, spk.gender)
-```
-
-### set_speaking_rate
-
-设置语速倍率，与音量相互独立。
-
-```python
-set_speaking_rate(*, speaking_rate: float, timeout_ms: int = 1000) -> VoiceStatusAppliedT
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `speaking_rate` | `float` | （必填） | 语速倍率，1.0 为默认；合法范围 (0.0, 3.0]，越界抛 `InvalidArgument` |
-| `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
-
-**返回**
-
-`VoiceStatusAppliedT`：`outcome` / `status`，字段见 [stop](#stop)。
-
-```python
-applied = robot.voice.set_speaking_rate(speaking_rate=1.2)
-print(applied.outcome.success, applied.status.speakingRate)
-```
+| `outcome` | `Outcome` | 调用结果 |
+| `status` | `VoiceStatus` | 状态快照 |
 
 ### set_wakeword_enabled
 
-开启或关闭唤醒词检测。
+启用或停用唤醒词。
 
 ```python
-set_wakeword_enabled(*, enabled: bool, timeout_ms: int = 1000) -> VoiceStatusAppliedT
+set_wakeword_enabled(enabled: bool, *, timeout_ms: int = 1000) -> VoiceStatusApplied
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `enabled` | `bool` | （必填） | `True` 开启，`False` 关闭 |
-| `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
+| `enabled` | `bool` | （必填） | 是否使能 |
+| `timeout_ms` | `int` | `1000` | 调用超时（毫秒） |
 
-**返回**
-
-`VoiceStatusAppliedT`：`outcome` / `status`，字段见 [stop](#stop)。
-
-```python
-applied = robot.voice.set_wakeword_enabled(enabled=False)
-print(applied.outcome.success, applied.status.wakewordEnabled)
-```
-
-### get_status
-
-以 Command 方式读取当前语音状态快照。
-
-```python
-get_status(*, timeout_ms: int = 1000) -> VoiceStatusAppliedT
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `timeout_ms` | `int` | `1000` | Command 超时（毫秒） |
-
-**返回**
-
-`VoiceStatusAppliedT`：`outcome` / `status`，字段见 [stop](#stop)。
-
-```python
-applied = robot.voice.get_status()
-print(applied.status.volume, applied.status.muted, applied.status.speakerId)
-```
-
-### speak
-
-合成文本并播报，返回可轮询、可取消的 Operation。
-
-```python
-speak(*, text: str, speaker_id: str) -> SpeakOperation
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `text` | `str` | （必填） | 待合成播报的文本 |
-| `speaker_id` | `str` | （必填） | 本次播报使用的发音人 id；空串表示沿用当前发音人 |
-
-**返回**
-
-`SpeakOperation`。通过 `get()` / `events()` 取快照，也可 `cancel()`。快照字段：
+**返回** `VoiceStatusApplied`
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `state` | `OperationState` | 任务状态 |
-| `terminal` | `bool` | 是否终态 |
-| `feedback` | `EmptyT` \| `None` | 无进度内容 |
-| `result` | `OutcomeT` \| `None` | `success` / `statusMessage` |
-| `error` | `FabotError` \| `None` | 失败原因 |
+| `outcome` | `Outcome` | 调用结果 |
+| `status` | `VoiceStatus` | 状态快照 |
+
+### get_status
+
+读取语音状态快照。`get_state` 是别名。
 
 ```python
-op = robot.voice.speak(text="你好，世界", speaker_id="")
-for snap in op.events(poll_timeout_ms=200, timeout_ms=30000):
-    print(snap.state)
-    if snap.terminal:
-        break
+get_status(*, timeout_ms: int = 1000) -> VoiceStatusApplied
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | 调用超时（毫秒） |
+
+**返回** `VoiceStatusApplied`
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `outcome` | `Outcome` | 调用结果 |
+| `status` | `VoiceStatus` | 状态快照 |
+
+### stop_capture
+
+停止指定采集会话。
+
+```python
+stop_capture(*, session_id: str, timeout_ms: int = 3000) -> CaptureAccepted
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `session_id` | `str` | （必填） | 会话 id |
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
+
+**返回** `CaptureAccepted`
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `outcome` | `Outcome` | 调用结果 |
+| `session_id` | `str` | 会话 id；同一会话的采集与播放操作必须一致 |
+| `accepted` | `bool` | 是否被接受 |
+
+### begin_playback
+
+开始流式播放会话，随后用 `write_audio` 推流。
+
+```python
+begin_playback(*, session_id: str, sample_rate: int = 16000, channels: int = 1, timeout_ms: int = 3000) -> PlaybackAccepted
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `session_id` | `str` | （必填） | 会话 id |
+| `sample_rate` | `int` | `16000` | 采样率，赫兹 |
+| `channels` | `int` | `1` | 声道数 |
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
+
+**返回** `PlaybackAccepted`
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `outcome` | `Outcome` | 调用结果 |
+| `session_id` | `str` | 会话 id；同一会话的采集与播放操作必须一致 |
+| `accepted` | `bool` | 是否被接受 |
+| `buffered_bytes` | `int` | 已缓冲字节数 |
+
+### write_audio
+
+写入一块音频；`final=True` 表示最后一块。
+
+```python
+write_audio(*, session_id: str, sequence: int, final: bool, data: list[int], timeout_ms: int = 3000) -> PlaybackAccepted
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `session_id` | `str` | （必填） | 会话 id |
+| `sequence` | `int` | （必填） | 序号 |
+| `final` | `bool` | （必填） | 是否为最后一块 |
+| `data` | `list[int]` | （必填） | 音频字节 |
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
+
+**返回** `PlaybackAccepted`
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `outcome` | `Outcome` | 调用结果 |
+| `session_id` | `str` | 会话 id；同一会话的采集与播放操作必须一致 |
+| `accepted` | `bool` | 是否被接受 |
+| `buffered_bytes` | `int` | 已缓冲字节数 |
+
+### listen
+
+采集一段语音，返回可取消的 Operation，终态结果为 `CaptureSummary`。
+
+```python
+listen(*, session_id: str, wake_cue: bool = True, max_seconds: float = 0.0) -> ListenOperation
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `session_id` | `str` | （必填） | 会话 id |
+| `wake_cue` | `bool` | `True` | 是否播放唤醒提示音 |
+| `max_seconds` | `float` | `0.0` | 最长采集时长（秒） |
+
+返回 `ListenOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
+
+```python
+from fabot.core import OperationState
+from fabot.capabilities.voice import CaptureEnd
+
+ch = robot.voice.capture(qos_profile="realtime")
+op = robot.voice.listen(session_id="demo-1", wake_cue=True, max_seconds=5.0)
+
+captured = bytearray()
+for frame in ch.frames(poll_timeout_ms=100, timeout_ms=8000):
+    captured.extend(frame.payload.data)
+
+snap = op.get(timeout=10.0)
+if snap.state is OperationState.Succeeded:
+    print(snap.result.voiced, snap.result.bytes, snap.result.reason)   # reason 为 CaptureEnd
+ch.close()
 ```
 
 ### play_audio
 
-播放一个音频资源，返回可轮询、可取消的 Operation。
+播放一个音频资源，返回可取消的 Operation。
 
 ```python
-play_audio(*, uri: str) -> PlayAudioOperation
+play_audio(uri: str) -> PlayAudioOperation
 ```
 
 **参数**
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `uri` | `str` | （必填） | 音频资源 URI，如 `file://` 本地文件 |
+| `uri` | `str` | （必填） | 资源地址 |
 
-**返回**
-
-`PlayAudioOperation`。快照字段与 `speak` 相同：`state` / `feedback: EmptyT` / `result: OutcomeT` / `error`，可 `cancel()`。
-
-```python
-op = robot.voice.play_audio(uri="file:///opt/fabot/media/ding.wav")
-snap = op.get(timeout_ms=30000)
-print(snap.state, snap.result)
-```
+返回 `PlayAudioOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
 
 ## 通道
 
-打开参数与帧约定如下；通用用法见 [事件与数据通道](../../usage/events-channels.md)。
+打开即建立租约并返回 Channel 句柄；用 `frames()` 迭代，`next()` 取一帧，`renew()` 续租，`close()` 释放。通用用法见 [事件与数据通道](../../usage/events-channels.md)。
 
 ### wake()
 
-订阅唤醒事件流。
+唤醒事件流。
 
 ```python
-wake(qos_profile: str = "latest") -> WakeChannel
+wake(qos_profile: str = "latest") -> Channel
 ```
 
-**打开参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `qos_profile` | `str` | `"latest"` | `"latest"` / `"realtime"` / `"reliable"` |
-
-**帧**（`WakeChannelFrame`）
+帧 payload 为 `WakeEvent`：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `channel_id` | `str` | 通道 id |
-| `sequence` | `int` | 帧序号 |
-| `timestamp_us` | `int` | 时间戳（微秒） |
-| `payload` | `WakeEventT` | `payload.keyword`（`str`）：命中的唤醒词；`payload.timestampUs`（`int`）：事件时间戳（微秒） |
+| `keyword` | `str` | 命中的唤醒词 |
+| `timestamp_us` | `int` | 采样时间戳（微秒） |
 
-用 `frames(poll_timeout_ms=..., timeout_ms=...)` 迭代帧。
+### capture()
 
-```python
-ch = robot.voice.wake(qos_profile="latest")
-for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-    print(frame.payload.keyword)
-```
-
-### transcript()
-
-订阅语音转写流。
+采集音频块流。
 
 ```python
-transcript(qos_profile: str = "latest") -> TranscriptChannel
+capture(qos_profile: str = "latest") -> Channel
 ```
 
-**打开参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `qos_profile` | `str` | `"latest"` | `"latest"` / `"realtime"` / `"reliable"` |
-
-**帧**（`TranscriptChannelFrame`）
+帧 payload 为 `CaptureChunk`：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `channel_id` | `str` | 通道 id |
-| `sequence` | `int` | 帧序号 |
-| `timestamp_us` | `int` | 时间戳（微秒） |
-| `payload` | `TranscriptEventT` | 见下 |
+| `session_id` | `str` | 会话 id；同一会话的采集与播放操作必须一致 |
+| `sequence` | `int` | 序号，从 0 递增 |
+| `sample_rate` | `int` | 采样率，赫兹 |
+| `channels` | `int` | 声道数 |
+| `timestamp_us` | `int` | 采样时间戳（微秒） |
+| `data` | `list[int]` | 音频字节 |
 
-`TranscriptEventT` 字段：
+### playback()
+
+播放事件流。
+
+```python
+playback(qos_profile: str = "latest") -> Channel
+```
+
+帧 payload 为 `PlaybackEvent`：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `text` | `str` | 转写文本 |
-| `isFinal` | `bool` | 是否最终结果（`False` 为中间结果） |
-| `confidence` | `float` | 置信度 |
-| `timestampUs` | `int` | 事件时间戳（微秒） |
-
-用 `frames(poll_timeout_ms=..., timeout_ms=...)` 迭代帧。
-
-```python
-ch = robot.voice.transcript(qos_profile="latest")
-for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-    if frame.payload.isFinal:
-        print(frame.payload.text, frame.payload.confidence)
-```
-
-### intent()
-
-订阅意图识别流。
-
-```python
-intent(qos_profile: str = "latest") -> IntentChannel
-```
-
-**打开参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `qos_profile` | `str` | `"latest"` | `"latest"` / `"realtime"` / `"reliable"` |
-
-**帧**（`IntentChannelFrame`）
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `channel_id` | `str` | 通道 id |
-| `sequence` | `int` | 帧序号 |
-| `timestamp_us` | `int` | 时间戳（微秒） |
-| `payload` | `IntentEventT` | 见下 |
-
-`IntentEventT` 字段：
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `intentId` | `str` | 意图 id |
-| `transcript` | `str` | 对应转写文本 |
-| `confidence` | `float` | 置信度 |
-| `timestampUs` | `int` | 事件时间戳（微秒） |
-
-用 `frames(poll_timeout_ms=..., timeout_ms=...)` 迭代帧。
-
-```python
-ch = robot.voice.intent(qos_profile="latest")
-for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-    print(frame.payload.intentId, frame.payload.confidence)
-```
+| `session_id` | `str` | 会话 id；同一会话的采集与播放操作必须一致 |
+| `state` | `PlaybackState` | 状态取值 |
+| `timestamp_us` | `int` | 采样时间戳（微秒） |
 
 ## 事件
 
-经 `robot.voice.events` 订阅。回调在 SDK I/O 线程执行，须保持轻量、禁止调用阻塞 API，见 [事件与数据通道](../../usage/events-channels.md)。
+经 `robot.<slot>.events` 订阅；回调在 SDK I/O 线程执行，须保持轻量、禁止调用阻塞 API。事件均带 `EventHeader`（`name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`）。
 
-事件均带 `EventHeader`：`name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`。
-
-本模块没有特有事件流；唤醒、转写、意图走数据通道，见 [通道](#_3)。
-
-### fault_changed
-
-该槽位故障集合变化时推送。
-
-订阅：`robot.voice.events.fault_changed.subscribe(callback)`。
-
-**payload**
-
-`FaultChangedEvent.faults`：`Faults`。当前 `Faults` 只有 `revision`，本模块尚无已命名故障，见 [异常](#_5)。
-
-```python
-def on_fault(event):
-    print(event.header.slot_id, event.faults.revision)
-
-token = robot.voice.events.fault_changed.subscribe(on_fault)
-```
-
-### lifecycle_changed
-
-该槽位生命周期或健康度变化时推送。
-
-订阅：`robot.voice.events.lifecycle_changed.subscribe(callback)`。
-
-**payload**
-
-`LifecycleChangedEvent.lifecycle`：`CapabilityLifecycleSnapshot`：
-
-| 字段 | 类型 | 说明 |
+| 入口 | 事件类型 | payload |
 |------|------|------|
-| `lifecycle` | `LifecycleState` | 生命周期阶段 |
-| `health` | `HealthState` | 健康度 |
-| `source_instance_id` | `str` | 来源实例 id |
+| `robot.<slot>.events.audio_wake_word_detected` | `AudioWakeWordDetectedEvent` | `audio_wake_word_detected` |
+| `robot.<slot>.events.fault_changed` | `FaultChangedEvent` | `FaultChangedEvent.faults`：`Faults` |
+| `robot.<slot>.events.lifecycle_changed` | `LifecycleChangedEvent` | `LifecycleChangedEvent.lifecycle`：`CapabilityLifecycleSnapshot` |
 
-```python
-def on_lifecycle(event):
-    snap = event.lifecycle
-    print(event.header.slot_id, snap.lifecycle, snap.health)
+### audio_wake_word_detected
 
-token = robot.voice.events.lifecycle_changed.subscribe(on_lifecycle)
-```
+检测到唤醒词时推送，`payload` 为 `WakeEvent`（`keyword` / `timestamp_us`）。
 
 ## 异常
 
-查询入口：`robot.voice.faults()`，返回 `Faults`。
-
-本模块尚无已命名故障：当前 `Faults` 只有 `revision`。变化通过 `fault_changed` 推送。通用约定见 [状态、故障与生命周期](../../usage/status-faults.md)。
-
-若日后出现已命名故障，每条为 `FaultState`：
+查询入口 `robot.<slot>.faults()`，返回 `Faults`（`revision` + `records: list[FaultState]`）。单条 `FaultState`：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `active` | `bool` | 是否仍在生效 |
-| `catalog_id` | `str` | 目录 id |
-| `fault_class` | `CapabilityStateClass` | 故障等级 |
-| `first_seen_us` / `last_seen_us` | `int` | 首次 / 最近见到的时间戳（微秒） |
-| `count` | `int` | 累计次数 |
+| `code` | `int` | 诊断码；`0` 表示无故障 |
+| `source` | `str` | 故障来源标识 |
+| `state` | `int` | 故障状态位 |
+| `severity` | `int` | 严重度，与 `HealthState` 对齐 |
+| `timestamp_us` | `int` | 最近一次时间戳（微秒） |
+
+展示给人看的故障文本用 `Catalogs.format_fault(record, capability_id="...")`，见 [文本目录 Catalogs](../../usage/catalogs.md)。
 
 ## 状态
 
-`status()` 返回 `Status`：
+`status()` 返回该能力的只读状态袋；整机聚合见 `robot.status()`。
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `activity` | `Activity` | 语音活动：`Activity.Idle` / `Activity.Listening` / `Activity.Speaking` |
+| 字段 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `activity` | `str` | `idle` | `idle` / `listening` / `speaking` |
 
-```python
-st = robot.voice.status()
-print(st.activity)
-```
+公共只读查询：
 
-`status()` 只含 `activity`；音量、静音、发音人等完整快照用 `get_status()` Command，见 [方法](#_2)。整机聚合状态见 `robot.status()`。
+- `health()`：`SlotHealth`（`is_usable` / `lifecycle` / `health` / `standing_faults` / `pbit_completed` / `source_instance_id`）
+- `lifecycle()`：`CapabilityLifecycleSnapshot`（`lifecycle` / `health` / `pbit_completed` / `source_instance_id`）
 
-公共查询：
-
-- `health()`：当前健康度
-- `lifecycle()`：`CapabilityLifecycleSnapshot`（`lifecycle` / `health` / `source_instance_id`）
-
-变化走 `lifecycle_changed`，见 [状态、故障与生命周期](../../usage/status-faults.md)。
+变化走 `lifecycle_changed` 事件，见 [状态、故障与生命周期](../../usage/status-faults.md)。
 
 ## 资源
 
-`speak` 与 `play_audio` 共享同一发音资源：一个播报或播放任务进行中时，新任务被**拒绝**（而非排队）。两个 Operation 默认超时 30 s，可 `cancel()`，也可由 `stop` 命令打断；`stop` 不占用该资源。
+采集占用 `speaker` + `microphone`，播放只占 `speaker`，策略均为 `reject`：同一时刻只允许一个会话，冲突时立即拒绝。

@@ -2,7 +2,7 @@
 title: Camera
 status: draft
 owner: fabot-core
-updated: 2026-10-26
+updated: 2026-11-02
 ---
 
 # Camera
@@ -10,435 +10,797 @@ updated: 2026-10-26
 ## Module Overview
 
 - Capability id: `camera`; slots: `robot.head_camera` / `robot.chest_camera` / `robot.waist_camera` / `robot.left_wrist_camera` / `robot.right_wrist_camera`
-- Camera access and image streams: single-shot capture, intrinsics query, stream configuration, image-frame channels, and preview playback URLs. All five slots share the same API on independent cameras.
+- Domain: `perception`; capability version: `1.1.0`
+- The camera capability covers color, depth, registered depth, infrared, confidence, point cloud and IMU streams, plus calibration, imaging control and software trigger.
+- Spatial registration uses `registration_mode` (the `registered_*` streams); temporal pairing uses `enable_stream_sync` (`FrameSet.sync_status`). They are different axes.
+
+Cameras start streaming automatically once the capability is active, so `open()` is only needed to change profiles or reopen a session.
+`camera.depth` always stays in the raw depth optical frame; depth registered to color only appears on `registered_depth()` and `FrameSet.registered_depth`.
 
 ## API Overview
 
-| Method | Request | Response | Type |
-|--------|---------|----------|------|
-| `capture` | — | `CaptureT` | Command |
-| `capture_color` | — | `ColorCaptureT` | Command |
-| `capture_depth` | — | `DepthCaptureT` | Command |
-| `get_intrinsics` | — | `IntrinsicsT` | Command |
-| `open` | `profiles`, `enable_sync` | `CameraSessionT` | Command |
-| `close` | — | `CameraSessionT` | Command |
+| Method | Request | Response | Default timeout |
+|------|------|------|------|
+| `get_info` | `Empty` | `DeviceInfo` | 1000 ms |
+| `get_state` | `Empty` | `SessionState` | 1000 ms |
+| `open` | `SessionConfig` | `SessionState` | 5000 ms |
+| `close` | `Empty` | `SessionState` | 3000 ms |
+| `capture` | `CaptureOptions` | `FrameSet` | 10000 ms |
+| `trigger` | `TriggerPulse` | `TriggerAck` | 2000 ms |
+| `get_calibration` | `Empty` | `CameraCalibration` | 1000 ms |
+| `get_imaging` | `Empty` | `ImagingState` | 1000 ms |
+| `set_imaging` | `ImagingPatch` | `ImagingState` | 2000 ms |
 
-Command default `timeout_ms`: 10000 for `capture` / `capture_color` / `capture_depth`, 1000 for `get_intrinsics`, 3000 for `open` / `close` (all overridable). All parameters are keyword-only. This module has no Operations.
+All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
 
 | Channel | Content |
-|---------|---------|
-| `frameset()` | Frame-set stream (`CameraFrameSetT`: color / depth / infrared as one set) |
-| `color()` | Color image stream (`ImageFrameT`) |
-| `depth()` | Depth image stream (`ImageFrameT`) |
-| `rtsp()` | RTSP preview playback URL (`StreamUrlT`, no frame iteration) |
-| `webrtc()` | WebRTC preview playback URL (`StreamUrlT`, no frame iteration) |
+|------|------|
+| `frameset()` | `FrameSet` |
+| `color()` | `ImageFrame` |
+| `depth()` | `ImageFrame` |
+| `registered_depth()` | `ImageFrame` |
+| `infrared()` | `ImageFrame` |
+| `infrared_left()` | `ImageFrame` |
+| `infrared_right()` | `ImageFrame` |
+| `confidence()` | `ImageFrame` |
+| `points()` | `PointCloud` |
+| `imu()` | `ImuSample` |
+| `rtsp()` | `MediaEndpoint` (media endpoint, not frame iteration) |
+| `webrtc()` | `MediaEndpoint` (media endpoint, not frame iteration) |
+
+Enums used on this page:
+
+**`StreamKind` enum**
+
+| Value | Description |
+|-------|-------------|
+| `COLOR` | Color |
+| `DEPTH` | Raw depth |
+| `REGISTERED_DEPTH` | Depth registered to color |
+| `INFRARED` | Infrared |
+| `INFRARED_LEFT` | Left infrared |
+| `INFRARED_RIGHT` | Right infrared |
+| `CONFIDENCE` | Confidence |
+| `THERMAL` | Thermal |
+
+**`RegistrationMode` enum**
+
+| Value | Description |
+|-------|-------------|
+| `NONE` | No registration |
+| `HARDWARE` | Hardware registration |
+| `SOFTWARE` | Software registration |
+
+**`FrameTransportHint` enum**
+
+| Value | Description |
+|-------|-------------|
+| `AUTO` | Choose automatically |
+| `SHM_ONLY` | Shared memory only |
+| `INLINE_REQUIRED` | Inline transport required |
 
 ## Methods
 
-All method parameters are keyword-only. Command timeouts are documented in [Commands & Operations](../../usage/commands-operations.md); they are not repeated in each section.
+Signatures below are authoritative for names and defaults. Parameters before `*` accept positional or keyword form; those after `*` are keyword-only. Fields use snake_case (`frame_id`); the generated types also accept the camelCase alias.
 
-Capture methods return whole image frames and are correspondingly heavy, hence the relaxed default timeout; for live preview, subscribe to a channel instead of polling captures.
+### get_info
 
-### capture
-
-Capture the current frame set (color + depth).
+Read device information: vendor, model, serial number, connection type and supported features.
 
 ```python
-capture(*, timeout_ms: int = 10000) -> CaptureT
+get_info(*, timeout_ms: int = 1000) -> DeviceInfo
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `10000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
-
-`CaptureT`:
+**Returns** `DeviceInfo`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `color` | `ImageFrameT` \| `None` | Color frame |
-| `depth` | `ImageFrameT` \| `None` | Depth frame |
-| `synchronized` | `bool` | Whether the two frames were captured in sync |
-| `outcome` | `OutcomeT` \| `None` | `success` / `statusMessage` |
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `vendor` | `str` | Vendor |
+| `model` | `str` | Model |
+| `serial_number` | `str` | Serial number |
+| `firmware_version` | `str` | Firmware version |
+| `connection_type` | `ConnectionType` | Physical connection type (`ConnectionType`) |
+| `supported_streams` | `list[StreamKind]` | Supported stream kinds |
+| `supported_profiles` | `list[StreamProfile]` | Supported stream profiles |
+| `supports_hardware_registration` | `bool` | Whether hardware registration is supported |
+| `supports_software_registration` | `bool` | Whether software registration is supported |
+| `supports_hardware_sync` | `bool` | Whether hardware sync is supported |
+| `supports_software_trigger` | `bool` | Whether software trigger is supported |
+| `has_imu` | `bool` | Whether an IMU is present |
+| `has_emitter` | `bool` | Whether an emitter is present |
 
-`ImageFrameT` fields:
+### get_state
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `sequence` | `int` | Frame sequence |
-| `width` / `height` | `int` | Image width / height (pixels) |
-| `encoding` | `str` | Pixel encoding (e.g. `rgb8`) |
-| `data` | `list[int]` | Pixel bytes |
-| `frameId` | `str` | Reference frame id |
-| `stampNs` | `int` | Capture timestamp (nanoseconds) |
-| `isBigendian` | `int` | Whether the data is big-endian |
-| `step` | `int` | Bytes per row |
-| `cameraSlot` | `str` | Source slot |
-| `stream` | `int` | Stream kind (`StreamKind`) |
-
-```python
-shot = robot.head_camera.capture()
-if shot.outcome is not None and shot.outcome.success:
-    print(shot.color.width, shot.color.height, shot.synchronized)
-```
-
-### capture_color
-
-Capture only the color frame.
+Read the current session state (streaming, sync, registration, calibration generation and temperature).
 
 ```python
-capture_color(*, timeout_ms: int = 10000) -> ColorCaptureT
+get_state(*, timeout_ms: int = 1000) -> SessionState
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `10000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
-
-`ColorCaptureT`:
+**Returns** `SessionState`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `image` | `ImageFrameT` \| `None` | Color frame |
-| `outcome` | `OutcomeT` \| `None` | `success` / `statusMessage` |
-
-### capture_depth
-
-Capture only the depth frame.
-
-```python
-capture_depth(*, timeout_ms: int = 10000) -> DepthCaptureT
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `10000` | Command timeout (milliseconds) |
-
-**Returns**
-
-`DepthCaptureT`: `image` (`ImageFrameT`) / `outcome` (`OutcomeT`), same as `capture_color`.
-
-### get_intrinsics
-
-Read the camera intrinsics (color and depth paths are independent). Intrinsics only (K and distortion) — **no color-to-depth extrinsics**.
-
-```python
-get_intrinsics(*, timeout_ms: int = 1000) -> IntrinsicsT
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
-
-**Returns**
-
-`IntrinsicsT`:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `cameraSlot` | `str` | Camera slot |
-| `color` | `OpticalIntrinsicsT` \| `None` | Color-path intrinsics; `None` when that path is unavailable |
-| `depth` | `OpticalIntrinsicsT` \| `None` | Depth-path intrinsics; `None` when that path is unavailable |
-| `outcome` | `OutcomeT` \| `None` | `success` / `statusMessage` |
-
-`OpticalIntrinsicsT` fields:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `stream` | `int` | Stream kind (`StreamKind`: `COLOR` / `DEPTH` / `INFRARED`) |
-| `width` / `height` | `int` | Image width / height the intrinsics apply to (pixels) |
-| `fx` / `fy` | `float` | Focal lengths (pixels) |
-| `cx` / `cy` | `float` | Principal point (pixels) |
-| `distortionModel` | `str` | Distortion model: `plumb_bob` / `rational_polynomial` / `kannala_brandt4` / `none` |
-| `d` | `list[float]` | Distortion coefficients in OpenCV order (`plumb_bob` is `[k1, k2, p1, p2, k3]`; `rational_polynomial` appends `k4, k5, k6`) |
-
-`outcome.success` is `True` when at least one of the two paths has intrinsics; the missing path's field is `None`. It is `False` when neither path has intrinsics, the slot is unconfigured, the pipeline has not been started (no `open()`), or the camera calibration has not been received yet — the command does not block waiting. When depth is aligned to color, depth frames use the color intrinsics.
-
-```python
-intr = robot.head_camera.get_intrinsics()   # requires open() to start the pipeline
-if intr.color:
-    print(intr.color.stream, intr.color.width, intr.color.height, intr.color.fx)
-    print(intr.color.distortionModel, intr.color.d)
-print(intr.outcome.success)
-```
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `state` | `DeviceState` | State value |
+| `sync_mode` | `HardwareSyncMode` | Hardware sync role (`SyncMode`) |
+| `registration_mode` | `RegistrationMode` | Pixel registration mode (`RegistrationMode`) |
+| `enable_stream_sync` | `bool` | Whether to enable multi-stream time pairing |
+| `calibration_generation` | `int` | Calibration generation; a change means intrinsics must be re-read |
+| `active_streams` | `list[ActiveStreamStatus]` | Active streams with measured frame rates |
+| `awaiting_external_trigger` | `bool` | Whether an external trigger is awaited |
+| `temperature_c` | `float` | Temperature in Celsius |
+| `status_message` | `str` | Status text |
 
 ### open
 
-Open the camera session with the given stream profiles.
+Open the session. Empty `profiles` keeps device defaults; `registration_mode` selects pixel registration; `enable_stream_sync` turns on multi-stream time pairing.
 
 ```python
-open(*, profiles: list[StreamProfileT], enable_sync: bool, timeout_ms: int = 3000) -> CameraSessionT
+open(*, profiles: list[StreamProfile] | None = None, enable_stream_sync: bool = True, registration_mode: RegistrationMode = RegistrationMode.NONE, enable_imu: bool = False, timeout_ms: int = 5000) -> SessionState
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `profiles` | `list[StreamProfileT]` | (required) | Stream profiles to enable |
-| `enable_sync` | `bool` | (required) | Whether to enable cross-stream sync |
-| `timeout_ms` | `int` | `3000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `profiles` | `list[StreamProfile] | None` | `None` | Profiles to open; `None` keeps the device defaults |
+| `enable_stream_sync` | `bool` | `True` | Whether to enable multi-stream time pairing |
+| `registration_mode` | `RegistrationMode` | `RegistrationMode.NONE` | Pixel registration mode |
+| `enable_imu` | `bool` | `False` | Whether to enable the IMU |
+| `timeout_ms` | `int` | `5000` | Timeout in milliseconds |
 
-`StreamProfileT` fields: `stream` (`StreamKind`: `COLOR` / `DEPTH` / `INFRARED`), `width` / `height` (pixels), `fps`, `encoding` (`str`), `alignedTo` (the stream this one aligns to).
-
-**Returns**
-
-`CameraSessionT`:
+**Returns** `SessionState`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `cameraSlot` | `str` | Camera slot |
-| `state` | `int` | Device state (`DeviceState`: `IDLE` / `STREAMING`, etc.) |
-| `outcome` | `OutcomeT` \| `None` | `success` / `statusMessage` |
-
-```python
-from fabot.capabilities.camera import StreamKind, StreamProfileT
-
-profile = StreamProfileT()
-profile.stream = StreamKind.COLOR
-profile.width, profile.height, profile.fps = 1280, 720, 30
-profile.encoding = "rgb8"
-session = robot.head_camera.open(profiles=[profile], enable_sync=True)
-print(session.state, session.outcome.statusMessage)
-```
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `state` | `DeviceState` | State value |
+| `sync_mode` | `HardwareSyncMode` | Hardware sync role (`SyncMode`) |
+| `registration_mode` | `RegistrationMode` | Pixel registration mode (`RegistrationMode`) |
+| `enable_stream_sync` | `bool` | Whether to enable multi-stream time pairing |
+| `calibration_generation` | `int` | Calibration generation; a change means intrinsics must be re-read |
+| `active_streams` | `list[ActiveStreamStatus]` | Active streams with measured frame rates |
+| `awaiting_external_trigger` | `bool` | Whether an external trigger is awaited |
+| `temperature_c` | `float` | Temperature in Celsius |
+| `status_message` | `str` | Status text |
 
 ### close
 
-Close the camera session.
+Close the camera session and stop every stream.
 
 ```python
-close(*, timeout_ms: int = 3000) -> CameraSessionT
+close(*, timeout_ms: int = 3000) -> SessionState
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `3000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `SessionState`
 
-`CameraSessionT`: `cameraSlot` / `state` / `outcome`, same as `open`.
+| Field | Type | Description |
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `state` | `DeviceState` | State value |
+| `sync_mode` | `HardwareSyncMode` | Hardware sync role (`SyncMode`) |
+| `registration_mode` | `RegistrationMode` | Pixel registration mode (`RegistrationMode`) |
+| `enable_stream_sync` | `bool` | Whether to enable multi-stream time pairing |
+| `calibration_generation` | `int` | Calibration generation; a change means intrinsics must be re-read |
+| `active_streams` | `list[ActiveStreamStatus]` | Active streams with measured frame rates |
+| `awaiting_external_trigger` | `bool` | Whether an external trigger is awaited |
+| `temperature_c` | `float` | Temperature in Celsius |
+| `status_message` | `str` | Status text |
+
+### capture
+
+Capture one multi-stream frame set. Large frames prefer shared memory and fall back to inline transport; `wait_for_fresh=True` waits for a new frame while `max_age_ms` bounds the accepted cache age.
 
 ```python
-session = robot.head_camera.close()
-print(session.state, session.outcome.statusMessage)
+capture(*, streams: list[StreamKind] | None = None, wait_for_fresh: bool = True, max_age_ms: int = 500, timeout_ms: int = 8000, transport_hint: FrameTransportHint = FrameTransportHint.AUTO, client_boot_id: str = "") -> FrameSet
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `streams` | `list[StreamKind] | None` | `None` | Streams to capture; `None` means every available stream |
+| `wait_for_fresh` | `bool` | `True` | Whether to wait for a fresh frame |
+| `max_age_ms` | `int` | `500` | Maximum frame age in milliseconds |
+| `timeout_ms` | `int` | `8000` | Timeout in milliseconds |
+| `transport_hint` | `FrameTransportHint` | `FrameTransportHint.AUTO` | Frame transport preference |
+| `client_boot_id` | `str` | `""` | Client boot id; empty fills it automatically |
+
+**Returns** `FrameSet`
+
+| Field | Type | Description |
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `sequence` | `int` | Sequence number increasing from 0 |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+| `clock_domain` | `str` | Clock domain of the timestamp |
+| `sync_status` | `SyncStatus` | Multi-stream time pairing status (`SyncStatus`) |
+| `calibration_generation` | `int` | Calibration generation; a change means intrinsics must be re-read |
+| `color` | `ImageFrame` | Color |
+| `depth` | `ImageFrame` | Depth data |
+| `registered_depth` | `ImageFrame` | Depth registered to color |
+| `infrared` | `ImageFrame` | Infrared stream |
+| `infrared_left` | `ImageFrame` | Left infrared stream |
+| `infrared_right` | `ImageFrame` | Right infrared stream |
+| `confidence` | `ImageFrame` | Confidence data |
+
+```python
+frame_set = robot.head_camera.capture()
+print(frame_set.sequence, frame_set.sync_status)
+if frame_set.color is not None:
+    print(frame_set.color.width, frame_set.color.height, frame_set.color.frame_id)
+```
+
+### trigger
+
+Emit an external trigger pulse for the `SOFTWARE_TRIGGER` sync role.
+
+```python
+trigger(*, frame_count: int = 1, timeout_ms: int = 2000) -> TriggerAck
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `frame_count` | `int` | `1` | Number of frames to trigger |
+| `timeout_ms` | `int` | `2000` | Timeout in milliseconds |
+
+**Returns** `TriggerAck`
+
+| Field | Type | Description |
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `trigger_sequence` | `int` | Trigger sequence number |
+| `accepted_at_ns` | `int` | Acceptance time in ns |
+
+### get_calibration
+
+Read calibration data: per-stream intrinsics, depth-to-color / left-right infrared / IMU-to-color extrinsics, stereo baseline, depth scale and the valid depth range. A change in `generation` means the calibration was updated.
+
+```python
+get_calibration(*, timeout_ms: int = 1000) -> CameraCalibration
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `CameraCalibration`
+
+| Field | Type | Description |
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `generation` | `int` | Status generation |
+| `depth_scale` | `float` | Depth scale in meters per LSB |
+| `min_depth_m` | `float` | Minimum valid depth in meters |
+| `max_depth_m` | `float` | Maximum valid depth in meters |
+| `color` | `OpticalIntrinsics` | Color |
+| `depth` | `OpticalIntrinsics` | Depth data |
+| `registered_depth` | `OpticalIntrinsics` | Depth registered to color |
+| `infrared` | `OpticalIntrinsics` | Infrared stream |
+| `infrared_left` | `OpticalIntrinsics` | Left infrared stream |
+| `infrared_right` | `OpticalIntrinsics` | Right infrared stream |
+| `depth_to_color` | `Transform3d` | Extrinsics from depth to color |
+| `infrared_left_to_right` | `Transform3d` | Extrinsics from left to right infrared |
+| `imu_to_color` | `Transform3d` | Extrinsics from IMU to color |
+| `stereo_baseline` | `StereoBaseline` | Stereo baseline and reference plane distance |
+
+```python
+calib = robot.head_camera.get_calibration()
+print(calib.generation, calib.depth_scale)
+print(calib.color.fx, calib.color.fy, calib.color.cx, calib.color.cy)
+print(calib.depth_to_color.tx, calib.depth_to_color.qw)
+```
+
+### get_imaging
+
+Read imaging controls (exposure, gain, white balance, mains frequency, emitter).
+
+```python
+get_imaging(*, timeout_ms: int = 1000) -> ImagingState
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `ImagingState`
+
+| Field | Type | Description |
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `color` | `ColorImagingControl` | Color |
+| `depth` | `DepthImagingControl` | Depth data |
+| `ae_strategy` | `AutoExposureStrategy` | Auto-exposure strategy (`AutoExposureStrategy`) |
+
+### set_imaging
+
+Replace the imaging controls and return the applied state.
+
+```python
+set_imaging(*, color: ColorImagingControl, depth: DepthImagingControl, ae_strategy: AutoExposureStrategy, timeout_ms: int = 2000) -> ImagingState
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `color` | `ColorImagingControl` | (required) | Color imaging control |
+| `depth` | `DepthImagingControl` | (required) | Depth imaging control |
+| `ae_strategy` | `AutoExposureStrategy` | (required) | Auto-exposure strategy |
+| `timeout_ms` | `int` | `2000` | Timeout in milliseconds |
+
+**Returns** `ImagingState`
+
+| Field | Type | Description |
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `color` | `ColorImagingControl` | Color |
+| `depth` | `DepthImagingControl` | Depth data |
+| `ae_strategy` | `AutoExposureStrategy` | Auto-exposure strategy (`AutoExposureStrategy`) |
+
+```python
+from fabot.capabilities.camera import (
+    AutoExposureStrategy, ColorImagingControl, DepthImagingControl, SensorExposureControl,
+)
+
+state = robot.head_camera.set_imaging(
+    color=ColorImagingControl(exposure=SensorExposureControl(exposure_us=8000)),
+    depth=DepthImagingControl(),
+    ae_strategy=AutoExposureStrategy.MOTION_PRIORITY,
+)
+print(state.ae_strategy)
 ```
 
 ## Channels
 
-Open parameters and frame fields are below; see [Events & Data Channels](../../usage/events-channels.md) for shared usage. Examples use `robot.head_camera`; the other camera slots behave the same.
+Opening a channel takes a lease and returns a handle: iterate with `frames()`, take one sample with `next()`, renew with `renew()`, release with `close()`. See [Events & Data Channels](../../usage/events-channels.md).
 
 ### frameset()
 
-Subscribe to the frame-set stream: each set carries the color / depth / infrared frames together.
+Multi-stream frame-set stream.
 
 ```python
-frameset(qos_profile: str = "latest") -> FramesetChannel
+frameset(qos_profile: str = "latest") -> Channel
 ```
 
-**Open parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `qos_profile` | `str` | `"latest"` | `"latest"` / `"realtime"` / `"reliable"` |
-
-**Frame** (`FramesetChannelFrame`)
+Frame payload is `FrameSet`:
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `channel_id` | `str` | Channel id |
-| `sequence` | `int` | Frame sequence |
-| `timestamp_us` | `int` | Timestamp (microseconds) |
-| `payload` | `CameraFrameSetT` | Frame set |
-
-`payload` (`CameraFrameSetT`) fields:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `cameraSlot` | `str` | Source slot |
-| `sequence` | `int` | Frame-set sequence |
-| `stampNs` | `int` | Capture timestamp (nanoseconds) |
-| `color` / `depth` / `infrared` | `ImageFrameT` \| `None` | Per-stream image frames |
-| `synchronized` | `bool` | Whether the frames were captured in sync |
-
-Iterate frames with `frames(poll_timeout_ms=..., timeout_ms=...)`.
-
-```python
-ch = robot.head_camera.frameset(qos_profile="latest")
-for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-    fs = frame.payload
-    print(frame.sequence, fs.synchronized, fs.color.width if fs.color else None)
-```
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `sequence` | `int` | Sequence number increasing from 0 |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+| `clock_domain` | `str` | Clock domain of the timestamp |
+| `sync_status` | `SyncStatus` | Multi-stream time pairing status (`SyncStatus`) |
+| `calibration_generation` | `int` | Calibration generation; a change means intrinsics must be re-read |
+| `color` | `ImageFrame` | Color |
+| `depth` | `ImageFrame` | Depth data |
+| `registered_depth` | `ImageFrame` | Depth registered to color |
+| `infrared` | `ImageFrame` | Infrared stream |
+| `infrared_left` | `ImageFrame` | Left infrared stream |
+| `infrared_right` | `ImageFrame` | Right infrared stream |
+| `confidence` | `ImageFrame` | Confidence data |
 
 ### color()
 
-Subscribe to the color image stream.
+Color image stream.
 
 ```python
-color(qos_profile: str = "latest") -> ColorChannel
+color(qos_profile: str = "latest") -> Channel
 ```
 
-**Open parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `qos_profile` | `str` | `"latest"` | `"latest"` / `"realtime"` / `"reliable"` |
-
-**Frame** (`ColorChannelFrame`)
+Frame payload is `ImageFrame`:
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `channel_id` | `str` | Channel id |
-| `sequence` | `int` | Frame sequence |
-| `timestamp_us` | `int` | Timestamp (microseconds) |
-| `payload` | `ImageFrameT` | Color image frame; fields under [capture](#capture) |
-
-Iterate frames with `frames(poll_timeout_ms=..., timeout_ms=...)`.
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `stream` | `StreamKind` | Stream kind (`StreamKind`) |
+| `registered_to` | `StreamKind` | Registration target stream; `UNKNOWN` means unregistered |
+| `sequence` | `int` | Sequence number increasing from 0 |
+| `frame_id` | `str` | Reference frame; an empty string in a command means the slot default base, feedback keeps the source frame |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+| `clock_domain` | `str` | Clock domain of the timestamp |
+| `clock_quality` | `ClockQuality` | Timestamp quality (`ClockQuality`) |
+| `sensor_stamp_ns` | `int` | Sensor-side capture time in ns |
+| `host_receive_stamp_ns` | `int` | Host receive time in ns |
+| `exposure_duration_us` | `int` | Exposure duration in microseconds |
+| `trigger_id` | `int` | Trigger id |
+| `calibration_generation` | `int` | Calibration generation; a change means intrinsics must be re-read |
+| `width` | `int` | Width in pixels |
+| `height` | `int` | Height in pixels |
+| `format` | `PixelFormat` | Pixel format (`PixelFormat`) |
+| `step` | `int` | Row stride in bytes |
+| `is_bigendian` | `bool` | Whether big-endian |
+| `depth_scale` | `float` | Depth scale in meters per LSB |
+| `data` | `list[int]` | Audio bytes |
 
 ```python
-ch = robot.chest_camera.color(qos_profile="latest")
-for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-    print(frame.sequence, frame.payload.width, frame.payload.height)
+ch = robot.head_camera.color(qos_profile="latest")
+try:
+    for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
+        print(frame.sequence, frame.payload.width, frame.payload.height)
+finally:
+    ch.close()
 ```
 
 ### depth()
 
-Subscribe to the depth image stream. Open parameters and frame fields match `color()`; the frame type is `DepthChannelFrame` and `payload` is a depth `ImageFrameT`.
+Raw depth stream.
 
 ```python
-depth(qos_profile: str = "latest") -> DepthChannel
+depth(qos_profile: str = "latest") -> Channel
 ```
 
+Frame payload is `ImageFrame`:
+
+| Field | Type | Description |
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `stream` | `StreamKind` | Stream kind (`StreamKind`) |
+| `registered_to` | `StreamKind` | Registration target stream; `UNKNOWN` means unregistered |
+| `sequence` | `int` | Sequence number increasing from 0 |
+| `frame_id` | `str` | Reference frame; an empty string in a command means the slot default base, feedback keeps the source frame |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+| `clock_domain` | `str` | Clock domain of the timestamp |
+| `clock_quality` | `ClockQuality` | Timestamp quality (`ClockQuality`) |
+| `sensor_stamp_ns` | `int` | Sensor-side capture time in ns |
+| `host_receive_stamp_ns` | `int` | Host receive time in ns |
+| `exposure_duration_us` | `int` | Exposure duration in microseconds |
+| `trigger_id` | `int` | Trigger id |
+| `calibration_generation` | `int` | Calibration generation; a change means intrinsics must be re-read |
+| `width` | `int` | Width in pixels |
+| `height` | `int` | Height in pixels |
+| `format` | `PixelFormat` | Pixel format (`PixelFormat`) |
+| `step` | `int` | Row stride in bytes |
+| `is_bigendian` | `bool` | Whether big-endian |
+| `depth_scale` | `float` | Depth scale in meters per LSB |
+| `data` | `list[int]` | Audio bytes |
+
+### registered_depth()
+
+Depth registered to the color frame.
+
 ```python
-ch = robot.head_camera.depth(qos_profile="latest")
-for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-    print(frame.sequence, frame.payload.encoding)
+registered_depth(qos_profile: str = "latest") -> Channel
 ```
+
+Frame payload is `ImageFrame`:
+
+| Field | Type | Description |
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `stream` | `StreamKind` | Stream kind (`StreamKind`) |
+| `registered_to` | `StreamKind` | Registration target stream; `UNKNOWN` means unregistered |
+| `sequence` | `int` | Sequence number increasing from 0 |
+| `frame_id` | `str` | Reference frame; an empty string in a command means the slot default base, feedback keeps the source frame |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+| `clock_domain` | `str` | Clock domain of the timestamp |
+| `clock_quality` | `ClockQuality` | Timestamp quality (`ClockQuality`) |
+| `sensor_stamp_ns` | `int` | Sensor-side capture time in ns |
+| `host_receive_stamp_ns` | `int` | Host receive time in ns |
+| `exposure_duration_us` | `int` | Exposure duration in microseconds |
+| `trigger_id` | `int` | Trigger id |
+| `calibration_generation` | `int` | Calibration generation; a change means intrinsics must be re-read |
+| `width` | `int` | Width in pixels |
+| `height` | `int` | Height in pixels |
+| `format` | `PixelFormat` | Pixel format (`PixelFormat`) |
+| `step` | `int` | Row stride in bytes |
+| `is_bigendian` | `bool` | Whether big-endian |
+| `depth_scale` | `float` | Depth scale in meters per LSB |
+| `data` | `list[int]` | Audio bytes |
+
+### infrared()
+
+Infrared stream.
+
+```python
+infrared(qos_profile: str = "latest") -> Channel
+```
+
+Frame payload is `ImageFrame`:
+
+| Field | Type | Description |
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `stream` | `StreamKind` | Stream kind (`StreamKind`) |
+| `registered_to` | `StreamKind` | Registration target stream; `UNKNOWN` means unregistered |
+| `sequence` | `int` | Sequence number increasing from 0 |
+| `frame_id` | `str` | Reference frame; an empty string in a command means the slot default base, feedback keeps the source frame |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+| `clock_domain` | `str` | Clock domain of the timestamp |
+| `clock_quality` | `ClockQuality` | Timestamp quality (`ClockQuality`) |
+| `sensor_stamp_ns` | `int` | Sensor-side capture time in ns |
+| `host_receive_stamp_ns` | `int` | Host receive time in ns |
+| `exposure_duration_us` | `int` | Exposure duration in microseconds |
+| `trigger_id` | `int` | Trigger id |
+| `calibration_generation` | `int` | Calibration generation; a change means intrinsics must be re-read |
+| `width` | `int` | Width in pixels |
+| `height` | `int` | Height in pixels |
+| `format` | `PixelFormat` | Pixel format (`PixelFormat`) |
+| `step` | `int` | Row stride in bytes |
+| `is_bigendian` | `bool` | Whether big-endian |
+| `depth_scale` | `float` | Depth scale in meters per LSB |
+| `data` | `list[int]` | Audio bytes |
+
+### infrared_left()
+
+Left infrared stream.
+
+```python
+infrared_left(qos_profile: str = "latest") -> Channel
+```
+
+Frame payload is `ImageFrame`:
+
+| Field | Type | Description |
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `stream` | `StreamKind` | Stream kind (`StreamKind`) |
+| `registered_to` | `StreamKind` | Registration target stream; `UNKNOWN` means unregistered |
+| `sequence` | `int` | Sequence number increasing from 0 |
+| `frame_id` | `str` | Reference frame; an empty string in a command means the slot default base, feedback keeps the source frame |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+| `clock_domain` | `str` | Clock domain of the timestamp |
+| `clock_quality` | `ClockQuality` | Timestamp quality (`ClockQuality`) |
+| `sensor_stamp_ns` | `int` | Sensor-side capture time in ns |
+| `host_receive_stamp_ns` | `int` | Host receive time in ns |
+| `exposure_duration_us` | `int` | Exposure duration in microseconds |
+| `trigger_id` | `int` | Trigger id |
+| `calibration_generation` | `int` | Calibration generation; a change means intrinsics must be re-read |
+| `width` | `int` | Width in pixels |
+| `height` | `int` | Height in pixels |
+| `format` | `PixelFormat` | Pixel format (`PixelFormat`) |
+| `step` | `int` | Row stride in bytes |
+| `is_bigendian` | `bool` | Whether big-endian |
+| `depth_scale` | `float` | Depth scale in meters per LSB |
+| `data` | `list[int]` | Audio bytes |
+
+### infrared_right()
+
+Right infrared stream.
+
+```python
+infrared_right(qos_profile: str = "latest") -> Channel
+```
+
+Frame payload is `ImageFrame`:
+
+| Field | Type | Description |
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `stream` | `StreamKind` | Stream kind (`StreamKind`) |
+| `registered_to` | `StreamKind` | Registration target stream; `UNKNOWN` means unregistered |
+| `sequence` | `int` | Sequence number increasing from 0 |
+| `frame_id` | `str` | Reference frame; an empty string in a command means the slot default base, feedback keeps the source frame |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+| `clock_domain` | `str` | Clock domain of the timestamp |
+| `clock_quality` | `ClockQuality` | Timestamp quality (`ClockQuality`) |
+| `sensor_stamp_ns` | `int` | Sensor-side capture time in ns |
+| `host_receive_stamp_ns` | `int` | Host receive time in ns |
+| `exposure_duration_us` | `int` | Exposure duration in microseconds |
+| `trigger_id` | `int` | Trigger id |
+| `calibration_generation` | `int` | Calibration generation; a change means intrinsics must be re-read |
+| `width` | `int` | Width in pixels |
+| `height` | `int` | Height in pixels |
+| `format` | `PixelFormat` | Pixel format (`PixelFormat`) |
+| `step` | `int` | Row stride in bytes |
+| `is_bigendian` | `bool` | Whether big-endian |
+| `depth_scale` | `float` | Depth scale in meters per LSB |
+| `data` | `list[int]` | Audio bytes |
+
+### confidence()
+
+Confidence stream.
+
+```python
+confidence(qos_profile: str = "latest") -> Channel
+```
+
+Frame payload is `ImageFrame`:
+
+| Field | Type | Description |
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `stream` | `StreamKind` | Stream kind (`StreamKind`) |
+| `registered_to` | `StreamKind` | Registration target stream; `UNKNOWN` means unregistered |
+| `sequence` | `int` | Sequence number increasing from 0 |
+| `frame_id` | `str` | Reference frame; an empty string in a command means the slot default base, feedback keeps the source frame |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+| `clock_domain` | `str` | Clock domain of the timestamp |
+| `clock_quality` | `ClockQuality` | Timestamp quality (`ClockQuality`) |
+| `sensor_stamp_ns` | `int` | Sensor-side capture time in ns |
+| `host_receive_stamp_ns` | `int` | Host receive time in ns |
+| `exposure_duration_us` | `int` | Exposure duration in microseconds |
+| `trigger_id` | `int` | Trigger id |
+| `calibration_generation` | `int` | Calibration generation; a change means intrinsics must be re-read |
+| `width` | `int` | Width in pixels |
+| `height` | `int` | Height in pixels |
+| `format` | `PixelFormat` | Pixel format (`PixelFormat`) |
+| `step` | `int` | Row stride in bytes |
+| `is_bigendian` | `bool` | Whether big-endian |
+| `depth_scale` | `float` | Depth scale in meters per LSB |
+| `data` | `list[int]` | Audio bytes |
+
+### points()
+
+Point cloud stream.
+
+```python
+points(qos_profile: str = "latest") -> Channel
+```
+
+Frame payload is `PointCloud`:
+
+| Field | Type | Description |
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `sequence` | `int` | Sequence number increasing from 0 |
+| `source_sequence` | `int` | Source frame sequence |
+| `frame_id` | `str` | Reference frame; an empty string in a command means the slot default base, feedback keeps the source frame |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+| `clock_domain` | `str` | Clock domain of the timestamp |
+| `clock_quality` | `ClockQuality` | Timestamp quality (`ClockQuality`) |
+| `calibration_generation` | `int` | Calibration generation; a change means intrinsics must be re-read |
+| `decimation` | `int` | Point cloud decimation stride |
+| `positions` | `list[float]` | Position list; point clouds store X/Y/Z interleaved |
+| `colors` | `list[int]` | Color list, RGB interleaved |
+
+### imu()
+
+IMU sample stream.
+
+```python
+imu(qos_profile: str = "latest") -> Channel
+```
+
+Frame payload is `ImuSample`:
+
+| Field | Type | Description |
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `sequence` | `int` | Sequence number increasing from 0 |
+| `frame_id` | `str` | Reference frame; an empty string in a command means the slot default base, feedback keeps the source frame |
+| `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
+| `clock_domain` | `str` | Clock domain of the timestamp |
+| `clock_quality` | `ClockQuality` | Timestamp quality (`ClockQuality`) |
+| `sensor_stamp_ns` | `int` | Sensor-side capture time in ns |
+| `linear_acceleration` | `Vector3d` | Linear acceleration in m/s² |
+| `angular_velocity` | `Vector3d` | Angular velocity in rad/s |
+| `temperature_c` | `float` | Temperature in Celsius |
 
 ### rtsp()
 
-Get the RTSP preview playback URL. This is an info-only channel: there is no `frames()`; read the URL from the `info` property. Supports `renew()` / `close()` and the `with` context manager.
+RTSP preview endpoint; it publishes media descriptors rather than image frames.
 
 ```python
-rtsp(qos_profile: str = "latest") -> RtspChannel
+rtsp(qos_profile: str = "latest") -> Channel
 ```
 
-**Open parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `qos_profile` | `str` | `"latest"` | `"latest"` / `"realtime"` / `"reliable"` |
-
-**info** (`StreamUrlT`)
+Frame payload is `MediaEndpoint`:
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `cameraSlot` | `str` | Camera slot |
-| `url` | `str` | Playback URL |
-| `outcome` | `OutcomeT` \| `None` | `success` / `statusMessage` |
-
-```python
-with robot.head_camera.rtsp() as ch:
-    print(ch.info.url)
-```
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `uri` | `str` | Image, video, or audio URI |
+| `protocol` | `MediaProtocol` | Media protocol (`MediaProtocol`) |
+| `codec` | `VideoCodec` | Video codec (`VideoCodec`) |
+| `width` | `int` | Width in pixels |
+| `height` | `int` | Height in pixels |
+| `fps` | `int` | Frame rate |
+| `bitrate_bps` | `int` | Bitrate in bits per second |
+| `lease_id` | `str` | Stream lease id |
+| `pipeline_generation` | `int` | Pipeline generation; a change means the preview must renegotiate |
 
 ### webrtc()
 
-Get the WebRTC preview playback URL. Like `rtsp()`, this is an info-only channel: `info` is a `StreamUrlT`, with `renew()` / `close()` and `with` support.
+WebRTC preview endpoint; it publishes media descriptors rather than image frames.
 
 ```python
-webrtc(qos_profile: str = "latest") -> WebrtcChannel
+webrtc(qos_profile: str = "latest") -> Channel
 ```
 
-```python
-with robot.head_camera.webrtc() as ch:
-    print(ch.info.url)
-```
+Frame payload is `MediaEndpoint`:
+
+| Field | Type | Description |
+|------|------|------|
+| `slot` | `str` | Slot id |
+| `uri` | `str` | Image, video, or audio URI |
+| `protocol` | `MediaProtocol` | Media protocol (`MediaProtocol`) |
+| `codec` | `VideoCodec` | Video codec (`VideoCodec`) |
+| `width` | `int` | Width in pixels |
+| `height` | `int` | Height in pixels |
+| `fps` | `int` | Frame rate |
+| `bitrate_bps` | `int` | Bitrate in bits per second |
+| `lease_id` | `str` | Stream lease id |
+| `pipeline_generation` | `int` | Pipeline generation; a change means the preview must renegotiate |
 
 ## Events
 
-Subscribe via each slot's `events` (e.g. `robot.head_camera.events`; the other cameras likewise). Callbacks run on the SDK I/O thread: keep them light and do not call blocking APIs; see [Events & Data Channels](../../usage/events-channels.md).
+Subscribe through `robot.<slot>.events`. Callbacks run on the SDK I/O thread: keep them short and never call blocking APIs. Every event carries an `EventHeader` (`name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`).
 
-Every event includes an `EventHeader`: `name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`.
+| Entry | Event type | payload |
+|------|------|------|
+| `robot.<slot>.events.camera_session_changed` | `CameraSessionChangedEvent` | `camera_session_changed` |
+| `robot.<slot>.events.camera_calibration_changed` | `CameraCalibrationChangedEvent` | `camera_calibration_changed` |
+| `robot.<slot>.events.camera_device_connection_changed` | `CameraDeviceConnectionChangedEvent` | `camera_device_connection_changed` |
+| `robot.<slot>.events.fault_changed` | `FaultChangedEvent` | `FaultChangedEvent.faults`: `Faults` |
+| `robot.<slot>.events.lifecycle_changed` | `LifecycleChangedEvent` | `LifecycleChangedEvent.lifecycle`: `CapabilityLifecycleSnapshot` |
 
-### fault_changed
+### camera_session_changed
 
-Pushed when this slot's fault set changes.
+Pushed when the session state changes; the payload is a `SessionState`.
 
-Subscribe with `robot.head_camera.events.fault_changed.subscribe(callback)` (same on the other slots).
+### camera_calibration_changed
 
-**Payload**
+Pushed when the calibration changes; the payload is a `CameraCalibration`. Re-read intrinsics and extrinsics on receipt.
 
-`FaultChangedEvent.faults`: `Faults`. Today `Faults` only has `revision`; this module has no named faults yet. See [Faults](#faults).
+### camera_device_connection_changed
 
-```python
-def on_fault(event):
-    print(event.header.slot_id, event.faults.revision)
-
-token = robot.head_camera.events.fault_changed.subscribe(on_fault)
-```
-
-### lifecycle_changed
-
-Pushed when this slot's lifecycle or health changes.
-
-Subscribe with `robot.head_camera.events.lifecycle_changed.subscribe(callback)` (same on the other slots).
-
-**Payload**
-
-`LifecycleChangedEvent.lifecycle`: `CapabilityLifecycleSnapshot`:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `lifecycle` | `LifecycleState` | Lifecycle stage |
-| `health` | `HealthState` | Health |
-| `source_instance_id` | `str` | Source instance id |
-
-```python
-def on_lifecycle(event):
-    snap = event.lifecycle
-    print(event.header.slot_id, snap.lifecycle, snap.health)
-
-token = robot.chest_camera.events.lifecycle_changed.subscribe(on_lifecycle)
-```
+Pushed when the device connects or disconnects; the payload is a `DeviceConnectionEvent`.
 
 ## Faults
 
-Query with each slot's `faults()` (e.g. `robot.head_camera.faults()`), which returns `Faults`.
-
-This module has no named faults yet: `Faults` currently only exposes `revision`. Changes are pushed on `fault_changed`. See [Status, Faults & Lifecycle](../../usage/status-faults.md) for the shared model.
-
-If named faults appear later, each one is a `FaultState`:
+Query with `robot.<slot>.faults()`, which returns `Faults` (`revision` plus `records: list[FaultState]`). Each `FaultState`: 
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `active` | `bool` | Whether the fault is still standing |
-| `catalog_id` | `str` | Catalog id |
-| `fault_class` | `CapabilityStateClass` | Fault class |
-| `first_seen_us` / `last_seen_us` | `int` | First / last seen timestamp (microseconds) |
-| `count` | `int` | Occurrence count |
+|------|------|------|
+| `code` | `int` | Diagnostic code; `0` means no fault |
+| `source` | `str` | Fault source id |
+| `state` | `int` | Fault state bits |
+| `severity` | `int` | Severity, aligned with `HealthState` |
+| `timestamp_us` | `int` | Latest timestamp in microseconds |
+
+For human-readable fault text use `Catalogs.format_fault(record, capability_id="...")`; see [Catalogs](../../usage/catalogs.md).
 
 ## Status
 
-This module has no `status()`. For aggregated robot status see `robot.status()`. Device state comes from `CameraSessionT.state` (`DeviceState`) returned by `open()` / `close()`.
+`status()` returns the read-only status bag for this capability; see `robot.status()` for the aggregated view.
 
-Shared queries:
+| Field | Type | Default | Description |
+|------|------|------|------|
+| `state` | `str` | `disconnected` | `disconnected` / `idle` / `streaming` / `fault` |
+| `sync_mode` | `str` | `standalone` | `standalone` / `primary` / `secondary` / `hardware_trigger` / `software_trigger` |
+| `registration_mode` | `str` | `none` | `none` / `hardware` / `software` |
+| `color_active` | `bool` | `False` |  |
+| `depth_active` | `bool` | `False` |  |
+| `infrared_active` | `bool` | `False` |  |
+| `imu_active` | `bool` | `False` |  |
+| `calibration_generation` | `uint64` | `0` | Calibration generation; a change means intrinsics must be re-read |
+| `temperature_c` | `float` | `0.0` | Temperature in Celsius |
 
-- `health()`: current health
-- `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `source_instance_id`)
+Shared read-only queries:
 
-Changes arrive on `lifecycle_changed`. See [Status, Faults & Lifecycle](../../usage/status-faults.md).
+- `health()`: `SlotHealth` (`is_usable` / `lifecycle` / `health` / `standing_faults` / `pbit_completed` / `source_instance_id`)
+- `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `pbit_completed` / `source_instance_id`)
+
+Changes arrive through `lifecycle_changed`; see [Status, Faults & Lifecycle](../../usage/status-faults.md).
 
 ## Resources
 
-On a given camera slot, `open` and `close` share the `camera_control` resource; new requests queue. Captures and channel subscriptions do not take this resource.
+`open` / `close` / `set_imaging` share the `camera_device` resource with policy `queue`; `capture` / `trigger` and the other commands hold no resource.

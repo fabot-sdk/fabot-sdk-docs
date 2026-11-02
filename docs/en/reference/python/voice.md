@@ -2,516 +2,405 @@
 title: Voice
 status: draft
 owner: fabot-core
-updated: 2026-09-03
+updated: 2026-11-02
 ---
 
 # Voice
 
 ## Module Overview
 
-- Capability id: `voice`; slot: `robot.voice`
-- Voice interaction: wake, transcription, and intent recognition arrive on data channels (input side); speech synthesis, audio playback, and volume / mute / speaking-rate / speaker control go through methods and Operations (output side).
+- Capability id: `voice`; slots: `robot.voice`
+- Domain: `interaction`; capability version: `1.1.0`
+- Voice hardware capability: status and volume, wake word, microphone capture and speaker playback, all stream-oriented.
+- Capture uses `listen` plus the `capture()` channel; playback uses `play_audio` or `begin_playback` with `write_audio` and the `playback()` channel.
+
+Semantic features (transcripts, intents, speech synthesis) live in the `robot.skills.voice_aiui` skill, not this module; see [Skills & Extensions](../../usage/skills.md).
 
 ## API Overview
 
-| Method | Request | Response | Type |
-|--------|---------|----------|------|
-| `stop` | — | `VoiceStatusAppliedT` | Command |
-| `set_volume` | `volume` | `VoiceStatusAppliedT` | Command |
-| `set_mute` | `muted` | `VoiceStatusAppliedT` | Command |
-| `set_speaker` | `speaker_id` | `VoiceStatusAppliedT` | Command |
-| `list_speakers` | — | `SpeakerListT` | Command |
-| `set_speaking_rate` | `speaking_rate` | `VoiceStatusAppliedT` | Command |
-| `set_wakeword_enabled` | `enabled` | `VoiceStatusAppliedT` | Command |
-| `get_status` | — | `VoiceStatusAppliedT` | Command |
-| `speak` | `text`, `speaker_id` | `SpeakOperation` | Operation |
-| `play_audio` | `uri` | `PlayAudioOperation` | Operation |
+| Method | Request | Response | Default timeout |
+|------|------|------|------|
+| `stop` | `Empty` | `VoiceStatusApplied` | 1000 ms |
+| `set_volume` | `Volume` | `VoiceStatusApplied` | 3000 ms |
+| `set_mute` | `Mute` | `VoiceStatusApplied` | 1000 ms |
+| `set_wakeword_enabled` | `Wakeword` | `VoiceStatusApplied` | 1000 ms |
+| `get_status` | `Empty` | `VoiceStatusApplied` | 1000 ms |
+| `stop_capture` | `CaptureControl` | `CaptureAccepted` | 3000 ms |
+| `begin_playback` | `PlaybackOptions` | `PlaybackAccepted` | 3000 ms |
+| `write_audio` | `PlaybackChunk` | `PlaybackAccepted` | 3000 ms |
 
-Command default `timeout_ms`: 3000 for `set_volume` / `list_speakers`, 1000 for the other Commands (all overridable). `speak` / `play_audio` default to a 30000 ms timeout and are cancelable. All parameters are keyword-only.
+All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
+
+| Method | Request | Kind | Resources | Default budget |
+|------|------|------|------|------|
+| `listen` | `CaptureOptions` | Operation | speaker, microphone | 60000 ms |
+| `play_audio` | `AudioPlayback` | Operation | speaker | 30000 ms |
+
+Operations return a handle immediately; progress and results come from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
 
 | Channel | Content |
-|---------|---------|
-| `wake()` | Wake-event stream (`WakeEventT`) |
-| `transcript()` | Speech-transcript stream (`TranscriptEventT`) |
-| `intent()` | Intent-recognition stream (`IntentEventT`) |
+|------|------|
+| `wake()` | `WakeEvent` |
+| `capture()` | `CaptureChunk` |
+| `playback()` | `PlaybackEvent` |
+
+Enums used on this page:
+
+**`CaptureEnd` enum**
+
+| Value | Description |
+|-------|-------------|
+| `SILENCE` | Ended on silence |
+| `MAX_DURATION` | Reached the maximum duration |
+| `NO_SPEECH` | No speech detected |
+| `STOPPED` | Stopped by the caller |
+| `FAILED` | Failed |
+
+**`PlaybackState` enum**
+
+| Value | Description |
+|-------|-------------|
+| `STARTED` | Playback started |
+| `FINISHED` | Playback finished |
+| `INTERRUPTED` | Interrupted |
+| `FAILED` | Failed |
 
 ## Methods
 
-All method parameters are keyword-only. Command timeouts and Operation polling / cancel are documented in [Commands & Operations](../../usage/commands-operations.md); they are not repeated in each section.
+Signatures below are authoritative for names and defaults. Parameters before `*` accept positional or keyword form; those after `*` are keyword-only. Fields use snake_case (`frame_id`); the generated types also accept the camelCase alias.
 
 ### stop
 
-Interrupt the current voice output, ending any in-flight `speak` / `play_audio` task.
+Stop the current playback or capture.
 
 ```python
-stop(*, timeout_ms: int = 1000) -> VoiceStatusAppliedT
+stop(*, timeout_ms: int = 1000) -> VoiceStatusApplied
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
-
-`VoiceStatusAppliedT` (shared by all write commands and `get_status`):
+**Returns** `VoiceStatusApplied`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `outcome` | `OutcomeT` | `success` / `statusMessage` |
-| `status` | `VoiceStatusT` | Voice-state snapshot after the change is applied |
-
-`VoiceStatusT` fields:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `activity` | `int` (`VoiceActivity`) | Current activity: `UNKNOWN` / `IDLE` / `LISTENING` / `SPEAKING` |
-| `volume` | `float` | Linear gain in [0.0, 1.0] |
-| `muted` | `bool` | Whether output is muted |
-| `speakerId` | `str` | Current speaker id; empty string means unset |
-| `speakingRate` | `float` | Speaking-rate multiplier; 1.0 is the default |
-| `wakewordEnabled` | `bool` | Whether wakeword detection is on |
-
-```python
-applied = robot.voice.stop()
-print(applied.outcome.success, applied.status.activity)
-```
+|------|------|------|
+| `outcome` | `Outcome` | Call result |
+| `status` | `VoiceStatus` | Status snapshot |
 
 ### set_volume
 
-Set the volume (linear gain). Volume and mute are independent: volume 0.0 is not mute.
+Set the volume from 0 to 1.
 
 ```python
-set_volume(*, volume: float, timeout_ms: int = 3000) -> VoiceStatusAppliedT
+set_volume(volume: float, *, timeout_ms: int = 3000) -> VoiceStatusApplied
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `volume` | `float` | (required) | Linear gain; legal range [0.0, 1.0], out of range raises `InvalidArgument` |
-| `timeout_ms` | `int` | `3000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `volume` | `float` | (required) | Volume from 0 to 1 |
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `VoiceStatusApplied`
 
-`VoiceStatusAppliedT`: `outcome` / `status`; see [stop](#stop) for the fields.
-
-```python
-applied = robot.voice.set_volume(volume=0.6)
-print(applied.outcome.success, applied.status.volume)
-```
+| Field | Type | Description |
+|------|------|------|
+| `outcome` | `Outcome` | Call result |
+| `status` | `VoiceStatus` | Status snapshot |
 
 ### set_mute
 
-Mute or unmute. Unmuting restores the last non-muted volume.
+Mute or unmute.
 
 ```python
-set_mute(*, muted: bool, timeout_ms: int = 1000) -> VoiceStatusAppliedT
+set_mute(muted: bool, *, timeout_ms: int = 1000) -> VoiceStatusApplied
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `muted` | `bool` | (required) | `True` mutes; `False` unmutes |
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `muted` | `bool` | (required) | Whether muted |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
-
-`VoiceStatusAppliedT`: `outcome` / `status`; see [stop](#stop) for the fields.
-
-```python
-applied = robot.voice.set_mute(muted=True)
-print(applied.outcome.success, applied.status.muted)
-```
-
-### set_speaker
-
-Switch the current speaker. See `list_speakers()` for the available speakers.
-
-```python
-set_speaker(*, speaker_id: str, timeout_ms: int = 1000) -> VoiceStatusAppliedT
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `speaker_id` | `str` | (required) | Speaker id |
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
-
-**Returns**
-
-`VoiceStatusAppliedT`: `outcome` / `status`; see [stop](#stop) for the fields.
-
-```python
-applied = robot.voice.set_speaker(speaker_id="zh-CN-female-1")
-print(applied.outcome.success, applied.status.speakerId)
-```
-
-### list_speakers
-
-List the selectable speakers.
-
-```python
-list_speakers(*, timeout_ms: int = 3000) -> SpeakerListT
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `3000` | Command timeout (milliseconds) |
-
-**Returns**
-
-`SpeakerListT`:
+**Returns** `VoiceStatusApplied`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `speakers` | `list[SpeakerInfoT]` | Speaker list; each entry has `speakerId` / `locale` (e.g. `zh-CN`) / `gender` — the latter two are empty when unknown |
-| `outcome` | `OutcomeT` | `success` / `statusMessage` |
-
-```python
-result = robot.voice.list_speakers()
-for spk in result.speakers:
-    print(spk.speakerId, spk.locale, spk.gender)
-```
-
-### set_speaking_rate
-
-Set the speaking-rate multiplier. Independent of volume.
-
-```python
-set_speaking_rate(*, speaking_rate: float, timeout_ms: int = 1000) -> VoiceStatusAppliedT
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `speaking_rate` | `float` | (required) | Rate multiplier; 1.0 is the default. Legal range (0.0, 3.0], out of range raises `InvalidArgument` |
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
-
-**Returns**
-
-`VoiceStatusAppliedT`: `outcome` / `status`; see [stop](#stop) for the fields.
-
-```python
-applied = robot.voice.set_speaking_rate(speaking_rate=1.2)
-print(applied.outcome.success, applied.status.speakingRate)
-```
+|------|------|------|
+| `outcome` | `Outcome` | Call result |
+| `status` | `VoiceStatus` | Status snapshot |
 
 ### set_wakeword_enabled
 
-Enable or disable wakeword detection.
+Enable or disable the wake word.
 
 ```python
-set_wakeword_enabled(*, enabled: bool, timeout_ms: int = 1000) -> VoiceStatusAppliedT
+set_wakeword_enabled(enabled: bool, *, timeout_ms: int = 1000) -> VoiceStatusApplied
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `enabled` | `bool` | (required) | `True` enables; `False` disables |
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `enabled` | `bool` | (required) | Whether enabled |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `VoiceStatusApplied`
 
-`VoiceStatusAppliedT`: `outcome` / `status`; see [stop](#stop) for the fields.
-
-```python
-applied = robot.voice.set_wakeword_enabled(enabled=False)
-print(applied.outcome.success, applied.status.wakewordEnabled)
-```
+| Field | Type | Description |
+|------|------|------|
+| `outcome` | `Outcome` | Call result |
+| `status` | `VoiceStatus` | Status snapshot |
 
 ### get_status
 
-Read the current voice-state snapshot as a Command.
+Read the voice status snapshot; `get_state` is an alias.
 
 ```python
-get_status(*, timeout_ms: int = 1000) -> VoiceStatusAppliedT
+get_status(*, timeout_ms: int = 1000) -> VoiceStatusApplied
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
-
-`VoiceStatusAppliedT`: `outcome` / `status`; see [stop](#stop) for the fields.
-
-```python
-applied = robot.voice.get_status()
-print(applied.status.volume, applied.status.muted, applied.status.speakerId)
-```
-
-### speak
-
-Synthesize text and play it. Returns a pollable, cancelable Operation.
-
-```python
-speak(*, text: str, speaker_id: str) -> SpeakOperation
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `text` | `str` | (required) | Text to synthesize and speak |
-| `speaker_id` | `str` | (required) | Speaker id for this utterance only; an empty string keeps the current speaker |
-
-**Returns**
-
-`SpeakOperation`. Use `get()` / `events()` for snapshots, or `cancel()`. Snapshot fields:
+**Returns** `VoiceStatusApplied`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `state` | `OperationState` | Task state |
-| `terminal` | `bool` | Whether the snapshot is terminal |
-| `feedback` | `EmptyT` \| `None` | No progress content |
-| `result` | `OutcomeT` \| `None` | `success` / `statusMessage` |
-| `error` | `FabotError` \| `None` | Failure reason |
+|------|------|------|
+| `outcome` | `Outcome` | Call result |
+| `status` | `VoiceStatus` | Status snapshot |
+
+### stop_capture
+
+Stop the given capture session.
 
 ```python
-op = robot.voice.speak(text="Hello, world", speaker_id="")
-for snap in op.events(poll_timeout_ms=200, timeout_ms=30000):
-    print(snap.state)
-    if snap.terminal:
-        break
+stop_capture(*, session_id: str, timeout_ms: int = 3000) -> CaptureAccepted
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `session_id` | `str` | (required) | Session id |
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
+
+**Returns** `CaptureAccepted`
+
+| Field | Type | Description |
+|------|------|------|
+| `outcome` | `Outcome` | Call result |
+| `session_id` | `str` | Session id; capture and playback calls must agree |
+| `accepted` | `bool` | Whether accepted |
+
+### begin_playback
+
+Begin a streaming playback session, then push chunks with `write_audio`.
+
+```python
+begin_playback(*, session_id: str, sample_rate: int = 16000, channels: int = 1, timeout_ms: int = 3000) -> PlaybackAccepted
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `session_id` | `str` | (required) | Session id |
+| `sample_rate` | `int` | `16000` | Sample rate in hertz |
+| `channels` | `int` | `1` | Channel count |
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
+
+**Returns** `PlaybackAccepted`
+
+| Field | Type | Description |
+|------|------|------|
+| `outcome` | `Outcome` | Call result |
+| `session_id` | `str` | Session id; capture and playback calls must agree |
+| `accepted` | `bool` | Whether accepted |
+| `buffered_bytes` | `int` | Buffered byte count |
+
+### write_audio
+
+Write one audio chunk; `final=True` marks the last.
+
+```python
+write_audio(*, session_id: str, sequence: int, final: bool, data: list[int], timeout_ms: int = 3000) -> PlaybackAccepted
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `session_id` | `str` | (required) | Session id |
+| `sequence` | `int` | (required) | Sequence number |
+| `final` | `bool` | (required) | Whether this is the last chunk |
+| `data` | `list[int]` | (required) | Audio bytes |
+| `timeout_ms` | `int` | `3000` | Timeout in milliseconds |
+
+**Returns** `PlaybackAccepted`
+
+| Field | Type | Description |
+|------|------|------|
+| `outcome` | `Outcome` | Call result |
+| `session_id` | `str` | Session id; capture and playback calls must agree |
+| `accepted` | `bool` | Whether accepted |
+| `buffered_bytes` | `int` | Buffered byte count |
+
+### listen
+
+Capture a speech segment and return a cancelable Operation whose terminal result is a `CaptureSummary`.
+
+```python
+listen(*, session_id: str, wake_cue: bool = True, max_seconds: float = 0.0) -> ListenOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `session_id` | `str` | (required) | Session id |
+| `wake_cue` | `bool` | `True` | Whether to play a wake cue |
+| `max_seconds` | `float` | `0.0` | Maximum capture length in seconds |
+
+Returns a `ListenOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
+
+```python
+from fabot.core import OperationState
+from fabot.capabilities.voice import CaptureEnd
+
+ch = robot.voice.capture(qos_profile="realtime")
+op = robot.voice.listen(session_id="demo-1", wake_cue=True, max_seconds=5.0)
+
+captured = bytearray()
+for frame in ch.frames(poll_timeout_ms=100, timeout_ms=8000):
+    captured.extend(frame.payload.data)
+
+snap = op.get(timeout=10.0)
+if snap.state is OperationState.Succeeded:
+    print(snap.result.voiced, snap.result.bytes, snap.result.reason)   # reason 为 CaptureEnd
+ch.close()
 ```
 
 ### play_audio
 
-Play an audio resource. Returns a pollable, cancelable Operation.
+Play an audio resource and return a cancelable Operation.
 
 ```python
-play_audio(*, uri: str) -> PlayAudioOperation
+play_audio(uri: str) -> PlayAudioOperation
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `uri` | `str` | (required) | Audio-resource URI, e.g. a `file://` local file |
+|------|------|------|------|
+| `uri` | `str` | (required) | Resource URI |
 
-**Returns**
-
-`PlayAudioOperation`. Snapshot fields match `speak`: `state` / `feedback: EmptyT` / `result: OutcomeT` / `error`. The handle supports `cancel()`.
-
-```python
-op = robot.voice.play_audio(uri="file:///opt/fabot/media/ding.wav")
-snap = op.get(timeout_ms=30000)
-print(snap.state, snap.result)
-```
+Returns a `PlayAudioOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
 ## Channels
 
-Open parameters and frame fields are below; see [Events & Data Channels](../../usage/events-channels.md) for shared usage.
+Opening a channel takes a lease and returns a handle: iterate with `frames()`, take one sample with `next()`, renew with `renew()`, release with `close()`. See [Events & Data Channels](../../usage/events-channels.md).
 
 ### wake()
 
-Subscribe to the wake-event stream.
+Wake-word stream.
 
 ```python
-wake(qos_profile: str = "latest") -> WakeChannel
+wake(qos_profile: str = "latest") -> Channel
 ```
 
-**Open parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `qos_profile` | `str` | `"latest"` | `"latest"` / `"realtime"` / `"reliable"` |
-
-**Frame** (`WakeChannelFrame`)
+Frame payload is `WakeEvent`:
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `channel_id` | `str` | Channel id |
-| `sequence` | `int` | Frame sequence |
-| `timestamp_us` | `int` | Timestamp (microseconds) |
-| `payload` | `WakeEventT` | `payload.keyword` (`str`): matched wakeword; `payload.timestampUs` (`int`): event timestamp (microseconds) |
+|------|------|------|
+| `keyword` | `str` | Matched wake word |
+| `timestamp_us` | `int` | Sample timestamp in microseconds |
 
-Iterate frames with `frames(poll_timeout_ms=..., timeout_ms=...)`.
+### capture()
 
-```python
-ch = robot.voice.wake(qos_profile="latest")
-for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-    print(frame.payload.keyword)
-```
-
-### transcript()
-
-Subscribe to the speech-transcript stream.
+Captured audio chunk stream.
 
 ```python
-transcript(qos_profile: str = "latest") -> TranscriptChannel
+capture(qos_profile: str = "latest") -> Channel
 ```
 
-**Open parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `qos_profile` | `str` | `"latest"` | `"latest"` / `"realtime"` / `"reliable"` |
-
-**Frame** (`TranscriptChannelFrame`)
+Frame payload is `CaptureChunk`:
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `channel_id` | `str` | Channel id |
-| `sequence` | `int` | Frame sequence |
-| `timestamp_us` | `int` | Timestamp (microseconds) |
-| `payload` | `TranscriptEventT` | See below |
+|------|------|------|
+| `session_id` | `str` | Session id; capture and playback calls must agree |
+| `sequence` | `int` | Sequence number increasing from 0 |
+| `sample_rate` | `int` | Sample rate in hertz |
+| `channels` | `int` | Channel count |
+| `timestamp_us` | `int` | Sample timestamp in microseconds |
+| `data` | `list[int]` | Audio bytes |
 
-`TranscriptEventT` fields:
+### playback()
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `text` | `str` | Transcribed text |
-| `isFinal` | `bool` | Whether this is a final result (`False` = interim) |
-| `confidence` | `float` | Confidence |
-| `timestampUs` | `int` | Event timestamp (microseconds) |
-
-Iterate frames with `frames(poll_timeout_ms=..., timeout_ms=...)`.
+Playback event stream.
 
 ```python
-ch = robot.voice.transcript(qos_profile="latest")
-for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-    if frame.payload.isFinal:
-        print(frame.payload.text, frame.payload.confidence)
+playback(qos_profile: str = "latest") -> Channel
 ```
 
-### intent()
-
-Subscribe to the intent-recognition stream.
-
-```python
-intent(qos_profile: str = "latest") -> IntentChannel
-```
-
-**Open parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `qos_profile` | `str` | `"latest"` | `"latest"` / `"realtime"` / `"reliable"` |
-
-**Frame** (`IntentChannelFrame`)
+Frame payload is `PlaybackEvent`:
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `channel_id` | `str` | Channel id |
-| `sequence` | `int` | Frame sequence |
-| `timestamp_us` | `int` | Timestamp (microseconds) |
-| `payload` | `IntentEventT` | See below |
-
-`IntentEventT` fields:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `intentId` | `str` | Intent id |
-| `transcript` | `str` | Corresponding transcript text |
-| `confidence` | `float` | Confidence |
-| `timestampUs` | `int` | Event timestamp (microseconds) |
-
-Iterate frames with `frames(poll_timeout_ms=..., timeout_ms=...)`.
-
-```python
-ch = robot.voice.intent(qos_profile="latest")
-for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-    print(frame.payload.intentId, frame.payload.confidence)
-```
+|------|------|------|
+| `session_id` | `str` | Session id; capture and playback calls must agree |
+| `state` | `PlaybackState` | State value |
+| `timestamp_us` | `int` | Sample timestamp in microseconds |
 
 ## Events
 
-Subscribe via `robot.voice.events`. Callbacks run on the SDK I/O thread: keep them light and do not call blocking APIs; see [Events & Data Channels](../../usage/events-channels.md).
+Subscribe through `robot.<slot>.events`. Callbacks run on the SDK I/O thread: keep them short and never call blocking APIs. Every event carries an `EventHeader` (`name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`).
 
-Every event includes an `EventHeader`: `name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`.
+| Entry | Event type | payload |
+|------|------|------|
+| `robot.<slot>.events.audio_wake_word_detected` | `AudioWakeWordDetectedEvent` | `audio_wake_word_detected` |
+| `robot.<slot>.events.fault_changed` | `FaultChangedEvent` | `FaultChangedEvent.faults`: `Faults` |
+| `robot.<slot>.events.lifecycle_changed` | `LifecycleChangedEvent` | `LifecycleChangedEvent.lifecycle`: `CapabilityLifecycleSnapshot` |
 
-This module has no module-specific event streams; wake, transcript, and intent arrive on data channels — see [Channels](#channels).
+### audio_wake_word_detected
 
-### fault_changed
-
-Pushed when this slot's fault set changes.
-
-Subscribe with `robot.voice.events.fault_changed.subscribe(callback)`.
-
-**Payload**
-
-`FaultChangedEvent.faults`: `Faults`. Today `Faults` only has `revision`; this module has no named faults yet. See [Faults](#faults).
-
-```python
-def on_fault(event):
-    print(event.header.slot_id, event.faults.revision)
-
-token = robot.voice.events.fault_changed.subscribe(on_fault)
-```
-
-### lifecycle_changed
-
-Pushed when this slot's lifecycle or health changes.
-
-Subscribe with `robot.voice.events.lifecycle_changed.subscribe(callback)`.
-
-**Payload**
-
-`LifecycleChangedEvent.lifecycle`: `CapabilityLifecycleSnapshot`:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `lifecycle` | `LifecycleState` | Lifecycle stage |
-| `health` | `HealthState` | Health |
-| `source_instance_id` | `str` | Source instance id |
-
-```python
-def on_lifecycle(event):
-    snap = event.lifecycle
-    print(event.header.slot_id, snap.lifecycle, snap.health)
-
-token = robot.voice.events.lifecycle_changed.subscribe(on_lifecycle)
-```
+Pushed when the wake word fires; the payload is a `WakeEvent` (`keyword` / `timestamp_us`).
 
 ## Faults
 
-Query with `robot.voice.faults()`, which returns `Faults`.
-
-This module has no named faults yet: `Faults` currently only exposes `revision`. Changes are pushed on `fault_changed`. See [Status, Faults & Lifecycle](../../usage/status-faults.md) for the shared model.
-
-If named faults appear later, each one is a `FaultState`:
+Query with `robot.<slot>.faults()`, which returns `Faults` (`revision` plus `records: list[FaultState]`). Each `FaultState`: 
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `active` | `bool` | Whether the fault is still standing |
-| `catalog_id` | `str` | Catalog id |
-| `fault_class` | `CapabilityStateClass` | Fault class |
-| `first_seen_us` / `last_seen_us` | `int` | First / last seen timestamp (microseconds) |
-| `count` | `int` | Occurrence count |
+|------|------|------|
+| `code` | `int` | Diagnostic code; `0` means no fault |
+| `source` | `str` | Fault source id |
+| `state` | `int` | Fault state bits |
+| `severity` | `int` | Severity, aligned with `HealthState` |
+| `timestamp_us` | `int` | Latest timestamp in microseconds |
+
+For human-readable fault text use `Catalogs.format_fault(record, capability_id="...")`; see [Catalogs](../../usage/catalogs.md).
 
 ## Status
 
-`status()` returns `Status`:
+`status()` returns the read-only status bag for this capability; see `robot.status()` for the aggregated view.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `activity` | `Activity` | Voice activity: `Activity.Idle` / `Activity.Listening` / `Activity.Speaking` |
+| Field | Type | Default | Description |
+|------|------|------|------|
+| `activity` | `str` | `idle` | `idle` / `listening` / `speaking` |
 
-```python
-st = robot.voice.status()
-print(st.activity)
-```
+Shared read-only queries:
 
-`status()` only carries `activity`; for the full snapshot (volume, mute, speaker, etc.) use the `get_status()` Command — see [Methods](#methods). For aggregated robot status see `robot.status()`.
+- `health()`: `SlotHealth` (`is_usable` / `lifecycle` / `health` / `standing_faults` / `pbit_completed` / `source_instance_id`)
+- `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `pbit_completed` / `source_instance_id`)
 
-Shared queries:
-
-- `health()`: current health
-- `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `source_instance_id`)
-
-Changes arrive on `lifecycle_changed`. See [Status, Faults & Lifecycle](../../usage/status-faults.md).
+Changes arrive through `lifecycle_changed`; see [Status, Faults & Lifecycle](../../usage/status-faults.md).
 
 ## Resources
 
-`speak` and `play_audio` share one speaker resource: while a speak or playback task is running, a new task is **rejected** (not queued). Both Operations default to a 30 s timeout and support `cancel()`; they can also be interrupted with the `stop` command, which does not take the resource.
+Capture holds `speaker` plus `microphone`; playback holds only `speaker`. Both use policy `reject`, so only one session runs at a time and conflicts fail immediately.

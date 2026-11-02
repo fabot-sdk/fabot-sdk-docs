@@ -2,528 +2,775 @@
 title: Arms
 status: draft
 owner: fabot-core
-updated: 2026-09-09
+updated: 2026-11-02
 ---
 
 # Arms
 
 ## Module Overview
 
-- Capability id: `arms`; slot: `robot.arms`
-- Dual-arm coordinated motion and control: dual-arm joint moves, dual-arm end-effector pose / path moves, interpolation-duration settings, impedance drag, dual-arm brakes, and relative pose hold.
-- Cartesian dual-arm motion goes only through this module's `move_dual_arm_*`; do not run it in parallel with the single-arm `smooth_move_pose` / `direct_move_pose` on `robot.left_arm` / `robot.right_arm`.
+- Capability id: `arms`; slots: `robot.arms`
+- Domain: `motion`; capability version: `1.1.0`
+- Coordinated dual-arm motion: coupling mode, impedance drag, relative poses and synchronized trajectories. Left and right data are paired in one call.
+- `ArmsMode.COUPLED` holds the relative end-effector pose captured when coupling is enabled; `ImpedanceMode` supports guided drag teaching.
+
+All motion Operations share the `arms` resource with policy `queue`.
 
 ## API Overview
 
-| Method | Request | Response | Type |
-|--------|---------|----------|------|
-| `get_joints` | — | `list[float]` | Command |
-| `get_pose` | — | `DualArmPoseMoveT` | Command |
-| `get_joints_move_duration` | — | `float` | Command |
-| `set_joints_move_duration` | `move_duration` | `JointsMoveDurationAppliedT` | Command |
-| `get_poses_move_duration` | — | `float` | Command |
-| `set_poses_move_duration` | `move_duration` | `PosesMoveDurationAppliedT` | Command |
-| `get_drag` | — | `DragStateT` | Command |
-| `set_drag` | `open`, `mode` | `OutcomeT` | Command |
-| `get_brake` | — | `BrakeStateT` | Command |
-| `set_brake` | `left_open`, `right_open` | `OutcomeT` | Command |
-| `set_relative_pose_hold` | `enabled` | `OutcomeT` | Command |
-| `move_joints` | `positions`, `wait` | `MoveJointsOperation` | Operation |
-| `move_dual_arm_pose` | `poses`, `wait`, `frame_id` | `MoveDualArmPoseOperation` | Operation |
-| `move_dual_arm_path` | `poses`, `wait`, `frame_id` | `MoveDualArmPathOperation` | Operation |
+| Method | Request | Response | Default timeout |
+|------|------|------|------|
+| `get_joint` | `Empty` | `DualJointState` | 1000 ms |
+| `get_pose` | `PoseQuery` | `DualPose` | 1000 ms |
+| `get_mode` | `Empty` | `Mode` | 1000 ms |
+| `set_mode` | `Mode` | `Mode` | 2000 ms |
+| `get_impedance` | `Empty` | `Impedance` | 2000 ms |
+| `set_impedance` | `Impedance` | `Impedance` | 5000 ms |
+| `get_brake` | `Empty` | `DualBrakeState` | 10000 ms |
+| `set_brake` | `BrakeOpen` | `DualBrakeState` | 10000 ms |
+| `get_joint_velocity_limit` | `Empty` | `Float64` | 2000 ms |
+| `set_joint_velocity_limit` | `Float64` | `Float64` | 2000 ms |
+| `get_linear_velocity_limit` | `Empty` | `Float64` | 2000 ms |
+| `set_linear_velocity_limit` | `Float64` | `Float64` | 2000 ms |
+| `get_angular_velocity_limit` | `Empty` | `Float64` | 2000 ms |
+| `set_angular_velocity_limit` | `Float64` | `Float64` | 2000 ms |
+| `get_joint_acceleration_limit` | `Empty` | `Float64` | 2000 ms |
+| `set_joint_acceleration_limit` | `Float64` | `Float64` | 2000 ms |
+| `get_linear_acceleration_limit` | `Empty` | `Float64` | 2000 ms |
+| `set_linear_acceleration_limit` | `Float64` | `Float64` | 2000 ms |
+| `get_angular_acceleration_limit` | `Empty` | `Float64` | 2000 ms |
+| `set_angular_acceleration_limit` | `Float64` | `Float64` | 2000 ms |
+| `servo_pose` | `DualPose` | `DualPose` | 1000 ms |
+| `get_arrival_thresholds` | `Empty` | `ArrivalThresholds` | 1000 ms |
+| `set_arrival_thresholds` | `ArrivalThresholds` | `ArrivalThresholds` | 1000 ms |
 
-Command default `timeout_ms`: 1000 for `get_joints` / `get_pose`, 2000 for the interpolation-duration and drag queries and `set_relative_pose_hold`, 5000 for `set_drag`, 10000 for `get_brake` / `set_brake` (all overridable). All parameters are keyword-only.
+All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
+
+| Method | Request | Kind | Resources | Default budget |
+|------|------|------|------|------|
+| `move_joint` | `JointMove` | Operation | arms | — |
+| `move_joint_path` | `JointPath` | Operation | arms | — |
+| `move_pose` | `PoseMove` | Operation | arms | — |
+| `move_pose_relative` | `PoseRelative` | Operation | arms | — |
+| `move_pose_path` | `PosePath` | Operation | arms | — |
+| `move_pose_arc_by_points` | `PoseArcByPointsMove` | Operation | arms | — |
+| `move_pose_arc_by_center` | `PoseArcByCenterMove` | Operation | arms | — |
+
+Operations return a handle immediately; progress and results come from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
 
 | Channel | Content |
-|---------|---------|
-| `joints()` | Dual-arm joint-position stream (`JointPositionsT`) |
-| `pose()` | Dual-arm end-effector pose stream (`DualArmPoseMoveT`) |
+|------|------|
+| `joint()` | `DualJointState` |
+| `pose()` | `DualPose` |
+
+Enums used on this page:
+
+**`ArmsMode` enum**
+
+| Value | Description |
+|-------|-------------|
+| `INDEPENDENT` | Arms move independently |
+| `COUPLED` | Hold the relative end-effector pose captured on coupling |
+
+**`ImpedanceMode` enum**
+
+| Value | Description |
+|-------|-------------|
+| `DISABLED` | Disable guided drag and restore rigid position control |
+| `LOW` | Low-stiffness compliance |
+| `HIGH` | High-stiffness compliance |
 
 ## Methods
 
-All method parameters are keyword-only. Command timeouts and Operation polling / cancel are documented in [Commands & Operations](../../usage/commands-operations.md); they are not repeated in each section.
+Signatures below are authoritative for names and defaults. Parameters before `*` accept positional or keyword form; those after `*` are keyword-only. Fields use snake_case (`frame_id`); the generated types also accept the camelCase alias.
 
-### get_joints
+### get_joint
 
-Read the current dual-arm joint angles.
+Read both arm joint samples; `left` / `right` share one timestamp.
 
 ```python
-get_joints(*, timeout_ms: int = 1000) -> list[float]
+get_joint(*, timeout_ms: int = 1000) -> DualJointState
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `DualJointState`
 
-`list[float]`: left-arm joint angles followed by right-arm joint angles (commonly 14 in total), in radians.
+| Field | Type | Description |
+|------|------|------|
+| `left` | `JointState` | Left |
+| `right` | `JointState` | Right |
+
+```python
+state = robot.arms.get_joint()
+print(state.left.positions, state.right.positions)
+```
 
 ### get_pose
 
-Read the current dual-arm end-effector poses.
+Read both end-effector poses.
 
 ```python
-get_pose(*, timeout_ms: int = 1000) -> DualArmPoseMoveT
+get_pose(*, frame_id: str = "", end_frame: str = "", timeout_ms: int = 1000) -> DualPose
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `1000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `frame_id` | `str` | `""` | Reference frame; empty means the slot default base |
+| `end_frame` | `str` | `""` | Controlled end frame; empty means the active tool TCP, or the flange without a tool |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
-
-`DualArmPoseMoveT`:
+**Returns** `DualPose`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `poses` | `list[Pose3dT]` | Left- and right-arm end-effector poses in that order (`x` / `y` / `z` in meters, `qx` / `qy` / `qz` / `qw` orientation quaternion) |
-| `wait` | `bool` | Reserved field |
-| `frameId` | `str` | Pose reference frame |
+|------|------|------|
+| `left` | `Pose3d` | Left |
+| `right` | `Pose3d` | Right |
 
-### get_joints_move_duration
+### get_mode
 
-Read the joint-move (MoveJ) interpolation duration.
+Read the current mode.
 
 ```python
-get_joints_move_duration(*, timeout_ms: int = 2000) -> float
+get_mode(*, timeout_ms: int = 1000) -> ArmsMode
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `2000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `ArmsMode`
 
-`float`: current MoveJ interpolation duration in seconds.
+The proxy unwraps `Mode` into `ArmsMode`.
 
-### set_joints_move_duration
+**`ArmsMode` enum**
 
-Set the joint-move (MoveJ) interpolation duration; the setting persists.
+| Value | Description |
+|-------|-------------|
+| `INDEPENDENT` | Arms move independently |
+| `COUPLED` | Hold the relative end-effector pose captured on coupling |
+
+### set_mode
+
+Switch the arm coupling mode and return the applied mode.
 
 ```python
-set_joints_move_duration(*, move_duration: float, timeout_ms: int = 2000) -> JointsMoveDurationAppliedT
+set_mode(mode: ArmsMode, *, timeout_ms: int = 2000) -> ArmsMode
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `move_duration` | `float` | (required) | MoveJ interpolation duration in seconds |
-| `timeout_ms` | `int` | `2000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `mode` | `ArmsMode` | (required) | Mode value |
+| `timeout_ms` | `int` | `2000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `ArmsMode`
 
-`JointsMoveDurationAppliedT`:
+The proxy unwraps `Mode` into `ArmsMode`.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `outcome` | `OutcomeT` \| `None` | `success` / `statusMessage` |
-| `appliedMoveDuration` | `float` | Actually applied duration (seconds) |
+### get_impedance
 
-```python
-applied = robot.arms.set_joints_move_duration(move_duration=2.0)
-print(applied.outcome.success, applied.appliedMoveDuration)
-```
-
-### get_poses_move_duration
-
-Read the end-effector move (MoveL) interpolation duration.
+Read the impedance drag mode.
 
 ```python
-get_poses_move_duration(*, timeout_ms: int = 2000) -> float
+get_impedance(*, timeout_ms: int = 2000) -> ImpedanceMode
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `2000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `2000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `ImpedanceMode`
 
-`float`: current MoveL interpolation duration in seconds.
+The proxy unwraps `Impedance` into `ImpedanceMode`.
 
-### set_poses_move_duration
+### set_impedance
 
-Set the end-effector move (MoveL) interpolation duration; the setting persists.
+Switch the impedance drag mode; `DISABLED` restores rigid position control.
 
 ```python
-set_poses_move_duration(*, move_duration: float, timeout_ms: int = 2000) -> PosesMoveDurationAppliedT
+set_impedance(mode: ImpedanceMode, *, timeout_ms: int = 5000) -> ImpedanceMode
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `move_duration` | `float` | (required) | MoveL interpolation duration in seconds |
-| `timeout_ms` | `int` | `2000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `mode` | `ImpedanceMode` | (required) | Mode value |
+| `timeout_ms` | `int` | `5000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `ImpedanceMode`
 
-`PosesMoveDurationAppliedT`: `outcome` (`OutcomeT` \| `None`) / `appliedMoveDuration` (`float`, actually applied value in seconds).
-
-### get_drag
-
-Query the impedance-drag state.
+The proxy unwraps `Impedance` into `ImpedanceMode`.
 
 ```python
-get_drag(*, timeout_ms: int = 2000) -> DragStateT
-```
+from fabot.capabilities.arms import ImpedanceMode
 
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `2000` | Command timeout (milliseconds) |
-
-**Returns**
-
-`DragStateT`:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `open` | `bool` | Whether drag is open |
-| `mode` | `DragMode` | Drag mode: `LOW_IMPEDANCE` or `HIGH_IMPEDANCE` |
-
-### set_drag
-
-Open or close impedance drag.
-
-```python
-set_drag(*, open: bool, mode: DragMode, timeout_ms: int = 5000) -> OutcomeT
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `open` | `bool` | (required) | `True` opens drag; `False` closes it |
-| `mode` | `DragMode` | (required) | `LOW_IMPEDANCE` or `HIGH_IMPEDANCE` |
-| `timeout_ms` | `int` | `5000` | Command timeout (milliseconds) |
-
-**Returns**
-
-`OutcomeT`: `success` / `statusMessage`.
-
-```python
-from fabot.capabilities.arms import DragMode
-
-outcome = robot.arms.set_drag(open=True, mode=DragMode.LOW_IMPEDANCE)
-print(outcome.success, outcome.statusMessage)
+robot.arms.set_impedance(ImpedanceMode.LOW)   # 轻导纳拖拽示教
+# ... 手动拖动双臂 ...
+robot.arms.set_impedance(ImpedanceMode.DISABLED)
 ```
 
 ### get_brake
 
-Query the dual-arm brake state.
+Query the brake state.
 
 ```python
-get_brake(*, timeout_ms: int = 10000) -> BrakeStateT
+get_brake(*, timeout_ms: int = 10000) -> DualBrakeState
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `timeout_ms` | `int` | `10000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `timeout_ms` | `int` | `10000` | Timeout in milliseconds |
 
-**Returns**
-
-`BrakeStateT`:
+**Returns** `DualBrakeState`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `leftOpen` | `bool` | Whether the left-arm brake is open (released) |
-| `rightOpen` | `bool` | Whether the right-arm brake is open (released) |
+|------|------|------|
+| `left_open` | `bool` | Whether the left brake is released |
+| `right_open` | `bool` | Whether the right brake is released |
 
 ### set_brake
 
-Open or close the left- and right-arm brakes independently.
+Release or engage both brakes and return both sides.
 
 ```python
-set_brake(*, left_open: bool, right_open: bool, timeout_ms: int = 10000) -> OutcomeT
+set_brake(open: bool, *, timeout_ms: int = 10000) -> DualBrakeState
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `left_open` | `bool` | (required) | `True` releases the left-arm brake; `False` engages it |
-| `right_open` | `bool` | (required) | `True` releases the right-arm brake; `False` engages it |
-| `timeout_ms` | `int` | `10000` | Command timeout (milliseconds) |
+|------|------|------|------|
+| `open` | `bool` | (required) | `True` releases the brake, `False` engages it |
+| `timeout_ms` | `int` | `10000` | Timeout in milliseconds |
 
-**Returns**
-
-`OutcomeT`: `success` / `statusMessage`.
-
-```python
-outcome = robot.arms.set_brake(left_open=True, right_open=True)
-print(outcome.success, outcome.statusMessage)
-```
-
-### set_relative_pose_hold
-
-Toggle dual-arm relative pose hold: when enabled, the relative pose between the two end-effectors stays fixed as the robot moves.
-
-```python
-set_relative_pose_hold(*, enabled: bool, timeout_ms: int = 2000) -> OutcomeT
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `enabled` | `bool` | (required) | `True` holds the relative pose; `False` releases it |
-| `timeout_ms` | `int` | `2000` | Command timeout (milliseconds) |
-
-**Returns**
-
-`OutcomeT`: `success` / `statusMessage`.
-
-### move_joints
-
-Run a long-running dual-arm joint-space move. Returns a pollable, cancelable Operation.
-
-```python
-move_joints(*, positions: list[float], wait: bool) -> MoveJointsOperation
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `positions` | `list[float]` | (required) | Target joint angles: left arm followed by right arm (commonly 14), in radians |
-| `wait` | `bool` | (required) | When `True`, the task finishes after arrival or timeout |
-
-**Returns**
-
-`MoveJointsOperation`. Use `get()` / `events()` for snapshots, or `cancel()`. Snapshot fields:
+**Returns** `DualBrakeState`
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `state` | `OperationState` | Task state |
-| `terminal` | `bool` | Whether the snapshot is terminal |
-| `feedback` | `ProgressT` \| `None` | `progress` (`float`), `statusMessage` (`str`) |
-| `result` | `OutcomeT` \| `None` | `success` / `statusMessage` |
-| `error` | `FabotError` \| `None` | Failure reason |
+|------|------|------|
+| `left_open` | `bool` | Whether the left brake is released |
+| `right_open` | `bool` | Whether the right brake is released |
+
+### get_joint_velocity_limit
+
+Read the joint velocity limit.
 
 ```python
-positions = robot.arms.get_joints()
-positions[1] += 0.2
-op = robot.arms.move_joints(positions=positions, wait=True)
-for snap in op.events(poll_timeout_ms=200, timeout_ms=30000):
-    print(snap.state, snap.feedback)
-    if snap.terminal:
-        break
-```
-
-### move_dual_arm_pose
-
-Move both end-effectors smoothly to the given poses at the same time. Returns a pollable, cancelable Operation.
-
-```python
-move_dual_arm_pose(*, poses: list[Pose3dT], wait: bool, frame_id: str) -> MoveDualArmPoseOperation
+get_joint_velocity_limit(*, timeout_ms: int = 2000) -> float
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `poses` | `list[Pose3dT]` | (required) | Must have length 2: left-arm target, then right-arm target |
-| `wait` | `bool` | (required) | When `True`, the task finishes after arrival or timeout |
-| `frame_id` | `str` | (required) | Pose reference frame: `arm_base` / `base_footprint` / `body_link4`; an empty string is equivalent to `arm_base` |
+|------|------|------|------|
+| `timeout_ms` | `int` | `2000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `float`
 
-`MoveDualArmPoseOperation`. Snapshot fields match `move_joints`: `state` / `feedback: ProgressT` / `result: OutcomeT` / `error`. The handle supports `cancel()`.
+The proxy unwraps `Float64` into `float`.
 
-```python
-from fabot.types.Pose3d import Pose3dT
+### set_joint_velocity_limit
 
-left = Pose3dT()
-left.x, left.y, left.z = 0.3, 0.2, 0.4
-left.qw = 1.0
-right = Pose3dT()
-right.x, right.y, right.z = 0.3, -0.2, 0.4
-right.qw = 1.0
-op = robot.arms.move_dual_arm_pose(poses=[left, right], wait=True, frame_id="arm_base")
-```
-
-### move_dual_arm_path
-
-Move both end-effectors along smooth trajectories with multiple waypoints. Returns a pollable, cancelable Operation.
+Set the joint velocity limit and return the applied value.
 
 ```python
-move_dual_arm_path(*, poses: list[Pose3dT], wait: bool, frame_id: str) -> MoveDualArmPathOperation
+set_joint_velocity_limit(value: float, *, timeout_ms: int = 2000) -> float
 ```
 
 **Parameters**
 
 | Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `poses` | `list[Pose3dT]` | (required) | Length must be even: the first half is the left-arm trajectory, the second half the right-arm trajectory |
-| `wait` | `bool` | (required) | When `True`, the task finishes after arrival or timeout |
-| `frame_id` | `str` | (required) | Pose reference frame: `arm_base` / `base_footprint` / `body_link4`; an empty string is equivalent to `arm_base` |
+|------|------|------|------|
+| `value` | `float` | (required) | Joint velocity limit |
+| `timeout_ms` | `int` | `2000` | Timeout in milliseconds |
 
-**Returns**
+**Returns** `float`
 
-`MoveDualArmPathOperation`. Snapshot fields match `move_joints`: `state` / `feedback: ProgressT` / `result: OutcomeT` / `error`. The handle supports `cancel()`.
+The proxy unwraps `Float64` into `float`.
+
+### get_linear_velocity_limit
+
+Read the linear velocity limit.
 
 ```python
-op = robot.arms.move_dual_arm_path(
-    poses=[left_p1, left_p2, right_p1, right_p2], wait=True, frame_id="arm_base",
-)
-snap = op.get(timeout_ms=30000)
-print(snap.state, snap.result)
+get_linear_velocity_limit(*, timeout_ms: int = 2000) -> float
 ```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `2000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### set_linear_velocity_limit
+
+Set the linear velocity limit and return the applied value.
+
+```python
+set_linear_velocity_limit(value: float, *, timeout_ms: int = 2000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `value` | `float` | (required) | Linear velocity limit in m/s |
+| `timeout_ms` | `int` | `2000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### get_angular_velocity_limit
+
+Read the angular velocity limit.
+
+```python
+get_angular_velocity_limit(*, timeout_ms: int = 2000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `2000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### set_angular_velocity_limit
+
+Set the angular velocity limit and return the applied value.
+
+```python
+set_angular_velocity_limit(value: float, *, timeout_ms: int = 2000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `value` | `float` | (required) | Angular velocity limit in rad/s |
+| `timeout_ms` | `int` | `2000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### get_joint_acceleration_limit
+
+Read the joint acceleration limit.
+
+```python
+get_joint_acceleration_limit(*, timeout_ms: int = 2000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `2000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### set_joint_acceleration_limit
+
+Set the joint acceleration limit and return the applied value.
+
+```python
+set_joint_acceleration_limit(value: float, *, timeout_ms: int = 2000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `value` | `float` | (required) | Joint acceleration limit |
+| `timeout_ms` | `int` | `2000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### get_linear_acceleration_limit
+
+Read the linear acceleration limit.
+
+```python
+get_linear_acceleration_limit(*, timeout_ms: int = 2000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `2000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### set_linear_acceleration_limit
+
+Set the linear acceleration limit and return the applied value.
+
+```python
+set_linear_acceleration_limit(value: float, *, timeout_ms: int = 2000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `value` | `float` | (required) | Linear acceleration limit in m/s² |
+| `timeout_ms` | `int` | `2000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### get_angular_acceleration_limit
+
+Read the angular acceleration limit.
+
+```python
+get_angular_acceleration_limit(*, timeout_ms: int = 2000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `2000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### set_angular_acceleration_limit
+
+Set the angular acceleration limit and return the applied value.
+
+```python
+set_angular_acceleration_limit(value: float, *, timeout_ms: int = 2000) -> float
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `value` | `float` | (required) | Angular acceleration limit in rad/s² |
+| `timeout_ms` | `int` | `2000` | Timeout in milliseconds |
+
+**Returns** `float`
+
+The proxy unwraps `Float64` into `float`.
+
+### servo_pose
+
+Dual-arm pose servo returning the applied poses.
+
+```python
+servo_pose(*, left: Pose3d, right: Pose3d, timeout_ms: int = 1000) -> DualPose
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `left` | `Pose3d` | (required) |  |
+| `right` | `Pose3d` | (required) |  |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `DualPose`
+
+| Field | Type | Description |
+|------|------|------|
+| `left` | `Pose3d` | Left |
+| `right` | `Pose3d` | Right |
+
+### get_arrival_thresholds
+
+Read the arrival thresholds for this slot.
+
+```python
+get_arrival_thresholds(*, timeout_ms: int = 1000) -> ArrivalThresholds
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `ArrivalThresholds`
+
+| Field | Type | Description |
+|------|------|------|
+| `joint_tolerance` | `float` | Joint arrival tolerance in radians; must be finite and positive |
+| `pose_position_tolerance` | `float` | Pose position tolerance in meters; must be finite and positive |
+| `pose_orientation_tolerance` | `float` | Pose orientation error as `1 - |dot(q, q_target)|`, not radians |
+| `max_timeout_s` | `float` | Extra arrival budget in seconds added to the motion duration |
+
+### set_arrival_thresholds
+
+Replace the arrival thresholds for this slot. The change is in-memory only and applies to later motions.
+
+```python
+set_arrival_thresholds(*, joint_tolerance: float = 0.02, pose_position_tolerance: float = 0.02, pose_orientation_tolerance: float = 0.05, max_timeout_s: float = 5.0, timeout_ms: int = 1000) -> ArrivalThresholds
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `joint_tolerance` | `float` | `0.02` | Joint arrival tolerance in radians |
+| `pose_position_tolerance` | `float` | `0.02` | Pose position tolerance in meters |
+| `pose_orientation_tolerance` | `float` | `0.05` | Pose orientation error as `1 - |dot(q, q_target)|` |
+| `max_timeout_s` | `float` | `5.0` | Extra arrival budget in seconds |
+| `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
+
+**Returns** `ArrivalThresholds`
+
+| Field | Type | Description |
+|------|------|------|
+| `joint_tolerance` | `float` | Joint arrival tolerance in radians; must be finite and positive |
+| `pose_position_tolerance` | `float` | Pose position tolerance in meters; must be finite and positive |
+| `pose_orientation_tolerance` | `float` | Pose orientation error as `1 - |dot(q, q_target)|`, not radians |
+| `max_timeout_s` | `float` | Extra arrival budget in seconds added to the motion duration |
+
+### move_joint
+
+Joint-space motion. `tolerance` is the arrival tolerance, `duration` the requested time, `wait_timeout` the extra arrival wait; 0 uses the defaults.
+
+```python
+move_joint(target: DualJoints, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveJointOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `target` | `DualJoints` | (required) | Goal value |
+| `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+
+Returns a `MoveJointOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
+
+### move_joint_path
+
+Follow a joint waypoint sequence; at least two waypoints, the first reached from the current joints.
+
+```python
+move_joint_path(waypoints: list[DualJoints], *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveJointPathOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `waypoints` | `list[DualJoints]` | (required) | Waypoints, at least two |
+| `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+
+Returns a `MoveJointPathOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
+
+### move_pose
+
+Absolute end-effector motion. The reference frame comes from `target.frame_id` (empty uses the slot base); `end_frame` empty uses the active TCP or flange.
+
+```python
+move_pose(target: DualPose, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MovePoseOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `target` | `DualPose` | (required) | Goal value |
+| `end_frame` | `str` | `""` | Controlled end frame; empty means the active tool TCP, or the flange without a tool |
+| `position_tolerance` | `float` | `0.0` | Position tolerance in meters; 0 uses the slot default |
+| `orientation_tolerance` | `float` | `0.0` | Orientation tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+
+Returns a `MovePoseOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
+
+### move_pose_relative
+
+Relative end-effector motion; `target` is an increment from the current pose.
+
+```python
+move_pose_relative(target: DualPose, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MovePoseRelativeOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `target` | `DualPose` | (required) | Goal value |
+| `end_frame` | `str` | `""` | Controlled end frame; empty means the active tool TCP, or the flange without a tool |
+| `position_tolerance` | `float` | `0.0` | Position tolerance in meters; 0 uses the slot default |
+| `orientation_tolerance` | `float` | `0.0` | Orientation tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+
+Returns a `MovePoseRelativeOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
+
+### move_pose_path
+
+Follow an end-effector waypoint sequence; each waypoint carries its own `frame_id`.
+
+```python
+move_pose_path(waypoints: list[DualPose], *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MovePosePathOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `waypoints` | `list[DualPose]` | (required) | Waypoints, at least two |
+| `end_frame` | `str` | `""` | Controlled end frame; empty means the active tool TCP, or the flange without a tool |
+| `position_tolerance` | `float` | `0.0` | Position tolerance in meters; 0 uses the slot default |
+| `orientation_tolerance` | `float` | `0.0` | Orientation tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+
+Returns a `MovePosePathOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
+
+### move_pose_arc_by_points
+
+Arc through three points: from the current pose through `via` to `end`.
+
+```python
+move_pose_arc_by_points(target: DualPoseArcByPoints, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MovePoseArcByPointsOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `target` | `DualPoseArcByPoints` | (required) | Goal value |
+| `end_frame` | `str` | `""` | Controlled end frame; empty means the active tool TCP, or the flange without a tool |
+| `position_tolerance` | `float` | `0.0` | Position tolerance in meters; 0 uses the slot default |
+| `orientation_tolerance` | `float` | `0.0` | Orientation tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+
+Returns a `MovePoseArcByPointsOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
+
+### move_pose_arc_by_center
+
+Center arc motion; the center is located in `center.frame_id`.
+
+```python
+move_pose_arc_by_center(target: DualPoseArcByCenter, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MovePoseArcByCenterOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|------|------|
+| `target` | `DualPoseArcByCenter` | (required) | Goal value |
+| `end_frame` | `str` | `""` | Controlled end frame; empty means the active tool TCP, or the flange without a tool |
+| `position_tolerance` | `float` | `0.0` | Position tolerance in meters; 0 uses the slot default |
+| `orientation_tolerance` | `float` | `0.0` | Orientation tolerance; 0 uses the slot default |
+| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+
+Returns a `MovePoseArcByCenterOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
 ## Channels
 
-Open parameters and frame fields are below; see [Events & Data Channels](../../usage/events-channels.md) for shared usage.
+Opening a channel takes a lease and returns a handle: iterate with `frames()`, take one sample with `next()`, renew with `renew()`, release with `close()`. See [Events & Data Channels](../../usage/events-channels.md).
 
-### joints()
+### joint()
 
-Subscribe to the dual-arm joint-position stream.
+Dual-arm joint-state stream.
 
 ```python
-joints(qos_profile: str = "latest") -> JointsChannel
+joint(qos_profile: str = "latest") -> Channel
 ```
 
-**Open parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `qos_profile` | `str` | `"latest"` | `"latest"` / `"realtime"` / `"reliable"` |
-
-**Frame** (`JointsChannelFrame`)
+Frame payload is `DualJointState`:
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `channel_id` | `str` | Channel id |
-| `sequence` | `int` | Frame sequence |
-| `timestamp_us` | `int` | Timestamp (microseconds) |
-| `payload` | `JointPositionsT` | `payload.positions`: `list[float]`, left arm followed by right arm, radians |
-
-Iterate frames with `frames(poll_timeout_ms=..., timeout_ms=...)`.
-
-```python
-ch = robot.arms.joints(qos_profile="latest")
-for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-    print(frame.channel_id, frame.sequence, frame.payload.positions)
-```
+|------|------|------|
+| `left` | `JointState` | Left |
+| `right` | `JointState` | Right |
 
 ### pose()
 
-Subscribe to the dual-arm end-effector pose stream.
+Dual-arm pose stream.
 
 ```python
-pose(qos_profile: str = "latest") -> PoseChannel
+pose(qos_profile: str = "latest") -> Channel
 ```
 
-**Open parameters**
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `qos_profile` | `str` | `"latest"` | `"latest"` / `"realtime"` / `"reliable"` |
-
-**Frame** (`PoseChannelFrame`)
+Frame payload is `DualPose`:
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `channel_id` | `str` | Channel id |
-| `sequence` | `int` | Frame sequence |
-| `timestamp_us` | `int` | Timestamp (microseconds) |
-| `payload` | `DualArmPoseMoveT` | `payload.poses`: `list[Pose3dT]`, left- then right-arm end-effector pose; `payload.frameId`: reference frame |
-
-Iterate frames with `frames(poll_timeout_ms=..., timeout_ms=...)`.
-
-```python
-ch = robot.arms.pose(qos_profile="latest")
-for frame in ch.frames(poll_timeout_ms=100, timeout_ms=5000):
-    left, right = frame.payload.poses
-    print(left.x, left.y, left.z, right.x, right.y, right.z)
-```
+|------|------|------|
+| `left` | `Pose3d` | Left |
+| `right` | `Pose3d` | Right |
 
 ## Events
 
-Subscribe via `robot.arms.events`. Callbacks run on the SDK I/O thread: keep them light and do not call blocking APIs; see [Events & Data Channels](../../usage/events-channels.md).
+Subscribe through `robot.<slot>.events`. Callbacks run on the SDK I/O thread: keep them short and never call blocking APIs. Every event carries an `EventHeader` (`name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`).
 
-Every event includes an `EventHeader`: `name` / `slot_id` / `capability_id` / `sequence` / `timestamp_us` / `trace_id` / `node_id`.
-
-### fault_changed
-
-Pushed when this slot's fault set changes.
-
-Subscribe with `robot.arms.events.fault_changed.subscribe(callback)`.
-
-**Payload**
-
-`FaultChangedEvent.faults`: `Faults`. Today `Faults` only has `revision`; this module has no named faults yet. See [Faults](#faults).
-
-```python
-def on_fault(event):
-    print(event.header.slot_id, event.faults.revision)
-
-token = robot.arms.events.fault_changed.subscribe(on_fault)
-```
-
-### lifecycle_changed
-
-Pushed when this slot's lifecycle or health changes.
-
-Subscribe with `robot.arms.events.lifecycle_changed.subscribe(callback)`.
-
-**Payload**
-
-`LifecycleChangedEvent.lifecycle`: `CapabilityLifecycleSnapshot`:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `lifecycle` | `LifecycleState` | Lifecycle stage |
-| `health` | `HealthState` | Health |
-| `source_instance_id` | `str` | Source instance id |
-
-```python
-def on_lifecycle(event):
-    snap = event.lifecycle
-    print(event.header.slot_id, snap.lifecycle, snap.health)
-
-token = robot.arms.events.lifecycle_changed.subscribe(on_lifecycle)
-```
+| Entry | Event type | payload |
+|------|------|------|
+| `robot.<slot>.events.fault_changed` | `FaultChangedEvent` | `FaultChangedEvent.faults`: `Faults` |
+| `robot.<slot>.events.lifecycle_changed` | `LifecycleChangedEvent` | `LifecycleChangedEvent.lifecycle`: `CapabilityLifecycleSnapshot` |
 
 ## Faults
 
-Query with `robot.arms.faults()`, which returns `Faults`.
-
-This module has no named faults yet: `Faults` currently only exposes `revision`. Changes are pushed on `fault_changed`. See [Status, Faults & Lifecycle](../../usage/status-faults.md) for the shared model.
-
-If named faults appear later, each one is a `FaultState`:
+Query with `robot.<slot>.faults()`, which returns `Faults` (`revision` plus `records: list[FaultState]`). Each `FaultState`: 
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `active` | `bool` | Whether the fault is still standing |
-| `catalog_id` | `str` | Catalog id |
-| `fault_class` | `CapabilityStateClass` | Fault class |
-| `first_seen_us` / `last_seen_us` | `int` | First / last seen timestamp (microseconds) |
-| `count` | `int` | Occurrence count |
+|------|------|------|
+| `code` | `int` | Diagnostic code; `0` means no fault |
+| `source` | `str` | Fault source id |
+| `state` | `int` | Fault state bits |
+| `severity` | `int` | Severity, aligned with `HealthState` |
+| `timestamp_us` | `int` | Latest timestamp in microseconds |
+
+For human-readable fault text use `Catalogs.format_fault(record, capability_id="...")`; see [Catalogs](../../usage/catalogs.md).
 
 ## Status
 
-This module has no `status()`. For aggregated robot status see `robot.status()`.
+This module has no `status()`; see `robot.status()` for the aggregated view.
 
-Shared queries:
+Shared read-only queries:
 
-- `health()`: current health
-- `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `source_instance_id`)
+- `health()`: `SlotHealth` (`is_usable` / `lifecycle` / `health` / `standing_faults` / `pbit_completed` / `source_instance_id`)
+- `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `pbit_completed` / `source_instance_id`)
 
-Changes arrive on `lifecycle_changed`. See [Status, Faults & Lifecycle](../../usage/status-faults.md).
+Changes arrive through `lifecycle_changed`; see [Status, Faults & Lifecycle](../../usage/status-faults.md).
 
 ## Resources
 
-`move_joints`, `move_dual_arm_pose`, and `move_dual_arm_path` share one resource; new tasks queue.
+`move_joint` / `move_joint_path` / `move_pose` / `move_pose_relative` / `move_pose_path` / `move_pose_arc_by_points` / `move_pose_arc_by_center` share the `arms` resource with policy `queue`.

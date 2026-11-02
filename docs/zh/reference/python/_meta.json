@@ -2,6 +2,8 @@
   "index",
   "robot",
   "catalogs",
+  "frames",
+  "types",
   "io",
   "screen",
   "chassis",

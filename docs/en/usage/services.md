@@ -2,90 +2,91 @@
 title: Platform Services
 status: draft
 owner: fabot-core
-updated: 2026-10-26
+updated: 2026-11-02
 ---
 
 # Platform Services
 
-Platform services on the robot (services, e.g. `fabot_ocs2`) expose only **7 platform operations** to the SDK; business interfaces are not open to clients. Services with `client_control: none` do not appear in `robot.services`.
+Platform services (such as `fabot_ocs2`) expose only a **small set of platform operations** to the SDK: start / stop / restart, state queries and config access. Business APIs are not open to clients. Only services declared client-visible show up in `robot.services`.
 
-## Entry Point & Service List
+## Entries and services
 
-`robot.services` exposes a handle for each client-visible service under a short name:
+`robot.services` exposes a handle per client-visible service, by short name:
 
-| Attribute | service id | Handle type | Config type |
-|-----------|-----------|-------------|-------------|
-| `robot.services.ocs2` | `fabot_ocs2` | `FabotOcs2ServiceHandle` | `FabotOcs2ServiceConfig` |
-| `robot.services.orbbec_sdk_ros2` | `fabot_orbbec_sdk_ros2` | `FabotOrbbecSdkRos2ServiceHandle` | `FabotOrbbecSdkRos2ServiceConfig` |
+| Property | service id | Handle | Config type |
+|----------|-----------|--------|-------------|
+| `robot.services.ocs2` | `fabot_ocs2` | `Ocs2ServiceHandle` | `Ocs2Config` |
+| `robot.services.orbbec_sdk_ros2` | `fabot_orbbec_sdk_ros2` | `OrbbecSdkRos2ServiceHandle` | `OrbbecSdkRos2Config` |
 
-The `SERVICE_ID` / `CONFIG` class attributes on a handle give the service id and the config type.
+The `SERVICE_ID` / `CONFIG` class attributes on each handle give the service id and config type.
 
-`orbbec_sdk_ros2` is the Orbbec ROS camera backend; it is **not started by default** in product deployments (`enabled: false`). Call `start()` explicitly when you need that backend.
+- `ocs2` is the launch entry of the motion-control (whole-body) stack; its `launch` config decides what starts, whether real or simulated hardware is used, and the left/right end-effector models.
+- `orbbec_sdk_ros2` is the Orbbec ROS camera backend, normally not started by default in a product deployment; call `start()` explicitly when you need it.
 
-## The 7 Platform Operations
+## Platform operations
 
-| Operation | Notes |
-|-----------|-------|
+| Operation | Description |
+|-----------|-------------|
 | `start()` / `stop()` / `restart()` | Lifecycle control |
 | `state()` | `ServiceState` snapshot |
-| `is_running()` | Whether it is running (equivalent to `state().is_running`) |
-| `get_config()` / `set_config(cfg)` | Read / CAS-modify the service configuration (conflicts raise `ConfigurationConflict`) |
+| `is_running()` | Running check (same as `state().is_running`) |
+| `get_config()` / `set_config(cfg)` | Read / CAS-update the service config (raises `ConfigurationConflict`) |
 
 ```python
-svc = robot.services.ocs2               # FabotOcs2ServiceHandle
+svc = robot.services.ocs2               # Ocs2ServiceHandle
 svc.start()
 print(svc.state(), svc.is_running())
 
-cfg = svc.get_config()                  # strongly typed config dataclass
-svc.set_config(cfg)                     # CAS; conflicts raise ConfigurationConflict
+cfg = svc.get_config()                  # typed config dataclass
+svc.set_config(cfg)                     # CAS; raises ConfigurationConflict
 ```
 
-## Lifecycle Control
+## Lifecycle control
 
-`start()` / `stop()` / `restart()` are synchronous calls: they submit the desired state to the platform and raise `FabotError` if the command fails (see [Error Handling](errors.md)). The process state transitions asynchronously — confirm with `state()` / `is_running()` after the call returns, or track the transition via the `service_state_changed` event.
+`start()` / `stop()` / `restart()` are synchronous: they submit the desired state and raise `FabotError` when the request fails (see [Error Handling](errors.md)). Process transitions are asynchronous, so confirm with `state()` / `is_running()` after the call, or subscribe to `service_state_changed`.
 
 :::warning
-`stop()` / `restart()` affects functionality that depends on the service; confirm the blast radius before invoking them.
+`stop()` / `restart()` affect everything that depends on the service. While the motion-control stack restarts, arms and chassis are unavailable.
 :::
 
-## State Query
+## State query
 
-`state()` returns a `ServiceState`:
+`state()` returns `ServiceState`:
 
-| Field | Type | Notes |
-|-------|------|-------|
-| `service_id` | `str` | Service id (e.g. `fabot_ocs2`) |
+| Field | Type | Description |
+|-------|------|-------------|
+| `service_id` | `str` | Service id (such as `fabot_ocs2`) |
 | `desired` | `ServiceDesiredState` | Desired state: `Unknown` / `Running` / `Stopped` |
 | `state` | `ServiceRunState` | Observed state: `Unknown` / `Starting` / `Ready` / `Stopping` / `Stopped` / `Failed` |
 | `pid` | `int` | Process id (`-1` when not running) |
-| `restart_count` | `int` | Cumulative restart count |
-| `source_instance_id` | `str` | Id of the instance that reported the state |
+| `restart_count` | `int` | Cumulative restarts |
+| `source_instance_id` | `str` | Source instance id |
 
-Two convenience properties are also available: `is_running` (`state` is `Starting` / `Ready`) and `is_ready` (`state` is `Ready`).
+Two convenience properties: `is_running` (`state` is `Starting` or `Ready`) and `is_ready` (`state` is `Ready`).
 
-## Service Configuration
+## Service configuration
 
-`get_config()` returns a strongly typed config dataclass (supports `to_yaml()` / `from_yaml()`); `set_config(cfg)` commits via CAS — it raises `ConfigurationConflict` (code 81001, see [Error Handling](errors.md)) on a `revision` conflict and returns the freshly re-read configuration on success.
+`get_config()` returns a typed config dataclass (`to_yaml()` / `from_yaml()` / `field_options()`); `set_config(cfg)` commits with CAS and raises `ConfigurationConflict` on contention (see [Error Handling](errors.md)), returning the freshly read config on success.
 
 ```python
 from fabot.errors import ConfigurationConflict
-from fabot.services.fabot_ocs2 import LaunchHardware
 
 svc = robot.services.ocs2
 cfg = svc.get_config()
-cfg.launch.hardware = LaunchHardware.Real   # fields are StrEnum or nested dataclasses
+print(cfg.to_yaml())                    # the effective launch config
 
+cfg.launch.hardware = "real"            # fields are StrEnums and accept strings
 try:
-    cfg = svc.set_config(cfg)               # CAS; returns the latest config on success
+    cfg = svc.set_config(cfg)           # CAS; returns the latest config
 except ConfigurationConflict:
-    cfg = svc.get_config()                  # re-read, merge your changes, retry
+    cfg = svc.get_config()              # re-read, merge, retry
 ```
 
-The general conflict-retry pattern is the same as for whole-robot configuration; see [Configuration Management](configuration.md).
+`Ocs2Config.field_options()` lists the legal values per field (such as `launch.hardware` with `real` / `real_usb` / `mock_components` / `isaac`), which is convenient for building dropdowns. The retry pattern is the same as for robot configuration, see [Configuration](configuration.md).
 
-## Observing Service State Changes
+## Observing service state
 
-Service state transitions are pushed via the whole-robot event `robot.events.service_state_changed` (`ServiceStateChangedEvent`):
+Service transitions are pushed through `robot.events.service_state_changed` (`ServiceStateChangedEvent`):
 
 ```python
 def on_service_state(event):
@@ -95,8 +96,8 @@ def on_service_state(event):
 token = robot.events.service_state_changed.subscribe(on_service_state)
 ```
 
-Callbacks run on the SDK's I/O thread: keep them lightweight and never call blocking APIs such as `start()` inside a callback; see [Events & Data Channels](events-channels.md) for the general subscription rules.
+Callbacks run on the SDK I/O thread: keep them short and never call blocking APIs such as `start()`; see [Events & Data Channels](events-channels.md).
 
 :::note
-`MockRobot` returned by `Robot.mock()` does not provide `robot.services`; stub service calls yourself in tests. See [Mock Testing](mock.md).
+`Robot.mock()` provides `robot.services`, but control operations merely succeed and state stays in memory. Tests that need real service behaviour still require a robot or a platform test environment, see [Mock Testing](mock.md).
 :::
