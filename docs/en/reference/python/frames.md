@@ -17,18 +17,22 @@ updated: 2026-11-02
 
 ## API overview
 
-| Member | Description |
-|--------|-------------|
-| `FrameSystem` | Coordinate-tree queries and transforms |
-| `Transform3d` | SE(3) rigid transform |
-| `TransformBuffer` | In-process tree you can feed offline |
-| `Frame` | Well-known frame name constants |
-| `deproject_pixel` / `project_point_to_pixel` | Pixel ↔ 3D point |
-| `deproject_depth_to_points` / `depth_to_points` | Batch depth deprojection |
-| `select_depth_intrinsics` | Pick intrinsics matching a depth frame |
-| `project_depth_to_frame` | Project a depth point into a target frame |
-| `euler_to_quaternion` / `quaternion_to_euler` | Euler ↔ quaternion (ZYX intrinsic) |
-| `pose_to_matrix` / `matrix_to_pose` | Pose ↔ 4×4 homogeneous matrix |
+| Name | Kind | Description |
+|------|------|------|
+| `FrameSystem` | Class | Coordinate-tree queries and transforms |
+| `Transform3d` | Class | SE(3) rigid transform |
+| `TransformBuffer` | Class | In-process tree you can feed offline |
+| `Frame` | Class | Well-known frame name constants |
+| `deproject_pixel` | Function | Pixel ↔ 3D point |
+| `project_point_to_pixel` | Function | Pixel ↔ 3D point |
+| `deproject_depth_to_points` | Function | Batch depth deprojection |
+| `depth_to_points` | Function | Batch depth deprojection |
+| `select_depth_intrinsics` | Function | Pick intrinsics matching a depth frame |
+| `project_depth_to_frame` | Function | Project a depth point into a target frame |
+| `euler_to_quaternion` | Function | Euler ↔ quaternion (ZYX intrinsic) |
+| `quaternion_to_euler` | Function | Euler ↔ quaternion (ZYX intrinsic) |
+| `pose_to_matrix` | Function | Pose ↔ 4×4 homogeneous matrix |
+| `matrix_to_pose` | Function | Pose ↔ 4×4 homogeneous matrix |
 
 ## FrameSystem
 

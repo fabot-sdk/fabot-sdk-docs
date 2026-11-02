@@ -18,6 +18,11 @@ The `id` property gives the rail index (`power_1` is `"1"`).
 
 ## API Overview
 
+| Name | Kind | Description |
+|------|------|------|
+| `fault_changed` | Event | Fault set changed; payload is `Faults`. |
+| `lifecycle_changed` | Event | Lifecycle changed; payload is `CapabilityLifecycleSnapshot`. |
+
 ## Methods
 
 Signatures below are authoritative for names and defaults. Parameters before `*` accept positional or keyword form; those after `*` are keyword-only. Fields use snake_case (`frame_id`); the generated types also accept the camelCase alias.

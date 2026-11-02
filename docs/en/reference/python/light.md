@@ -18,15 +18,17 @@ Writes and `get_status` all return `LightStatusApplied` (`outcome` plus `status`
 
 ## API Overview
 
-| Method | Request | Response | Default timeout |
-|------|------|------|------|
-| `set_mode` | `LightModeChange` | `LightStatusApplied` | 1000 ms |
-| `set_color` | `Rgb8` | `LightStatusApplied` | 1000 ms |
-| `set_brightness` | `Brightness` | `LightStatusApplied` | 1000 ms |
-| `set_period` | `Period` | `LightStatusApplied` | 1000 ms |
-| `get_status` | `Empty` | `LightStatusApplied` | 1000 ms |
+| Name | Kind | Description |
+|------|------|------|
+| `set_mode` | Command | Switch the mode and set color plus period; the brightness is unchanged; default timeout 1000 ms. |
+| `set_color` | Command | Change only the color; default timeout 1000 ms. |
+| `set_brightness` | Command | Change only the brightness; default timeout 1000 ms. |
+| `set_period` | Command | Change only the period; no visible effect for `OFF` / `SOLID`; default timeout 1000 ms. |
+| `get_status` | Command | Read the current strip snapshot; `get_state` is an alias; default timeout 1000 ms. |
+| `fault_changed` | Event | Fault set changed; payload is `Faults`. |
+| `lifecycle_changed` | Event | Lifecycle changed; payload is `CapabilityLifecycleSnapshot`. |
 
-All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
+Commands return their response synchronously, and `timeout_ms` can be overridden per call; Operations return a handle immediately, with progress and results read from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
 
 Enums used on this page:
 

@@ -18,50 +18,44 @@ All motion Operations share the `arms` resource with policy `queue`.
 
 ## API Overview
 
-| Method | Request | Response | Default timeout |
-|------|------|------|------|
-| `get_joint` | `Empty` | `DualJointState` | 1000 ms |
-| `get_pose` | `PoseQuery` | `DualPose` | 1000 ms |
-| `get_mode` | `Empty` | `Mode` | 1000 ms |
-| `set_mode` | `Mode` | `Mode` | 2000 ms |
-| `get_impedance` | `Empty` | `Impedance` | 2000 ms |
-| `set_impedance` | `Impedance` | `Impedance` | 5000 ms |
-| `get_brake` | `Empty` | `DualBrakeState` | 10000 ms |
-| `set_brake` | `BrakeOpen` | `DualBrakeState` | 10000 ms |
-| `get_joint_velocity_limit` | `Empty` | `Float64` | 2000 ms |
-| `set_joint_velocity_limit` | `Float64` | `Float64` | 2000 ms |
-| `get_linear_velocity_limit` | `Empty` | `Float64` | 2000 ms |
-| `set_linear_velocity_limit` | `Float64` | `Float64` | 2000 ms |
-| `get_angular_velocity_limit` | `Empty` | `Float64` | 2000 ms |
-| `set_angular_velocity_limit` | `Float64` | `Float64` | 2000 ms |
-| `get_joint_acceleration_limit` | `Empty` | `Float64` | 2000 ms |
-| `set_joint_acceleration_limit` | `Float64` | `Float64` | 2000 ms |
-| `get_linear_acceleration_limit` | `Empty` | `Float64` | 2000 ms |
-| `set_linear_acceleration_limit` | `Float64` | `Float64` | 2000 ms |
-| `get_angular_acceleration_limit` | `Empty` | `Float64` | 2000 ms |
-| `set_angular_acceleration_limit` | `Float64` | `Float64` | 2000 ms |
-| `servo_pose` | `DualPose` | `DualPose` | 1000 ms |
-| `get_arrival_thresholds` | `Empty` | `ArrivalThresholds` | 1000 ms |
-| `set_arrival_thresholds` | `ArrivalThresholds` | `ArrivalThresholds` | 1000 ms |
+| Name | Kind | Description |
+|------|------|------|
+| `get_joint` | Command | Read both arm joint samples; `left` / `right` share one timestamp; default timeout 1000 ms. |
+| `get_pose` | Command | Read both end-effector poses; default timeout 1000 ms. |
+| `get_mode` | Command | Read the current mode; default timeout 1000 ms. |
+| `set_mode` | Command | Switch the arm coupling mode and return the applied mode; default timeout 2000 ms. |
+| `get_impedance` | Command | Read the impedance drag mode; default timeout 2000 ms. |
+| `set_impedance` | Command | Switch the impedance drag mode; `DISABLED` restores rigid position control; default timeout 5000 ms. |
+| `get_brake` | Command | Query the brake state; default timeout 10000 ms. |
+| `set_brake` | Command | Release or engage both brakes and return both sides; default timeout 10000 ms. |
+| `get_joint_velocity_limit` | Command | Read the joint velocity limit; default timeout 2000 ms. |
+| `set_joint_velocity_limit` | Command | Set the joint velocity limit and return the applied value; default timeout 2000 ms. |
+| `get_linear_velocity_limit` | Command | Read the linear velocity limit; default timeout 2000 ms. |
+| `set_linear_velocity_limit` | Command | Set the linear velocity limit and return the applied value; default timeout 2000 ms. |
+| `get_angular_velocity_limit` | Command | Read the angular velocity limit; default timeout 2000 ms. |
+| `set_angular_velocity_limit` | Command | Set the angular velocity limit and return the applied value; default timeout 2000 ms. |
+| `get_joint_acceleration_limit` | Command | Read the joint acceleration limit; default timeout 2000 ms. |
+| `set_joint_acceleration_limit` | Command | Set the joint acceleration limit and return the applied value; default timeout 2000 ms. |
+| `get_linear_acceleration_limit` | Command | Read the linear acceleration limit; default timeout 2000 ms. |
+| `set_linear_acceleration_limit` | Command | Set the linear acceleration limit and return the applied value; default timeout 2000 ms. |
+| `get_angular_acceleration_limit` | Command | Read the angular acceleration limit; default timeout 2000 ms. |
+| `set_angular_acceleration_limit` | Command | Set the angular acceleration limit and return the applied value; default timeout 2000 ms. |
+| `servo_pose` | Command | Dual-arm pose servo returning the applied poses; default timeout 1000 ms. |
+| `get_arrival_thresholds` | Command | Read the arrival thresholds for this slot; default timeout 1000 ms. |
+| `set_arrival_thresholds` | Command | Replace the arrival thresholds for this slot; default timeout 1000 ms. |
+| `move_joint` | Operation | Joint-space motion. |
+| `move_joint_path` | Operation | Follow a joint waypoint sequence; at least two waypoints, the first reached from the current joints. |
+| `move_pose` | Operation | Absolute end-effector motion. |
+| `move_pose_relative` | Operation | Relative end-effector motion; `target` is an increment from the current pose. |
+| `move_pose_path` | Operation | Follow an end-effector waypoint sequence; each waypoint carries its own `frame_id`. |
+| `move_pose_arc_by_points` | Operation | Arc through three points: from the current pose through `via` to `end`. |
+| `move_pose_arc_by_center` | Operation | Center arc motion; the center is located in `center.frame_id`. |
+| `joint` | Channel | Dual-arm joint-state stream; frame is `DualJointState`. |
+| `pose` | Channel | Dual-arm pose stream; frame is `DualPose`. |
+| `fault_changed` | Event | Fault set changed; payload is `Faults`. |
+| `lifecycle_changed` | Event | Lifecycle changed; payload is `CapabilityLifecycleSnapshot`. |
 
-All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
-
-| Method | Request | Kind | Resources | Default budget |
-|------|------|------|------|------|
-| `move_joint` | `JointMove` | Operation | arms | — |
-| `move_joint_path` | `JointPath` | Operation | arms | — |
-| `move_pose` | `PoseMove` | Operation | arms | — |
-| `move_pose_relative` | `PoseRelative` | Operation | arms | — |
-| `move_pose_path` | `PosePath` | Operation | arms | — |
-| `move_pose_arc_by_points` | `PoseArcByPointsMove` | Operation | arms | — |
-| `move_pose_arc_by_center` | `PoseArcByCenterMove` | Operation | arms | — |
-
-Operations return a handle immediately; progress and results come from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
-
-| Channel | Content |
-|------|------|
-| `joint()` | `DualJointState` |
-| `pose()` | `DualPose` |
+Commands return their response synchronously, and `timeout_ms` can be overridden per call; Operations return a handle immediately, with progress and results read from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
 
 Enums used on this page:
 

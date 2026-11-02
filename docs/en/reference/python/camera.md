@@ -19,34 +19,36 @@ Cameras start streaming automatically once the capability is active, so `open()`
 
 ## API Overview
 
-| Method | Request | Response | Default timeout |
-|------|------|------|------|
-| `get_info` | `Empty` | `DeviceInfo` | 1000 ms |
-| `get_state` | `Empty` | `SessionState` | 1000 ms |
-| `open` | `SessionConfig` | `SessionState` | 5000 ms |
-| `close` | `Empty` | `SessionState` | 3000 ms |
-| `capture` | `CaptureOptions` | `FrameSet` | 10000 ms |
-| `trigger` | `TriggerPulse` | `TriggerAck` | 2000 ms |
-| `get_calibration` | `Empty` | `CameraCalibration` | 1000 ms |
-| `get_imaging` | `Empty` | `ImagingState` | 1000 ms |
-| `set_imaging` | `ImagingPatch` | `ImagingState` | 2000 ms |
+| Name | Kind | Description |
+|------|------|------|
+| `get_info` | Command | Read device information: vendor, model, serial number, connection type and supported features; default timeout 1000 ms. |
+| `get_state` | Command | Read the current session state (streaming, sync, registration, calibration generation and temperature); default timeout 1000 ms. |
+| `open` | Command | Open the session; default timeout 5000 ms. |
+| `close` | Command | Close the camera session and stop every stream; default timeout 3000 ms. |
+| `capture` | Command | Capture one multi-stream frame set; default timeout 8000 ms. |
+| `trigger` | Command | Emit an external trigger pulse for the `SOFTWARE_TRIGGER` sync role; default timeout 2000 ms. |
+| `get_calibration` | Command | Read calibration data: per-stream intrinsics, depth-to-color / left-right infrared / IMU-to-color extrinsics, stereo baseline, depth scale and the valid depth range; default timeout 1000 ms. |
+| `get_imaging` | Command | Read imaging controls (exposure, gain, white balance, mains frequency, emitter); default timeout 1000 ms. |
+| `set_imaging` | Command | Replace the imaging controls and return the applied state; default timeout 2000 ms. |
+| `frameset` | Channel | Multi-stream frame-set stream; frame is `FrameSet`. |
+| `color` | Channel | Color image stream; frame is `ImageFrame`. |
+| `depth` | Channel | Raw depth stream; frame is `ImageFrame`. |
+| `registered_depth` | Channel | Depth registered to the color frame; frame is `ImageFrame`. |
+| `infrared` | Channel | Infrared stream; frame is `ImageFrame`. |
+| `infrared_left` | Channel | Left infrared stream; frame is `ImageFrame`. |
+| `infrared_right` | Channel | Right infrared stream; frame is `ImageFrame`. |
+| `confidence` | Channel | Confidence stream; frame is `ImageFrame`. |
+| `points` | Channel | Point cloud stream; frame is `PointCloud`. |
+| `imu` | Channel | IMU sample stream; frame is `ImuSample`. |
+| `rtsp` | Channel | RTSP preview endpoint; it publishes media descriptors rather than image frames; frame is `MediaEndpoint` (media endpoint, not frame iteration). |
+| `webrtc` | Channel | WebRTC preview endpoint; it publishes media descriptors rather than image frames; frame is `MediaEndpoint` (media endpoint, not frame iteration). |
+| `camera_session_changed` | Event | Pushed when the session state changes; the payload is a `SessionState`. |
+| `camera_calibration_changed` | Event | Pushed when the calibration changes; the payload is a `CameraCalibration`. |
+| `camera_device_connection_changed` | Event | Pushed when the device connects or disconnects; the payload is a `DeviceConnectionEvent`. |
+| `fault_changed` | Event | Fault set changed; payload is `Faults`. |
+| `lifecycle_changed` | Event | Lifecycle changed; payload is `CapabilityLifecycleSnapshot`. |
 
-All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
-
-| Channel | Content |
-|------|------|
-| `frameset()` | `FrameSet` |
-| `color()` | `ImageFrame` |
-| `depth()` | `ImageFrame` |
-| `registered_depth()` | `ImageFrame` |
-| `infrared()` | `ImageFrame` |
-| `infrared_left()` | `ImageFrame` |
-| `infrared_right()` | `ImageFrame` |
-| `confidence()` | `ImageFrame` |
-| `points()` | `PointCloud` |
-| `imu()` | `ImuSample` |
-| `rtsp()` | `MediaEndpoint` (media endpoint, not frame iteration) |
-| `webrtc()` | `MediaEndpoint` (media endpoint, not frame iteration) |
+Commands return their response synchronously, and `timeout_ms` can be overridden per call; Operations return a handle immediately, with progress and results read from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
 
 Enums used on this page:
 

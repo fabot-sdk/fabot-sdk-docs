@@ -18,46 +18,40 @@ All motion Operations share the `body` resource with policy `queue` and a 60-sec
 
 ## API Overview
 
-| Method | Request | Response | Default timeout |
-|------|------|------|------|
-| `get_joint` | `Empty` | `JointState` | 1000 ms |
-| `get_pose` | `PoseQuery` | `Pose3d` | 1000 ms |
-| `get_mode` | `Empty` | `Mode` | 1000 ms |
-| `set_mode` | `Mode` | `Mode` | 1000 ms |
-| `get_joint_velocity_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_joint_velocity_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_linear_velocity_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_linear_velocity_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_angular_velocity_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_angular_velocity_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_joint_acceleration_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_joint_acceleration_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_linear_acceleration_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_linear_acceleration_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_angular_acceleration_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_angular_acceleration_limit` | `Float64` | `Float64` | 1000 ms |
-| `servo_waist_twist` | `WaistTwist` | `WaistTwist` | 1000 ms |
-| `servo_pose` | `Pose3d` | `Pose3d` | 1000 ms |
-| `get_arrival_thresholds` | `Empty` | `ArrivalThresholds` | 1000 ms |
-| `set_arrival_thresholds` | `ArrivalThresholds` | `ArrivalThresholds` | 1000 ms |
+| Name | Kind | Description |
+|------|------|------|
+| `get_joint` | Command | Read the body joint sample; default timeout 1000 ms. |
+| `get_pose` | Command | Read the body pose; default timeout 1000 ms. |
+| `get_mode` | Command | Read the current mode; default timeout 1000 ms. |
+| `set_mode` | Command | Switch the body constraint mode under whole-body control; default timeout 1000 ms. |
+| `get_joint_velocity_limit` | Command | Read the joint velocity limit; default timeout 1000 ms. |
+| `set_joint_velocity_limit` | Command | Set the joint velocity limit and return the applied value; default timeout 1000 ms. |
+| `get_linear_velocity_limit` | Command | Read the linear velocity limit; default timeout 1000 ms. |
+| `set_linear_velocity_limit` | Command | Set the linear velocity limit and return the applied value; default timeout 1000 ms. |
+| `get_angular_velocity_limit` | Command | Read the angular velocity limit; default timeout 1000 ms. |
+| `set_angular_velocity_limit` | Command | Set the angular velocity limit and return the applied value; default timeout 1000 ms. |
+| `get_joint_acceleration_limit` | Command | Read the joint acceleration limit; default timeout 1000 ms. |
+| `set_joint_acceleration_limit` | Command | Set the joint acceleration limit and return the applied value; default timeout 1000 ms. |
+| `get_linear_acceleration_limit` | Command | Read the linear acceleration limit; default timeout 1000 ms. |
+| `set_linear_acceleration_limit` | Command | Set the linear acceleration limit and return the applied value; default timeout 1000 ms. |
+| `get_angular_acceleration_limit` | Command | Read the angular acceleration limit; default timeout 1000 ms. |
+| `set_angular_acceleration_limit` | Command | Set the angular acceleration limit and return the applied value; default timeout 1000 ms. |
+| `servo_waist_twist` | Command | Body velocity servo: `lift` / `turn` / `pitch` are normalized ratios in [-1, 1]; default timeout 1000 ms. |
+| `servo_pose` | Command | Send one pose servo target and get the applied pose; default timeout 1000 ms. |
+| `get_arrival_thresholds` | Command | Read the arrival thresholds for this slot; default timeout 1000 ms. |
+| `set_arrival_thresholds` | Command | Replace the arrival thresholds for this slot; default timeout 1000 ms. |
+| `move_joint` | Operation | Joint-space motion; default budget 60 s. |
+| `move_joint_path` | Operation | Follow a joint waypoint sequence; at least two waypoints, the first reached from the current joints; default budget 60 s. |
+| `move_waist` | Operation | Absolute motion of the degenerate waist pose (`x` forward, `z` lift, `phi` pitch); default budget 60 s. |
+| `move_waist_relative` | Operation | Incremental motion of the degenerate waist pose; default budget 60 s. |
+| `move_pose` | Operation | Absolute end-effector motion; default budget 60 s. |
+| `move_pose_relative` | Operation | Relative end-effector motion; `target` is an increment from the current pose; default budget 60 s. |
+| `joint` | Channel | Body joint-state stream; frame is `JointState`. |
+| `pose` | Channel | Body pose stream; frame is `Pose3d`. |
+| `fault_changed` | Event | Fault set changed; payload is `Faults`. |
+| `lifecycle_changed` | Event | Lifecycle changed; payload is `CapabilityLifecycleSnapshot`. |
 
-All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
-
-| Method | Request | Kind | Resources | Default budget |
-|------|------|------|------|------|
-| `move_joint` | `JointMove` | Operation | body | 60000 ms |
-| `move_joint_path` | `JointPath` | Operation | body | 60000 ms |
-| `move_waist` | `WaistMove` | Operation | body | 60000 ms |
-| `move_waist_relative` | `WaistMove` | Operation | body | 60000 ms |
-| `move_pose` | `PoseMove` | Operation | body | 60000 ms |
-| `move_pose_relative` | `PoseMove` | Operation | body | 60000 ms |
-
-Operations return a handle immediately; progress and results come from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
-
-| Channel | Content |
-|------|------|
-| `joint()` | `JointState` |
-| `pose()` | `Pose3d` |
+Commands return their response synchronously, and `timeout_ms` can be overridden per call; Operations return a handle immediately, with progress and results read from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
 
 Enums used on this page:
 

@@ -19,46 +19,40 @@ The `ChassisStage` from `get_stage()` / `stage()` is a read-only projection of t
 
 ## API Overview
 
-| Method | Request | Response | Default timeout |
-|------|------|------|------|
-| `get_pose` | `Empty` | `Pose2d` | 3000 ms |
-| `set_pose` | `Pose2d` | `Pose2d` | 5000 ms |
-| `get_twist` | `Empty` | `Twist2d` | 3000 ms |
-| `get_stage` | `Empty` | `Stage` | 3000 ms |
-| `get_station` | `Empty` | `Stations` | 5000 ms |
-| `get_mode` | `Empty` | `Mode` | 3000 ms |
-| `set_mode` | `Mode` | `Mode` | 3000 ms |
-| `get_parking` | `Empty` | `Parking` | 3000 ms |
-| `set_parking` | `Parking` | `Parking` | 3000 ms |
-| `get_lock` | `Empty` | `Lock` | 3000 ms |
-| `set_lock` | `Lock` | `Lock` | 3000 ms |
-| `get_pause` | `Empty` | `Pause` | 3000 ms |
-| `set_pause` | `Pause` | `Pause` | 3000 ms |
-| `get_linear_velocity_limit` | `Empty` | `Float64` | 3000 ms |
-| `set_linear_velocity_limit` | `Float64` | `Float64` | 3000 ms |
-| `get_angular_velocity_limit` | `Empty` | `Float64` | 3000 ms |
-| `set_angular_velocity_limit` | `Float64` | `Float64` | 3000 ms |
-| `get_linear_acceleration_limit` | `Empty` | `Float64` | 3000 ms |
-| `set_linear_acceleration_limit` | `Float64` | `Float64` | 3000 ms |
-| `get_angular_acceleration_limit` | `Empty` | `Float64` | 3000 ms |
-| `set_angular_acceleration_limit` | `Float64` | `Float64` | 3000 ms |
-| `servo_twist` | `Twist2d` | `Twist2d` | 2000 ms |
+| Name | Kind | Description |
+|------|------|------|
+| `get_pose` | Command | Read the map-frame pose; default timeout 3000 ms. |
+| `set_pose` | Command | Reset the map-frame pose to the given value and return the applied pose; default timeout 5000 ms. |
+| `get_twist` | Command | Read the current velocity; default timeout 3000 ms. |
+| `get_stage` | Command | Read the current motion stage; default timeout 3000 ms. |
+| `get_station` | Command | Read the map station list; `get_stations` is an alias; default timeout 5000 ms. |
+| `get_mode` | Command | Read the current mode; default timeout 3000 ms. |
+| `set_mode` | Command | Switch between manual and autonomous modes; default timeout 3000 ms. |
+| `get_parking` | Command | Query whether parking is latched; default timeout 3000 ms. |
+| `set_parking` | Command | Set the parking latch; default timeout 3000 ms. |
+| `get_lock` | Command | Query whether the chassis degree of freedom is locked; default timeout 3000 ms. |
+| `set_lock` | Command | Lock or unlock the chassis degree of freedom; default timeout 3000 ms. |
+| `get_pause` | Command | Query whether in-flight navigation is paused; default timeout 3000 ms. |
+| `set_pause` | Command | Pause or resume in-flight navigation without dropping `move_*` handles; default timeout 3000 ms. |
+| `get_linear_velocity_limit` | Command | Read the linear velocity limit; default timeout 3000 ms. |
+| `set_linear_velocity_limit` | Command | Set the linear velocity limit and return the applied value; default timeout 3000 ms. |
+| `get_angular_velocity_limit` | Command | Read the angular velocity limit; default timeout 3000 ms. |
+| `set_angular_velocity_limit` | Command | Set the angular velocity limit and return the applied value; default timeout 3000 ms. |
+| `get_linear_acceleration_limit` | Command | Read the linear acceleration limit; default timeout 3000 ms. |
+| `set_linear_acceleration_limit` | Command | Set the linear acceleration limit and return the applied value; default timeout 3000 ms. |
+| `get_angular_acceleration_limit` | Command | Read the angular acceleration limit; default timeout 3000 ms. |
+| `set_angular_acceleration_limit` | Command | Set the angular acceleration limit and return the applied value; default timeout 3000 ms. |
+| `servo_twist` | Command | Velocity servo returning the applied velocity; only allowed in `MANUAL` mode; default timeout 2000 ms. |
+| `move_pose` | Operation | Navigate to an absolute map-frame pose; default budget 180 s. |
+| `move_pose_relative` | Operation | Body-frame relative navigation; `target.x` / `y` / `theta` are `dx` / `dy` / `dyaw`; default budget 180 s. |
+| `move_station` | Operation | Navigate to a map station; `station_id` comes from `get_station()`; default budget 180 s. |
+| `pose` | Channel | Map-frame pose stream; frame is `Pose2d`. |
+| `twist` | Channel | Velocity stream; frame is `Twist2d`. |
+| `stage` | Channel | Motion-stage stream; frame is `Stage`. |
+| `fault_changed` | Event | Fault set changed; payload is `Faults`. |
+| `lifecycle_changed` | Event | Lifecycle changed; payload is `CapabilityLifecycleSnapshot`. |
 
-All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
-
-| Method | Request | Kind | Resources | Default budget |
-|------|------|------|------|------|
-| `move_pose` | `PoseMove` | Operation | chassis | 180000 ms |
-| `move_pose_relative` | `RelativePoseMove` | Operation | chassis | 180000 ms |
-| `move_station` | `StationMove` | Operation | chassis | 180000 ms |
-
-Operations return a handle immediately; progress and results come from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
-
-| Channel | Content |
-|------|------|
-| `pose()` | `Pose2d` |
-| `twist()` | `Twist2d` |
-| `stage()` | `Stage` |
+Commands return their response synchronously, and `timeout_ms` can be overridden per call; Operations return a handle immediately, with progress and results read from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
 
 Enums used on this page:
 

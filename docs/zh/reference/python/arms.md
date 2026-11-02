@@ -18,50 +18,44 @@ updated: 2026-11-02
 
 ## API 总览
 
-| 方法 | 请求 | 响应 | 默认超时 |
-|------|------|------|------|
-| `get_joint` | `Empty` | `DualJointState` | 1000 ms |
-| `get_pose` | `PoseQuery` | `DualPose` | 1000 ms |
-| `get_mode` | `Empty` | `Mode` | 1000 ms |
-| `set_mode` | `Mode` | `Mode` | 2000 ms |
-| `get_impedance` | `Empty` | `Impedance` | 2000 ms |
-| `set_impedance` | `Impedance` | `Impedance` | 5000 ms |
-| `get_brake` | `Empty` | `DualBrakeState` | 10000 ms |
-| `set_brake` | `BrakeOpen` | `DualBrakeState` | 10000 ms |
-| `get_joint_velocity_limit` | `Empty` | `Float64` | 2000 ms |
-| `set_joint_velocity_limit` | `Float64` | `Float64` | 2000 ms |
-| `get_linear_velocity_limit` | `Empty` | `Float64` | 2000 ms |
-| `set_linear_velocity_limit` | `Float64` | `Float64` | 2000 ms |
-| `get_angular_velocity_limit` | `Empty` | `Float64` | 2000 ms |
-| `set_angular_velocity_limit` | `Float64` | `Float64` | 2000 ms |
-| `get_joint_acceleration_limit` | `Empty` | `Float64` | 2000 ms |
-| `set_joint_acceleration_limit` | `Float64` | `Float64` | 2000 ms |
-| `get_linear_acceleration_limit` | `Empty` | `Float64` | 2000 ms |
-| `set_linear_acceleration_limit` | `Float64` | `Float64` | 2000 ms |
-| `get_angular_acceleration_limit` | `Empty` | `Float64` | 2000 ms |
-| `set_angular_acceleration_limit` | `Float64` | `Float64` | 2000 ms |
-| `servo_pose` | `DualPose` | `DualPose` | 1000 ms |
-| `get_arrival_thresholds` | `Empty` | `ArrivalThresholds` | 1000 ms |
-| `set_arrival_thresholds` | `ArrivalThresholds` | `ArrivalThresholds` | 1000 ms |
+| 名字 | 类型 | 说明 |
+|------|------|------|
+| `get_joint` | Command | 读取双臂关节采样，`left` / `right` 共用同一时间戳；默认超时 1000 ms。 |
+| `get_pose` | Command | 读取双臂末端位姿；默认超时 1000 ms。 |
+| `get_mode` | Command | 读取当前模式；默认超时 1000 ms。 |
+| `set_mode` | Command | 切换双臂耦合模式，返回生效模式；默认超时 2000 ms。 |
+| `get_impedance` | Command | 读取导纳拖拽模式；默认超时 2000 ms。 |
+| `set_impedance` | Command | 切换导纳拖拽模式；`DISABLED` 恢复刚性位置控制；默认超时 5000 ms。 |
+| `get_brake` | Command | 查询抱闸状态；默认超时 10000 ms。 |
+| `set_brake` | Command | 同时松开或闭合双臂抱闸，返回两侧状态；默认超时 10000 ms。 |
+| `get_joint_velocity_limit` | Command | 读取关节速度上限；默认超时 2000 ms。 |
+| `set_joint_velocity_limit` | Command | 设置关节速度上限，返回生效值；默认超时 2000 ms。 |
+| `get_linear_velocity_limit` | Command | 读取线速度上限；默认超时 2000 ms。 |
+| `set_linear_velocity_limit` | Command | 设置线速度上限，返回生效值；默认超时 2000 ms。 |
+| `get_angular_velocity_limit` | Command | 读取角速度上限；默认超时 2000 ms。 |
+| `set_angular_velocity_limit` | Command | 设置角速度上限，返回生效值；默认超时 2000 ms。 |
+| `get_joint_acceleration_limit` | Command | 读取关节加速度上限；默认超时 2000 ms。 |
+| `set_joint_acceleration_limit` | Command | 设置关节加速度上限，返回生效值；默认超时 2000 ms。 |
+| `get_linear_acceleration_limit` | Command | 读取线加速度上限；默认超时 2000 ms。 |
+| `set_linear_acceleration_limit` | Command | 设置线加速度上限，返回生效值；默认超时 2000 ms。 |
+| `get_angular_acceleration_limit` | Command | 读取角加速度上限；默认超时 2000 ms。 |
+| `set_angular_acceleration_limit` | Command | 设置角加速度上限，返回生效值；默认超时 2000 ms。 |
+| `servo_pose` | Command | 双臂位姿伺服，返回实际生效位姿；默认超时 1000 ms。 |
+| `get_arrival_thresholds` | Command | 读取该槽位的到位判定阈值；默认超时 1000 ms。 |
+| `set_arrival_thresholds` | Command | 整体替换该槽位的到位判定阈值；只改内存，不持久化，后续运动生效；默认超时 1000 ms。 |
+| `move_joint` | Operation | 关节空间运动。 |
+| `move_joint_path` | Operation | 沿关节路点序列运动；至少两个路点，当前关节接到第一个路点。 |
+| `move_pose` | Operation | 末端位姿绝对运动。 |
+| `move_pose_relative` | Operation | 末端位姿增量运动。 |
+| `move_pose_path` | Operation | 沿末端位姿路点序列运动，每个路点自带 `frame_id`。 |
+| `move_pose_arc_by_points` | Operation | 三点圆弧运动：起点为当前位姿，经 `via` 到 `end`。 |
+| `move_pose_arc_by_center` | Operation | 圆心圆弧运动：圆心由 `center.frame_id` 定位。 |
+| `joint` | Channel | 双臂关节状态流，帧为 `DualJointState`。 |
+| `pose` | Channel | 双臂末端位姿流，帧为 `DualPose`。 |
+| `fault_changed` | Event | 故障集合变化，payload 为 `Faults`。 |
+| `lifecycle_changed` | Event | 生命周期变化，payload 为 `CapabilityLifecycleSnapshot`。 |
 
-以上均为 Command（同步请求-响应），`timeout_ms` 可逐次覆盖。
-
-| 方法 | 请求 | 类型 | 资源 | 默认时限 |
-|------|------|------|------|------|
-| `move_joint` | `JointMove` | Operation | arms | — |
-| `move_joint_path` | `JointPath` | Operation | arms | — |
-| `move_pose` | `PoseMove` | Operation | arms | — |
-| `move_pose_relative` | `PoseRelative` | Operation | arms | — |
-| `move_pose_path` | `PosePath` | Operation | arms | — |
-| `move_pose_arc_by_points` | `PoseArcByPointsMove` | Operation | arms | — |
-| `move_pose_arc_by_center` | `PoseArcByCenterMove` | Operation | arms | — |
-
-Operation 立即返回句柄，进度与结果通过快照获取；通用用法见 [命令与长时操作](../../usage/commands-operations.md)。
-
-| 通道 | 内容 |
-|------|------|
-| `joint()` | `DualJointState` |
-| `pose()` | `DualPose` |
+Command 同步返回响应，`timeout_ms` 可逐次覆盖；Operation 立即返回句柄，进度与结果通过快照获取，见 [命令与长时操作](../../usage/commands-operations.md)。
 
 本页方法用到的枚举：
 

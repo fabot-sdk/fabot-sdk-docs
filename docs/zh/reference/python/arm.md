@@ -18,62 +18,56 @@ updated: 2026-11-02
 
 ## API 总览
 
-| 方法 | 请求 | 响应 | 默认超时 |
-|------|------|------|------|
-| `get_joint` | `Empty` | `JointState` | 1000 ms |
-| `get_pose` | `PoseQuery` | `Pose3d` | 1000 ms |
-| `get_wrench` | `Empty` | `Wrench3d` | 1000 ms |
-| `get_filtered_wrench` | `Empty` | `Wrench3d` | 1000 ms |
-| `get_joint_velocity_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_joint_velocity_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_linear_velocity_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_linear_velocity_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_angular_velocity_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_angular_velocity_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_joint_acceleration_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_joint_acceleration_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_linear_acceleration_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_linear_acceleration_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_angular_acceleration_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_angular_acceleration_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_brake` | `Empty` | `BrakeState` | 10000 ms |
-| `set_brake` | `BrakeState` | `BrakeState` | 10000 ms |
-| `get_enable` | `Empty` | `Enable` | 1000 ms |
-| `set_enable` | `Enable` | `Enable` | 3000 ms |
-| `set_wrench_zero` | `WrenchZero` | `WrenchZero` | 1000 ms |
-| `get_compliance_mask` | `Empty` | `Doubles` | 1000 ms |
-| `set_compliance_mask` | `Doubles` | `Doubles` | 1000 ms |
-| `get_compliance_wrench` | `Empty` | `Wrench3d` | 1000 ms |
-| `set_compliance_wrench` | `Wrench3d` | `Wrench3d` | 1000 ms |
-| `get_compliance_linear_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_compliance_linear_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_compliance_angular_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_compliance_angular_limit` | `Float64` | `Float64` | 1000 ms |
-| `servo_pose` | `Pose3d` | `Pose3d` | 3000 ms |
-| `servo_twist` | `Twist3d` | `Twist3d` | 1000 ms |
-| `get_arrival_thresholds` | `Empty` | `ArrivalThresholds` | 1000 ms |
-| `set_arrival_thresholds` | `ArrivalThresholds` | `ArrivalThresholdsApplied` | 1000 ms |
+| 名字 | 类型 | 说明 |
+|------|------|------|
+| `get_joint` | Command | 读取当前关节采样：位置（弧度）、速度、力矩与时间戳；默认超时 1000 ms。 |
+| `get_pose` | Command | 读取当前末端位姿；默认超时 1000 ms。 |
+| `get_wrench` | Command | 读取末端原始六维力（未滤波）；默认超时 1000 ms。 |
+| `get_filtered_wrench` | Command | 读取滤波后的末端六维力；默认超时 1000 ms。 |
+| `get_joint_velocity_limit` | Command | 读取关节速度上限；默认超时 1000 ms。 |
+| `set_joint_velocity_limit` | Command | 设置关节速度上限，返回生效值；默认超时 1000 ms。 |
+| `get_linear_velocity_limit` | Command | 读取线速度上限；默认超时 1000 ms。 |
+| `set_linear_velocity_limit` | Command | 设置线速度上限，返回生效值；默认超时 1000 ms。 |
+| `get_angular_velocity_limit` | Command | 读取角速度上限；默认超时 1000 ms。 |
+| `set_angular_velocity_limit` | Command | 设置角速度上限，返回生效值；默认超时 1000 ms。 |
+| `get_joint_acceleration_limit` | Command | 读取关节加速度上限；默认超时 1000 ms。 |
+| `set_joint_acceleration_limit` | Command | 设置关节加速度上限，返回生效值；默认超时 1000 ms。 |
+| `get_linear_acceleration_limit` | Command | 读取线加速度上限；默认超时 1000 ms。 |
+| `set_linear_acceleration_limit` | Command | 设置线加速度上限，返回生效值；默认超时 1000 ms。 |
+| `get_angular_acceleration_limit` | Command | 读取角加速度上限；默认超时 1000 ms。 |
+| `set_angular_acceleration_limit` | Command | 设置角加速度上限，返回生效值；默认超时 1000 ms。 |
+| `get_brake` | Command | 查询抱闸状态；默认超时 10000 ms。 |
+| `set_brake` | Command | 松开或闭合抱闸；默认超时 10000 ms。 |
+| `get_enable` | Command | 查询使能状态；默认超时 1000 ms。 |
+| `set_enable` | Command | 使能或失能关节；默认超时 3000 ms。 |
+| `set_wrench_zero` | Command | 触发一次力传感器零偏标定；默认超时 1000 ms。 |
+| `get_compliance_mask` | Command | 读取柔顺控制各自由度权重；默认超时 1000 ms。 |
+| `set_compliance_mask` | Command | 设置柔顺控制各自由度权重，返回生效值；默认超时 1000 ms。 |
+| `get_compliance_wrench` | Command | 读取柔顺控制的目标力；默认超时 1000 ms。 |
+| `set_compliance_wrench` | Command | 设置柔顺控制的目标力与力矩；默认超时 1000 ms。 |
+| `get_compliance_linear_limit` | Command | 读取柔顺控制的线位移限幅；默认超时 1000 ms。 |
+| `set_compliance_linear_limit` | Command | 设置柔顺控制线位移限幅；默认超时 1000 ms。 |
+| `get_compliance_angular_limit` | Command | 读取柔顺控制的角位移限幅；默认超时 1000 ms。 |
+| `set_compliance_angular_limit` | Command | 设置柔顺控制角位移限幅；默认超时 1000 ms。 |
+| `servo_pose` | Command | 位姿伺服；默认超时 3000 ms。 |
+| `servo_twist` | Command | 下发一次速度伺服目标，返回实际生效的速度；默认超时 1000 ms。 |
+| `get_arrival_thresholds` | Command | 读取该槽位的到位判定阈值；默认超时 1000 ms。 |
+| `set_arrival_thresholds` | Command | 整体替换该槽位的到位判定阈值，返回 `outcome` 与实际生效值；默认超时 1000 ms。 |
+| `move_joint` | Operation | 关节空间运动。 |
+| `move_joint_path` | Operation | 沿关节路点序列运动；至少两个路点，当前关节接到第一个路点。 |
+| `move_pose` | Operation | 末端位姿绝对运动。 |
+| `move_pose_relative` | Operation | 末端位姿增量运动。 |
+| `move_pose_path` | Operation | 沿末端位姿路点序列运动，每个路点自带 `frame_id`。 |
+| `move_pose_arc_by_points` | Operation | 三点圆弧运动：起点为当前位姿，经 `via` 到 `end`。 |
+| `move_pose_arc_by_center` | Operation | 圆心圆弧运动：圆心由 `center.frame_id` 定位。 |
+| `joint` | Channel | 关节状态流，帧为 `JointState`。 |
+| `pose` | Channel | 末端位姿流，帧为 `Pose3d`。 |
+| `wrench` | Channel | 原始六维力流，帧为 `Wrench3d`。 |
+| `filtered_wrench` | Channel | 滤波后的六维力流，帧为 `Wrench3d`。 |
+| `fault_changed` | Event | 故障集合变化，payload 为 `Faults`。 |
+| `lifecycle_changed` | Event | 生命周期变化，payload 为 `CapabilityLifecycleSnapshot`。 |
 
-以上均为 Command（同步请求-响应），`timeout_ms` 可逐次覆盖。
-
-| 方法 | 请求 | 类型 | 资源 | 默认时限 |
-|------|------|------|------|------|
-| `move_joint` | `JointMove` | Operation | arm | — |
-| `move_joint_path` | `JointPathMove` | Operation | arm | — |
-| `move_pose` | `PoseMove` | Operation | arm | — |
-| `move_pose_relative` | `PoseMove` | Operation | arm | — |
-| `move_pose_path` | `PosePathMove` | Operation | arm | — |
-| `move_pose_arc_by_points` | `PoseArcPointsMove` | Operation | arm | — |
-| `move_pose_arc_by_center` | `PoseArcCenterMove` | Operation | arm | — |
-
-Operation 立即返回句柄，进度与结果通过快照获取；通用用法见 [命令与长时操作](../../usage/commands-operations.md)。
-
-| 通道 | 内容 |
-|------|------|
-| `joint()` | `JointState` |
-| `pose()` | `Pose3d` |
-| `wrench()` | `Wrench3d` |
-| `filtered_wrench()` | `Wrench3d` |
+Command 同步返回响应，`timeout_ms` 可逐次覆盖；Operation 立即返回句柄，进度与结果通过快照获取，见 [命令与长时操作](../../usage/commands-operations.md)。
 
 ## 方法
 

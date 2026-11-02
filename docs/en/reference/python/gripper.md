@@ -18,30 +18,24 @@ updated: 2026-11-02
 
 ## API Overview
 
-| Method | Request | Response | Default timeout |
-|------|------|------|------|
-| `get_opening` | `Empty` | `Float64` | 1000 ms |
-| `get_joint` | `Empty` | `JointState` | 1000 ms |
-| `get_velocity_limit` | `Empty` | `Float64` | 8000 ms |
-| `set_velocity_limit` | `Float64` | `Float64` | 8000 ms |
-| `get_force_limit` | `Empty` | `Float64` | 8000 ms |
-| `set_force_limit` | `Float64` | `Float64` | 8000 ms |
-| `servo_opening` | `Float64` | `Float64` | 1000 ms |
-| `servo_joint` | `Doubles` | `JointPositions` | 1000 ms |
+| Name | Kind | Description |
+|------|------|------|
+| `get_opening` | Command | Read the current opening; default timeout 1000 ms. |
+| `get_joint` | Command | Read the current joint sample: positions, velocities, efforts and timestamp; default timeout 1000 ms. |
+| `get_velocity_limit` | Command | Read the velocity limit; default timeout 8000 ms. |
+| `set_velocity_limit` | Command | Set the velocity limit and return the applied value; default timeout 8000 ms. |
+| `get_force_limit` | Command | Read the force limit; default timeout 8000 ms. |
+| `set_force_limit` | Command | Set the force limit and return the applied value; default timeout 8000 ms. |
+| `servo_opening` | Command | Send one opening servo target and return the applied value; default timeout 1000 ms. |
+| `servo_joint` | Command | Joint servo returning the applied values; default timeout 1000 ms. |
+| `move_opening` | Operation | Normalized opening motion. |
+| `move_joint` | Operation | Physical-stroke motion. |
+| `opening` | Channel | Opening stream; frame is `Float64`. |
+| `joint` | Channel | Joint position stream; frame is `JointState`. |
+| `fault_changed` | Event | Fault set changed; payload is `Faults`. |
+| `lifecycle_changed` | Event | Lifecycle changed; payload is `CapabilityLifecycleSnapshot`. |
 
-All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
-
-| Method | Request | Kind | Resources | Default budget |
-|------|------|------|------|------|
-| `move_opening` | `OpeningMove` | Operation | gripper | — |
-| `move_joint` | `JointMove` | Operation | gripper | — |
-
-Operations return a handle immediately; progress and results come from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
-
-| Channel | Content |
-|------|------|
-| `opening()` | `Float64` |
-| `joint()` | `JointState` |
+Commands return their response synchronously, and `timeout_ms` can be overridden per call; Operations return a handle immediately, with progress and results read from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
 
 ## Methods
 

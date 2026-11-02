@@ -19,32 +19,26 @@ All motion Operations share the `motion_controller` resource with policy `queue`
 
 ## API Overview
 
-| Method | Request | Response | Default timeout |
-|------|------|------|------|
-| `get_joint` | `Empty` | `WholeBodyJointState` | 1000 ms |
-| `get_wbc_state` | `Empty` | `WbcState` | 1000 ms |
-| `get_center_of_mass` | `Empty` | `CenterOfMass` | 1000 ms |
-| `get_mode` | `Empty` | `Mode` | 1000 ms |
-| `set_mode` | `Mode` | `Mode` | 7000 ms |
-| `servo_pose` | `WholeBodyPoseTarget` | `WholeBodyPoseTarget` | 1000 ms |
+| Name | Kind | Description |
+|------|------|------|
+| `get_joint` | Command | Read the whole-body joint sample (body / left arm / right arm / head); default timeout 1000 ms. |
+| `get_wbc_state` | Command | Read the whole-body control state: per-part modes, arm enables and chassis lock; default timeout 1000 ms. |
+| `get_center_of_mass` | Command | Read the center of mass and its margin to the support polygon; default timeout 1000 ms. |
+| `get_mode` | Command | Read the current mode; default timeout 1000 ms. |
+| `set_mode` | Command | Switch the motion regime and return the applied one; default timeout 7000 ms. |
+| `servo_pose` | Command | Whole-body pose servo: supply goals for all three parts and get the applied values; default timeout 1000 ms. |
+| `move_home` | Operation | Move to a preset home pose; `HomePose.PRIMARY` is the default; default budget 60 s. |
+| `move_preset` | Operation | Move to a named preset configuration; default budget 60 s. |
+| `move_joint` | Operation | Joint-space motion; default budget 60 s. |
+| `move_joint_path` | Operation | Follow a joint waypoint sequence; at least two waypoints, the first reached from the current joints; default budget 60 s. |
+| `move_pose` | Operation | Absolute end-effector motion; default budget 60 s. |
+| `joint` | Channel | Whole-body joint-state stream; frame is `WholeBodyJointState`. |
+| `wbc_state` | Channel | Whole-body control state stream; frame is `WbcState`. |
+| `center_of_mass` | Channel | Center-of-mass and margin stream; frame is `CenterOfMass`. |
+| `fault_changed` | Event | Fault set changed; payload is `Faults`. |
+| `lifecycle_changed` | Event | Lifecycle changed; payload is `CapabilityLifecycleSnapshot`. |
 
-All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
-
-| Method | Request | Kind | Resources | Default budget |
-|------|------|------|------|------|
-| `move_home` | `Home` | Operation | motion_controller | 60000 ms |
-| `move_preset` | `Preset` | Operation | motion_controller | 60000 ms |
-| `move_joint` | `JointMove` | Operation | motion_controller | 60000 ms |
-| `move_joint_path` | `JointPath` | Operation | motion_controller | 60000 ms |
-| `move_pose` | `PoseMove` | Operation | motion_controller | 60000 ms |
-
-Operations return a handle immediately; progress and results come from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
-
-| Channel | Content |
-|------|------|
-| `joint()` | `WholeBodyJointState` |
-| `wbc_state()` | `WbcState` |
-| `center_of_mass()` | `CenterOfMass` |
+Commands return their response synchronously, and `timeout_ms` can be overridden per call; Operations return a handle immediately, with progress and results read from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
 
 Enums used on this page:
 

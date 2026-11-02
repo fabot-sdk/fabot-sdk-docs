@@ -18,34 +18,28 @@ updated: 2026-11-02
 
 ## API 总览
 
-| 方法 | 请求 | 响应 | 默认超时 |
-|------|------|------|------|
-| `get_joint` | `Empty` | `JointState` | 1000 ms |
-| `get_pose` | `PoseQuery` | `Pose3d` | 1000 ms |
-| `get_mode` | `Empty` | `Mode` | 1000 ms |
-| `set_mode` | `Mode` | `Mode` | 1000 ms |
-| `get_joint_velocity_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_joint_velocity_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_joint_acceleration_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_joint_acceleration_limit` | `Float64` | `Float64` | 1000 ms |
-| `servo_pose` | `Pose3d` | `Pose3d` | 1000 ms |
-| `get_arrival_thresholds` | `Empty` | `ArrivalThresholds` | 1000 ms |
-| `set_arrival_thresholds` | `ArrivalThresholds` | `ArrivalThresholdsApplied` | 1000 ms |
+| 名字 | 类型 | 说明 |
+|------|------|------|
+| `get_joint` | Command | 读取头部关节采样（`[yaw, pitch]`）；默认超时 1000 ms。 |
+| `get_pose` | Command | 读取头部位姿；默认超时 1000 ms。 |
+| `get_mode` | Command | 读取当前模式；默认超时 1000 ms。 |
+| `set_mode` | Command | 切换全身控制下的头部约束模式；`GAZE` 时位姿位置即空间注视点；默认超时 1000 ms。 |
+| `get_joint_velocity_limit` | Command | 读取关节速度上限；默认超时 1000 ms。 |
+| `set_joint_velocity_limit` | Command | 设置关节速度上限，返回生效值；默认超时 1000 ms。 |
+| `get_joint_acceleration_limit` | Command | 读取关节加速度上限；默认超时 1000 ms。 |
+| `set_joint_acceleration_limit` | Command | 设置关节加速度上限，返回生效值；默认超时 1000 ms。 |
+| `servo_pose` | Command | 下发一次位姿伺服目标，返回实际生效的位姿；默认超时 1000 ms。 |
+| `get_arrival_thresholds` | Command | 读取该槽位的到位判定阈值；默认超时 1000 ms。 |
+| `set_arrival_thresholds` | Command | 整体替换该槽位的到位判定阈值；只改内存，不持久化，后续运动生效；默认超时 1000 ms。 |
+| `move_joint` | Operation | 关节空间运动。 |
+| `move_joint_path` | Operation | 沿关节路点序列运动；至少两个路点，当前关节接到第一个路点。 |
+| `move_pose` | Operation | 末端位姿绝对运动。 |
+| `joint` | Channel | 头部关节状态流，帧为 `JointState`。 |
+| `pose` | Channel | 头部位姿流，帧为 `Pose3d`。 |
+| `fault_changed` | Event | 故障集合变化，payload 为 `Faults`。 |
+| `lifecycle_changed` | Event | 生命周期变化，payload 为 `CapabilityLifecycleSnapshot`。 |
 
-以上均为 Command（同步请求-响应），`timeout_ms` 可逐次覆盖。
-
-| 方法 | 请求 | 类型 | 资源 | 默认时限 |
-|------|------|------|------|------|
-| `move_joint` | `JointMove` | Operation | head | — |
-| `move_joint_path` | `JointPath` | Operation | head | — |
-| `move_pose` | `PoseMove` | Operation | head | — |
-
-Operation 立即返回句柄，进度与结果通过快照获取；通用用法见 [命令与长时操作](../../usage/commands-operations.md)。
-
-| 通道 | 内容 |
-|------|------|
-| `joint()` | `JointState` |
-| `pose()` | `Pose3d` |
+Command 同步返回响应，`timeout_ms` 可逐次覆盖；Operation 立即返回句柄，进度与结果通过快照获取，见 [命令与长时操作](../../usage/commands-operations.md)。
 
 本页方法用到的枚举：
 

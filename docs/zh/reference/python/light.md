@@ -18,15 +18,17 @@ updated: 2026-11-02
 
 ## API 总览
 
-| 方法 | 请求 | 响应 | 默认超时 |
-|------|------|------|------|
-| `set_mode` | `LightModeChange` | `LightStatusApplied` | 1000 ms |
-| `set_color` | `Rgb8` | `LightStatusApplied` | 1000 ms |
-| `set_brightness` | `Brightness` | `LightStatusApplied` | 1000 ms |
-| `set_period` | `Period` | `LightStatusApplied` | 1000 ms |
-| `get_status` | `Empty` | `LightStatusApplied` | 1000 ms |
+| 名字 | 类型 | 说明 |
+|------|------|------|
+| `set_mode` | Command | 切换灯效模式，同时设置颜色与动画周期；不改变亮度；默认超时 1000 ms。 |
+| `set_color` | Command | 只改颜色；默认超时 1000 ms。 |
+| `set_brightness` | Command | 只改亮度；默认超时 1000 ms。 |
+| `set_period` | Command | 只改动画周期；对 `OFF` / `SOLID` 无可见效果；默认超时 1000 ms。 |
+| `get_status` | Command | 读取当前灯带快照（`get_state` 是别名）；默认超时 1000 ms。 |
+| `fault_changed` | Event | 故障集合变化，payload 为 `Faults`。 |
+| `lifecycle_changed` | Event | 生命周期变化，payload 为 `CapabilityLifecycleSnapshot`。 |
 
-以上均为 Command（同步请求-响应），`timeout_ms` 可逐次覆盖。
+Command 同步返回响应，`timeout_ms` 可逐次覆盖；Operation 立即返回句柄，进度与结果通过快照获取，见 [命令与长时操作](../../usage/commands-operations.md)。
 
 本页方法用到的枚举：
 

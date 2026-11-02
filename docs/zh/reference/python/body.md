@@ -18,46 +18,40 @@ updated: 2026-11-02
 
 ## API 总览
 
-| 方法 | 请求 | 响应 | 默认超时 |
-|------|------|------|------|
-| `get_joint` | `Empty` | `JointState` | 1000 ms |
-| `get_pose` | `PoseQuery` | `Pose3d` | 1000 ms |
-| `get_mode` | `Empty` | `Mode` | 1000 ms |
-| `set_mode` | `Mode` | `Mode` | 1000 ms |
-| `get_joint_velocity_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_joint_velocity_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_linear_velocity_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_linear_velocity_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_angular_velocity_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_angular_velocity_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_joint_acceleration_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_joint_acceleration_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_linear_acceleration_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_linear_acceleration_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_angular_acceleration_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_angular_acceleration_limit` | `Float64` | `Float64` | 1000 ms |
-| `servo_waist_twist` | `WaistTwist` | `WaistTwist` | 1000 ms |
-| `servo_pose` | `Pose3d` | `Pose3d` | 1000 ms |
-| `get_arrival_thresholds` | `Empty` | `ArrivalThresholds` | 1000 ms |
-| `set_arrival_thresholds` | `ArrivalThresholds` | `ArrivalThresholds` | 1000 ms |
+| 名字 | 类型 | 说明 |
+|------|------|------|
+| `get_joint` | Command | 读取躯干关节采样；默认超时 1000 ms。 |
+| `get_pose` | Command | 读取躯干位姿；默认超时 1000 ms。 |
+| `get_mode` | Command | 读取当前模式；默认超时 1000 ms。 |
+| `set_mode` | Command | 切换全身控制下的躯干约束模式；默认超时 1000 ms。 |
+| `get_joint_velocity_limit` | Command | 读取关节速度上限；默认超时 1000 ms。 |
+| `set_joint_velocity_limit` | Command | 设置关节速度上限，返回生效值；默认超时 1000 ms。 |
+| `get_linear_velocity_limit` | Command | 读取线速度上限；默认超时 1000 ms。 |
+| `set_linear_velocity_limit` | Command | 设置线速度上限，返回生效值；默认超时 1000 ms。 |
+| `get_angular_velocity_limit` | Command | 读取角速度上限；默认超时 1000 ms。 |
+| `set_angular_velocity_limit` | Command | 设置角速度上限，返回生效值；默认超时 1000 ms。 |
+| `get_joint_acceleration_limit` | Command | 读取关节加速度上限；默认超时 1000 ms。 |
+| `set_joint_acceleration_limit` | Command | 设置关节加速度上限，返回生效值；默认超时 1000 ms。 |
+| `get_linear_acceleration_limit` | Command | 读取线加速度上限；默认超时 1000 ms。 |
+| `set_linear_acceleration_limit` | Command | 设置线加速度上限，返回生效值；默认超时 1000 ms。 |
+| `get_angular_acceleration_limit` | Command | 读取角加速度上限；默认超时 1000 ms。 |
+| `set_angular_acceleration_limit` | Command | 设置角加速度上限，返回生效值；默认超时 1000 ms。 |
+| `servo_waist_twist` | Command | 腰部速度伺服：`lift` / `turn` / `pitch` 均为归一化速度比例，取值 [-1, 1]；默认超时 1000 ms。 |
+| `servo_pose` | Command | 下发一次位姿伺服目标，返回实际生效的位姿；默认超时 1000 ms。 |
+| `get_arrival_thresholds` | Command | 读取该槽位的到位判定阈值；默认超时 1000 ms。 |
+| `set_arrival_thresholds` | Command | 整体替换该槽位的到位判定阈值；只改内存，不持久化，后续运动生效；默认超时 1000 ms。 |
+| `move_joint` | Operation | 关节空间运动；默认时限 60 秒。 |
+| `move_joint_path` | Operation | 沿关节路点序列运动；至少两个路点，当前关节接到第一个路点；默认时限 60 秒。 |
+| `move_waist` | Operation | 腰部简并平面位姿的绝对运动（`x` 前探、`z` 升降、`phi` 俯仰）；默认时限 60 秒。 |
+| `move_waist_relative` | Operation | 腰部简并平面位姿的增量运动；默认时限 60 秒。 |
+| `move_pose` | Operation | 末端位姿绝对运动；默认时限 60 秒。 |
+| `move_pose_relative` | Operation | 末端位姿增量运动；默认时限 60 秒。 |
+| `joint` | Channel | 躯干关节状态流，帧为 `JointState`。 |
+| `pose` | Channel | 躯干位姿流，帧为 `Pose3d`。 |
+| `fault_changed` | Event | 故障集合变化，payload 为 `Faults`。 |
+| `lifecycle_changed` | Event | 生命周期变化，payload 为 `CapabilityLifecycleSnapshot`。 |
 
-以上均为 Command（同步请求-响应），`timeout_ms` 可逐次覆盖。
-
-| 方法 | 请求 | 类型 | 资源 | 默认时限 |
-|------|------|------|------|------|
-| `move_joint` | `JointMove` | Operation | body | 60000 ms |
-| `move_joint_path` | `JointPath` | Operation | body | 60000 ms |
-| `move_waist` | `WaistMove` | Operation | body | 60000 ms |
-| `move_waist_relative` | `WaistMove` | Operation | body | 60000 ms |
-| `move_pose` | `PoseMove` | Operation | body | 60000 ms |
-| `move_pose_relative` | `PoseMove` | Operation | body | 60000 ms |
-
-Operation 立即返回句柄，进度与结果通过快照获取；通用用法见 [命令与长时操作](../../usage/commands-operations.md)。
-
-| 通道 | 内容 |
-|------|------|
-| `joint()` | `JointState` |
-| `pose()` | `Pose3d` |
+Command 同步返回响应，`timeout_ms` 可逐次覆盖；Operation 立即返回句柄，进度与结果通过快照获取，见 [命令与长时操作](../../usage/commands-operations.md)。
 
 本页方法用到的枚举：
 

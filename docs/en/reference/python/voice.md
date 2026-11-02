@@ -18,31 +18,26 @@ Semantic features (transcripts, intents, speech synthesis) live in the `robot.sk
 
 ## API Overview
 
-| Method | Request | Response | Default timeout |
-|------|------|------|------|
-| `stop` | `Empty` | `VoiceStatusApplied` | 1000 ms |
-| `set_volume` | `Volume` | `VoiceStatusApplied` | 3000 ms |
-| `set_mute` | `Mute` | `VoiceStatusApplied` | 1000 ms |
-| `set_wakeword_enabled` | `Wakeword` | `VoiceStatusApplied` | 1000 ms |
-| `get_status` | `Empty` | `VoiceStatusApplied` | 1000 ms |
-| `stop_capture` | `CaptureControl` | `CaptureAccepted` | 3000 ms |
-| `begin_playback` | `PlaybackOptions` | `PlaybackAccepted` | 3000 ms |
-| `write_audio` | `PlaybackChunk` | `PlaybackAccepted` | 3000 ms |
+| Name | Kind | Description |
+|------|------|------|
+| `stop` | Command | Stop the current playback or capture; default timeout 1000 ms. |
+| `set_volume` | Command | Set the volume from 0 to 1; default timeout 3000 ms. |
+| `set_mute` | Command | Mute or unmute; default timeout 1000 ms. |
+| `set_wakeword_enabled` | Command | Enable or disable the wake word; default timeout 1000 ms. |
+| `get_status` | Command | Read the voice status snapshot; `get_state` is an alias; default timeout 1000 ms. |
+| `stop_capture` | Command | Stop the given capture session; default timeout 3000 ms. |
+| `begin_playback` | Command | Begin a streaming playback session, then push chunks with `write_audio`; default timeout 3000 ms. |
+| `write_audio` | Command | Write one audio chunk; `final=True` marks the last; default timeout 3000 ms. |
+| `listen` | Operation | Capture a speech segment and return a cancelable Operation whose terminal result is a `CaptureSummary`; default budget 60 s. |
+| `play_audio` | Operation | Play an audio resource and return a cancelable Operation; default budget 30 s. |
+| `wake` | Channel | Wake-word stream; frame is `WakeEvent`. |
+| `capture` | Channel | Captured audio chunk stream; frame is `CaptureChunk`. |
+| `playback` | Channel | Playback event stream; frame is `PlaybackEvent`. |
+| `audio_wake_word_detected` | Event | Pushed when the wake word fires; the payload is a `WakeEvent` (`keyword` / `timestamp_us`). |
+| `fault_changed` | Event | Fault set changed; payload is `Faults`. |
+| `lifecycle_changed` | Event | Lifecycle changed; payload is `CapabilityLifecycleSnapshot`. |
 
-All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
-
-| Method | Request | Kind | Resources | Default budget |
-|------|------|------|------|------|
-| `listen` | `CaptureOptions` | Operation | speaker, microphone | 60000 ms |
-| `play_audio` | `AudioPlayback` | Operation | speaker | 30000 ms |
-
-Operations return a handle immediately; progress and results come from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
-
-| Channel | Content |
-|------|------|
-| `wake()` | `WakeEvent` |
-| `capture()` | `CaptureChunk` |
-| `playback()` | `PlaybackEvent` |
+Commands return their response synchronously, and `timeout_ms` can be overridden per call; Operations return a handle immediately, with progress and results read from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
 
 Enums used on this page:
 

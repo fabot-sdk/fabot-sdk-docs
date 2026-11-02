@@ -18,6 +18,11 @@ updated: 2026-11-02
 
 ## API 总览
 
+| 名字 | 类型 | 说明 |
+|------|------|------|
+| `fault_changed` | Event | 故障集合变化，payload 为 `Faults`。 |
+| `lifecycle_changed` | Event | 生命周期变化，payload 为 `CapabilityLifecycleSnapshot`。 |
+
 ## 方法
 
 参数名与默认值以本节签名块为准；未标 `*` 的参数可按位置或关键字传入，`*` 之后的只能按关键字传入。字段名用小写下划线写法（如 `frame_id`），生成类型同时接受原样的驼峰别名。

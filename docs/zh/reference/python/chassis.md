@@ -19,46 +19,40 @@ updated: 2026-11-02
 
 ## API 总览
 
-| 方法 | 请求 | 响应 | 默认超时 |
-|------|------|------|------|
-| `get_pose` | `Empty` | `Pose2d` | 3000 ms |
-| `set_pose` | `Pose2d` | `Pose2d` | 5000 ms |
-| `get_twist` | `Empty` | `Twist2d` | 3000 ms |
-| `get_stage` | `Empty` | `Stage` | 3000 ms |
-| `get_station` | `Empty` | `Stations` | 5000 ms |
-| `get_mode` | `Empty` | `Mode` | 3000 ms |
-| `set_mode` | `Mode` | `Mode` | 3000 ms |
-| `get_parking` | `Empty` | `Parking` | 3000 ms |
-| `set_parking` | `Parking` | `Parking` | 3000 ms |
-| `get_lock` | `Empty` | `Lock` | 3000 ms |
-| `set_lock` | `Lock` | `Lock` | 3000 ms |
-| `get_pause` | `Empty` | `Pause` | 3000 ms |
-| `set_pause` | `Pause` | `Pause` | 3000 ms |
-| `get_linear_velocity_limit` | `Empty` | `Float64` | 3000 ms |
-| `set_linear_velocity_limit` | `Float64` | `Float64` | 3000 ms |
-| `get_angular_velocity_limit` | `Empty` | `Float64` | 3000 ms |
-| `set_angular_velocity_limit` | `Float64` | `Float64` | 3000 ms |
-| `get_linear_acceleration_limit` | `Empty` | `Float64` | 3000 ms |
-| `set_linear_acceleration_limit` | `Float64` | `Float64` | 3000 ms |
-| `get_angular_acceleration_limit` | `Empty` | `Float64` | 3000 ms |
-| `set_angular_acceleration_limit` | `Float64` | `Float64` | 3000 ms |
-| `servo_twist` | `Twist2d` | `Twist2d` | 2000 ms |
+| 名字 | 类型 | 说明 |
+|------|------|------|
+| `get_pose` | Command | 读取地图系位姿；默认超时 3000 ms。 |
+| `set_pose` | Command | 把地图系位姿重置为给定值（重定位），返回生效位姿；默认超时 5000 ms。 |
+| `get_twist` | Command | 读取当前速度；默认超时 3000 ms。 |
+| `get_stage` | Command | 读取当前运动阶段；默认超时 3000 ms。 |
+| `get_station` | Command | 读取地图站点列表（`get_stations` 是别名）；默认超时 5000 ms。 |
+| `get_mode` | Command | 读取当前模式；默认超时 3000 ms。 |
+| `set_mode` | Command | 切换手动 / 自主方式；默认超时 3000 ms。 |
+| `get_parking` | Command | 查询是否驻停锁死；默认超时 3000 ms。 |
+| `set_parking` | Command | 设置驻停锁死状态；默认超时 3000 ms。 |
+| `get_lock` | Command | 查询底盘自由度是否被锁止；默认超时 3000 ms。 |
+| `set_lock` | Command | 锁止或解锁底盘自由度；默认超时 3000 ms。 |
+| `get_pause` | Command | 查询在途导航是否被暂停；默认超时 3000 ms。 |
+| `set_pause` | Command | 暂停或恢复在途导航；不销毁 `move_*` 句柄；默认超时 3000 ms。 |
+| `get_linear_velocity_limit` | Command | 读取线速度上限；默认超时 3000 ms。 |
+| `set_linear_velocity_limit` | Command | 设置线速度上限，返回生效值；默认超时 3000 ms。 |
+| `get_angular_velocity_limit` | Command | 读取角速度上限；默认超时 3000 ms。 |
+| `set_angular_velocity_limit` | Command | 设置角速度上限，返回生效值；默认超时 3000 ms。 |
+| `get_linear_acceleration_limit` | Command | 读取线加速度上限；默认超时 3000 ms。 |
+| `set_linear_acceleration_limit` | Command | 设置线加速度上限，返回生效值；默认超时 3000 ms。 |
+| `get_angular_acceleration_limit` | Command | 读取角加速度上限；默认超时 3000 ms。 |
+| `set_angular_acceleration_limit` | Command | 设置角加速度上限，返回生效值；默认超时 3000 ms。 |
+| `servo_twist` | Command | 速度伺服，返回实际生效速度；默认超时 2000 ms。 |
+| `move_pose` | Operation | 地图系绝对位姿导航；默认时限 180 秒。 |
+| `move_pose_relative` | Operation | 车体系相对位移导航，`target.x` / `y` / `theta` 即 `dx` / `dy` / `dyaw`；默认时限 180 秒。 |
+| `move_station` | Operation | 导航到地图站点，`station_id` 取自 `get_station()`；默认时限 180 秒。 |
+| `pose` | Channel | 地图系位姿流，帧为 `Pose2d`。 |
+| `twist` | Channel | 速度流，帧为 `Twist2d`。 |
+| `stage` | Channel | 运动阶段流，帧为 `Stage`。 |
+| `fault_changed` | Event | 故障集合变化，payload 为 `Faults`。 |
+| `lifecycle_changed` | Event | 生命周期变化，payload 为 `CapabilityLifecycleSnapshot`。 |
 
-以上均为 Command（同步请求-响应），`timeout_ms` 可逐次覆盖。
-
-| 方法 | 请求 | 类型 | 资源 | 默认时限 |
-|------|------|------|------|------|
-| `move_pose` | `PoseMove` | Operation | chassis | 180000 ms |
-| `move_pose_relative` | `RelativePoseMove` | Operation | chassis | 180000 ms |
-| `move_station` | `StationMove` | Operation | chassis | 180000 ms |
-
-Operation 立即返回句柄，进度与结果通过快照获取；通用用法见 [命令与长时操作](../../usage/commands-operations.md)。
-
-| 通道 | 内容 |
-|------|------|
-| `pose()` | `Pose2d` |
-| `twist()` | `Twist2d` |
-| `stage()` | `Stage` |
+Command 同步返回响应，`timeout_ms` 可逐次覆盖；Operation 立即返回句柄，进度与结果通过快照获取，见 [命令与长时操作](../../usage/commands-operations.md)。
 
 本页方法用到的枚举：
 

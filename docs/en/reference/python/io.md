@@ -18,14 +18,16 @@ updated: 2026-11-02
 
 ## API Overview
 
-| Method | Request | Response | Default timeout |
-|------|------|------|------|
-| `acquire` | `PinClaim` | `PinApplied` | 1000 ms |
-| `release` | `Pin` | `PinApplied` | 1000 ms |
-| `set_level` | `PinLevel` | `PinLevelApplied` | 1000 ms |
-| `get_level` | `Pin` | `PinLevelApplied` | 1000 ms |
+| Name | Kind | Description |
+|------|------|------|
+| `acquire` | Command | Acquire a pin with a direction; default timeout 1000 ms. |
+| `release` | Command | Release an acquired pin; calling it on a free pin is rejected; default timeout 1000 ms. |
+| `set_level` | Command | Write a digital output level; acquire the pin as `OUTPUT` first; default timeout 1000 ms. |
+| `get_level` | Command | Read the level of an acquired pin, in either direction; default timeout 1000 ms. |
+| `fault_changed` | Event | Fault set changed; payload is `Faults`. |
+| `lifecycle_changed` | Event | Lifecycle changed; payload is `CapabilityLifecycleSnapshot`. |
 
-All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
+Commands return their response synchronously, and `timeout_ms` can be overridden per call; Operations return a handle immediately, with progress and results read from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
 
 Enums used on this page:
 

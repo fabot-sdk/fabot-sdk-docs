@@ -17,17 +17,17 @@ updated: 2026-11-02
 
 ## API overview
 
-| Member | Description |
-|--------|-------------|
-| `Catalogs(...)` | Construct from custom tables; product code should use `load()` |
-| `load(language=None)` | Bind the embedded tables and return a `Catalogs` |
-| `default()` | Process-wide lazily created singleton |
-| `language` | Current language preference (read-only) |
-| `set_language(locale)` | Set the language; returns `self` |
-| `format_log(record, locale=None)` | Fill the `{component}.{action}` template |
-| `format_error(error, locale=None)` | Fill the template for a diagnostic code `0xXXXXXXXX` |
-| `format_fault(record, locale=None)` | Same as `format_error`, keyed by the record's code |
-| `format_metric(record, locale=None)` | Look up a metric title by name |
+| Name | Kind | Description |
+|------|------|------|
+| `Catalogs` | Class | Construct from custom tables; product code should use `load()` |
+| `load` | Method | Bind the embedded tables and return a `Catalogs` |
+| `default` | Method | Process-wide lazily created singleton |
+| `language` | Attribute | Current language preference (read-only) |
+| `set_language` | Method | Set the language; returns `self` |
+| `format_log` | Method | Fill the `{component}.{action}` template |
+| `format_error` | Method | Fill the template for a diagnostic code `0xXXXXXXXX` |
+| `format_fault` | Method | Same as `format_error`, keyed by the record's code |
+| `format_metric` | Method | Look up a metric title by name |
 
 ## Methods
 

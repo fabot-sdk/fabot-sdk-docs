@@ -17,17 +17,17 @@ updated: 2026-11-02
 
 ## API 总览
 
-| 成员 | 说明 |
-|------|------|
-| `Catalogs(...)` | 用自定义文本表构造；产品路径请用 `load()` |
-| `load(language=None)` | 绑定 SDK 嵌入的文本表，返回 `Catalogs` |
-| `default()` | 进程级懒加载单例 |
-| `language` | 当前语言偏好（只读） |
-| `set_language(locale)` | 设置语言，返回 `self` |
-| `format_log(record, locale=None)` | 按 `{component}.{action}` 填模板 |
-| `format_error(error, locale=None)` | 按诊断码 `0xXXXXXXXX` 填模板 |
-| `format_fault(record, locale=None)` | 同 `format_error`，按记录的诊断码查表 |
-| `format_metric(record, locale=None)` | 按指标名查标题 |
+| 名字 | 类型 | 说明 |
+|------|------|------|
+| `Catalogs` | 类 | 用自定义文本表构造；产品路径请用 `load()` |
+| `load` | 方法 | 绑定 SDK 嵌入的文本表，返回 `Catalogs` |
+| `default` | 方法 | 进程级懒加载单例 |
+| `language` | 属性 | 当前语言偏好（只读） |
+| `set_language` | 方法 | 设置语言，返回 `self` |
+| `format_log` | 方法 | 按 `{component}.{action}` 填模板 |
+| `format_error` | 方法 | 按诊断码 `0xXXXXXXXX` 填模板 |
+| `format_fault` | 方法 | 同 `format_error`，按记录的诊断码查表 |
+| `format_metric` | 方法 | 按指标名查标题 |
 
 ## 方法
 

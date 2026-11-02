@@ -18,17 +18,14 @@ The `joystick_control` resource uses policy `reject`: a second start during a se
 
 ## API Overview
 
-| Method | Request | Response | Default timeout |
-|------|------|------|------|
-| `stop_joystick_control` | `Empty` | `Outcome` | 10000 ms |
+| Name | Kind | Description |
+|------|------|------|
+| `stop_joystick_control` | Command | Stop the current session; default timeout 10000 ms. |
+| `start_joystick_control` | Operation | Start a joystick session and return a pollable, cancelable Operation; default budget 45 s. |
+| `fault_changed` | Event | Fault set changed; payload is `Faults`. |
+| `lifecycle_changed` | Event | Lifecycle changed; payload is `CapabilityLifecycleSnapshot`. |
 
-All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
-
-| Method | Request | Kind | Resources | Default budget |
-|------|------|------|------|------|
-| `start_joystick_control` | `Empty` | Operation | joystick_control | 45000 ms |
-
-Operations return a handle immediately; progress and results come from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
+Commands return their response synchronously, and `timeout_ms` can be overridden per call; Operations return a handle immediately, with progress and results read from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
 
 ## Methods
 

@@ -17,18 +17,22 @@ updated: 2026-11-02
 
 ## API 总览
 
-| 成员 | 说明 |
-|------|------|
-| `FrameSystem` | 坐标树查询与变换入口 |
-| `Transform3d` | SE(3) 刚体变换 |
-| `TransformBuffer` | 进程内坐标树，可离线喂数据 |
-| `Frame` | 常用坐标名常量 |
-| `deproject_pixel` / `project_point_to_pixel` | 单像素与三维点互转 |
-| `deproject_depth_to_points` / `depth_to_points` | 深度图批量反投影 |
-| `select_depth_intrinsics` | 按深度帧挑出对应内参 |
-| `project_depth_to_frame` | 深度点投影到目标系 |
-| `euler_to_quaternion` / `quaternion_to_euler` | 欧拉角与四元数互转（ZYX 内旋） |
-| `pose_to_matrix` / `matrix_to_pose` | 位姿与 4×4 齐次矩阵互转 |
+| 名字 | 类型 | 说明 |
+|------|------|------|
+| `FrameSystem` | 类 | 坐标树查询与变换入口 |
+| `Transform3d` | 类 | SE(3) 刚体变换 |
+| `TransformBuffer` | 类 | 进程内坐标树，可离线喂数据 |
+| `Frame` | 类 | 常用坐标名常量 |
+| `deproject_pixel` | 函数 | 单像素与三维点互转 |
+| `project_point_to_pixel` | 函数 | 单像素与三维点互转 |
+| `deproject_depth_to_points` | 函数 | 深度图批量反投影 |
+| `depth_to_points` | 函数 | 深度图批量反投影 |
+| `select_depth_intrinsics` | 函数 | 按深度帧挑出对应内参 |
+| `project_depth_to_frame` | 函数 | 深度点投影到目标系 |
+| `euler_to_quaternion` | 函数 | 欧拉角与四元数互转（ZYX 内旋） |
+| `quaternion_to_euler` | 函数 | 欧拉角与四元数互转（ZYX 内旋） |
+| `pose_to_matrix` | 函数 | 位姿与 4×4 齐次矩阵互转 |
+| `matrix_to_pose` | 函数 | 位姿与 4×4 齐次矩阵互转 |
 
 ## FrameSystem
 

@@ -18,16 +18,18 @@ Every write command except `get_status` shares the `display` resource with polic
 
 ## API Overview
 
-| Method | Request | Response | Default timeout |
-|------|------|------|------|
-| `show_text` | `OverlayText` | `ScreenStatusApplied` | 1000 ms |
-| `show_image` | `Image` | `ScreenStatusApplied` | 3000 ms |
-| `play_video` | `VideoPlayback` | `ScreenStatusApplied` | 3000 ms |
-| `stop` | `Empty` | `ScreenStatusApplied` | 1000 ms |
-| `get_status` | `Empty` | `ScreenStatusApplied` | 1000 ms |
-| `set_battery` | `BatteryLevel` | `ScreenStatusApplied` | 1000 ms |
+| Name | Kind | Description |
+|------|------|------|
+| `show_text` | Command | Overlay text on the screen; default timeout 1000 ms. |
+| `show_image` | Command | Show an image on the screen; default timeout 3000 ms. |
+| `play_video` | Command | Play a video; `loop=True` repeats it; default timeout 3000 ms. |
+| `stop` | Command | Stop the current content; default timeout 1000 ms. |
+| `get_status` | Command | Read the screen status snapshot; `get_state` is an alias; default timeout 1000 ms. |
+| `set_battery` | Command | Sync the battery percentage shown on screen; default timeout 1000 ms. |
+| `fault_changed` | Event | Fault set changed; payload is `Faults`. |
+| `lifecycle_changed` | Event | Lifecycle changed; payload is `CapabilityLifecycleSnapshot`. |
 
-All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
+Commands return their response synchronously, and `timeout_ms` can be overridden per call; Operations return a handle immediately, with progress and results read from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
 
 ## Methods
 

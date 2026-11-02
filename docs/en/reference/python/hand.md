@@ -18,35 +18,29 @@ All motion Operations share the `hand` resource with policy `queue`.
 
 ## API Overview
 
-| Method | Request | Response | Default timeout |
-|------|------|------|------|
-| `get_opening` | `Empty` | `Doubles` | 1000 ms |
-| `get_joint` | `Empty` | `JointState` | 1000 ms |
-| `get_tactile` | `Empty` | `HandTactile` | 1000 ms |
-| `get_velocity_limit` | `Empty` | `Doubles` | 1000 ms |
-| `set_velocity_limit` | `Doubles` | `Doubles` | 8000 ms |
-| `get_force_limit` | `Empty` | `Doubles` | 1000 ms |
-| `set_force_limit` | `Doubles` | `Doubles` | 8000 ms |
-| `servo_opening` | `Doubles` | `Doubles` | 1000 ms |
-| `servo_joint` | `JointPositions` | `JointPositions` | 1000 ms |
-| `get_arrival_thresholds` | `Empty` | `ArrivalThresholds` | 1000 ms |
-| `set_arrival_thresholds` | `ArrivalThresholds` | `ArrivalThresholdsApplied` | 1000 ms |
+| Name | Kind | Description |
+|------|------|------|
+| `get_opening` | Command | Read the per-joint opening; default timeout 1000 ms. |
+| `get_joint` | Command | Read the current joint sample: positions, velocities, efforts and timestamp; default timeout 1000 ms. |
+| `get_tactile` | Command | Read the five-finger tactile arrays and total contact force; default timeout 1000 ms. |
+| `get_velocity_limit` | Command | Read the velocity limit; default timeout 1000 ms. |
+| `set_velocity_limit` | Command | Set the velocity limit and return the applied value; default timeout 8000 ms. |
+| `get_force_limit` | Command | Read the force limit; default timeout 1000 ms. |
+| `set_force_limit` | Command | Set the force limit and return the applied value; default timeout 8000 ms. |
+| `servo_opening` | Command | Send one opening servo target and return the applied value; default timeout 1000 ms. |
+| `servo_joint` | Command | Send one joint servo target; default timeout 1000 ms. |
+| `get_arrival_thresholds` | Command | Read the arrival thresholds for this slot; default timeout 1000 ms. |
+| `set_arrival_thresholds` | Command | Replace the arrival thresholds for this slot; default timeout 1000 ms. |
+| `move_opening` | Operation | Opening motion. |
+| `move_joint` | Operation | Joint motion in radians. |
+| `move_joint_path` | Operation | Follow a joint waypoint sequence; at least two waypoints, the first reached from the current joints. |
+| `opening` | Channel | Opening stream; frame is `Doubles`. |
+| `joint` | Channel | Joint position stream; frame is `JointState`. |
+| `tactile` | Channel | Tactile array stream; frame is `HandTactile`. |
+| `fault_changed` | Event | Fault set changed; payload is `Faults`. |
+| `lifecycle_changed` | Event | Lifecycle changed; payload is `CapabilityLifecycleSnapshot`. |
 
-All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
-
-| Method | Request | Kind | Resources | Default budget |
-|------|------|------|------|------|
-| `move_opening` | `OpeningMove` | Operation | hand | — |
-| `move_joint` | `JointMove` | Operation | hand | — |
-| `move_joint_path` | `JointPath` | Operation | hand | — |
-
-Operations return a handle immediately; progress and results come from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
-
-| Channel | Content |
-|------|------|
-| `opening()` | `Doubles` |
-| `joint()` | `JointState` |
-| `tactile()` | `HandTactile` |
+Commands return their response synchronously, and `timeout_ms` can be overridden per call; Operations return a handle immediately, with progress and results read from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
 
 ## Methods
 

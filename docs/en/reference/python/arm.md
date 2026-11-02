@@ -18,62 +18,56 @@ Every motion Operation on one arm shares the `arm` resource with policy `queue`:
 
 ## API Overview
 
-| Method | Request | Response | Default timeout |
-|------|------|------|------|
-| `get_joint` | `Empty` | `JointState` | 1000 ms |
-| `get_pose` | `PoseQuery` | `Pose3d` | 1000 ms |
-| `get_wrench` | `Empty` | `Wrench3d` | 1000 ms |
-| `get_filtered_wrench` | `Empty` | `Wrench3d` | 1000 ms |
-| `get_joint_velocity_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_joint_velocity_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_linear_velocity_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_linear_velocity_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_angular_velocity_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_angular_velocity_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_joint_acceleration_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_joint_acceleration_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_linear_acceleration_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_linear_acceleration_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_angular_acceleration_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_angular_acceleration_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_brake` | `Empty` | `BrakeState` | 10000 ms |
-| `set_brake` | `BrakeState` | `BrakeState` | 10000 ms |
-| `get_enable` | `Empty` | `Enable` | 1000 ms |
-| `set_enable` | `Enable` | `Enable` | 3000 ms |
-| `set_wrench_zero` | `WrenchZero` | `WrenchZero` | 1000 ms |
-| `get_compliance_mask` | `Empty` | `Doubles` | 1000 ms |
-| `set_compliance_mask` | `Doubles` | `Doubles` | 1000 ms |
-| `get_compliance_wrench` | `Empty` | `Wrench3d` | 1000 ms |
-| `set_compliance_wrench` | `Wrench3d` | `Wrench3d` | 1000 ms |
-| `get_compliance_linear_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_compliance_linear_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_compliance_angular_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_compliance_angular_limit` | `Float64` | `Float64` | 1000 ms |
-| `servo_pose` | `Pose3d` | `Pose3d` | 3000 ms |
-| `servo_twist` | `Twist3d` | `Twist3d` | 1000 ms |
-| `get_arrival_thresholds` | `Empty` | `ArrivalThresholds` | 1000 ms |
-| `set_arrival_thresholds` | `ArrivalThresholds` | `ArrivalThresholdsApplied` | 1000 ms |
+| Name | Kind | Description |
+|------|------|------|
+| `get_joint` | Command | Read the current joint sample: positions in radians, velocities, efforts and timestamp; default timeout 1000 ms. |
+| `get_pose` | Command | Read the current end-effector pose; default timeout 1000 ms. |
+| `get_wrench` | Command | Read the raw end-effector wrench (unfiltered); default timeout 1000 ms. |
+| `get_filtered_wrench` | Command | Read the filtered end-effector wrench; default timeout 1000 ms. |
+| `get_joint_velocity_limit` | Command | Read the joint velocity limit; default timeout 1000 ms. |
+| `set_joint_velocity_limit` | Command | Set the joint velocity limit and return the applied value; default timeout 1000 ms. |
+| `get_linear_velocity_limit` | Command | Read the linear velocity limit; default timeout 1000 ms. |
+| `set_linear_velocity_limit` | Command | Set the linear velocity limit and return the applied value; default timeout 1000 ms. |
+| `get_angular_velocity_limit` | Command | Read the angular velocity limit; default timeout 1000 ms. |
+| `set_angular_velocity_limit` | Command | Set the angular velocity limit and return the applied value; default timeout 1000 ms. |
+| `get_joint_acceleration_limit` | Command | Read the joint acceleration limit; default timeout 1000 ms. |
+| `set_joint_acceleration_limit` | Command | Set the joint acceleration limit and return the applied value; default timeout 1000 ms. |
+| `get_linear_acceleration_limit` | Command | Read the linear acceleration limit; default timeout 1000 ms. |
+| `set_linear_acceleration_limit` | Command | Set the linear acceleration limit and return the applied value; default timeout 1000 ms. |
+| `get_angular_acceleration_limit` | Command | Read the angular acceleration limit; default timeout 1000 ms. |
+| `set_angular_acceleration_limit` | Command | Set the angular acceleration limit and return the applied value; default timeout 1000 ms. |
+| `get_brake` | Command | Query the brake state; default timeout 10000 ms. |
+| `set_brake` | Command | Release or engage the brake; default timeout 10000 ms. |
+| `get_enable` | Command | Query the enable state; default timeout 1000 ms. |
+| `set_enable` | Command | Enable or disable the joints; default timeout 3000 ms. |
+| `set_wrench_zero` | Command | Trigger a wrench zero-offset calibration; default timeout 1000 ms. |
+| `get_compliance_mask` | Command | Read the per-DoF compliance weights; default timeout 1000 ms. |
+| `set_compliance_mask` | Command | Set the per-DoF compliance weights and return the applied values; default timeout 1000 ms. |
+| `get_compliance_wrench` | Command | Read the compliance target wrench; default timeout 1000 ms. |
+| `set_compliance_wrench` | Command | Set the compliance target force and torque; default timeout 1000 ms. |
+| `get_compliance_linear_limit` | Command | Read the compliance linear limit; default timeout 1000 ms. |
+| `set_compliance_linear_limit` | Command | Set the compliance linear limit; default timeout 1000 ms. |
+| `get_compliance_angular_limit` | Command | Read the compliance angular limit; default timeout 1000 ms. |
+| `set_compliance_angular_limit` | Command | Set the compliance angular limit; default timeout 1000 ms. |
+| `servo_pose` | Command | Pose servo; default timeout 3000 ms. |
+| `servo_twist` | Command | Send one velocity servo target and return the applied velocity; default timeout 1000 ms. |
+| `get_arrival_thresholds` | Command | Read the arrival thresholds for this slot; default timeout 1000 ms. |
+| `set_arrival_thresholds` | Command | Replace the arrival thresholds and return the `outcome` plus the applied values; default timeout 1000 ms. |
+| `move_joint` | Operation | Joint-space motion. |
+| `move_joint_path` | Operation | Follow a joint waypoint sequence; at least two waypoints, the first reached from the current joints. |
+| `move_pose` | Operation | Absolute end-effector motion. |
+| `move_pose_relative` | Operation | Relative end-effector motion; `target` is an increment from the current pose. |
+| `move_pose_path` | Operation | Follow an end-effector waypoint sequence; each waypoint carries its own `frame_id`. |
+| `move_pose_arc_by_points` | Operation | Arc through three points: from the current pose through `via` to `end`. |
+| `move_pose_arc_by_center` | Operation | Center arc motion; the center is located in `center.frame_id`. |
+| `joint` | Channel | Joint-state stream; frame is `JointState`. |
+| `pose` | Channel | End-effector pose stream; frame is `Pose3d`. |
+| `wrench` | Channel | Raw wrench stream; frame is `Wrench3d`. |
+| `filtered_wrench` | Channel | Filtered wrench stream; frame is `Wrench3d`. |
+| `fault_changed` | Event | Fault set changed; payload is `Faults`. |
+| `lifecycle_changed` | Event | Lifecycle changed; payload is `CapabilityLifecycleSnapshot`. |
 
-All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
-
-| Method | Request | Kind | Resources | Default budget |
-|------|------|------|------|------|
-| `move_joint` | `JointMove` | Operation | arm | — |
-| `move_joint_path` | `JointPathMove` | Operation | arm | — |
-| `move_pose` | `PoseMove` | Operation | arm | — |
-| `move_pose_relative` | `PoseMove` | Operation | arm | — |
-| `move_pose_path` | `PosePathMove` | Operation | arm | — |
-| `move_pose_arc_by_points` | `PoseArcPointsMove` | Operation | arm | — |
-| `move_pose_arc_by_center` | `PoseArcCenterMove` | Operation | arm | — |
-
-Operations return a handle immediately; progress and results come from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
-
-| Channel | Content |
-|------|------|
-| `joint()` | `JointState` |
-| `pose()` | `Pose3d` |
-| `wrench()` | `Wrench3d` |
-| `filtered_wrench()` | `Wrench3d` |
+Commands return their response synchronously, and `timeout_ms` can be overridden per call; Operations return a handle immediately, with progress and results read from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
 
 ## Methods
 

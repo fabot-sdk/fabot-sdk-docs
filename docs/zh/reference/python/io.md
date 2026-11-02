@@ -18,14 +18,16 @@ updated: 2026-11-02
 
 ## API 总览
 
-| 方法 | 请求 | 响应 | 默认超时 |
-|------|------|------|------|
-| `acquire` | `PinClaim` | `PinApplied` | 1000 ms |
-| `release` | `Pin` | `PinApplied` | 1000 ms |
-| `set_level` | `PinLevel` | `PinLevelApplied` | 1000 ms |
-| `get_level` | `Pin` | `PinLevelApplied` | 1000 ms |
+| 名字 | 类型 | 说明 |
+|------|------|------|
+| `acquire` | Command | 占用引脚并设定方向；默认超时 1000 ms。 |
+| `release` | Command | 释放已占用的引脚；默认超时 1000 ms。 |
+| `set_level` | Command | 写数字输出电平，须先以 `OUTPUT` 占用；默认超时 1000 ms。 |
+| `get_level` | Command | 读取已占用引脚的当前电平（输入输出均可）；默认超时 1000 ms。 |
+| `fault_changed` | Event | 故障集合变化，payload 为 `Faults`。 |
+| `lifecycle_changed` | Event | 生命周期变化，payload 为 `CapabilityLifecycleSnapshot`。 |
 
-以上均为 Command（同步请求-响应），`timeout_ms` 可逐次覆盖。
+Command 同步返回响应，`timeout_ms` 可逐次覆盖；Operation 立即返回句柄，进度与结果通过快照获取，见 [命令与长时操作](../../usage/commands-operations.md)。
 
 本页方法用到的枚举：
 

@@ -18,17 +18,14 @@ updated: 2026-11-02
 
 ## API 总览
 
-| 方法 | 请求 | 响应 | 默认超时 |
-|------|------|------|------|
-| `stop_joystick_control` | `Empty` | `Outcome` | 10000 ms |
+| 名字 | 类型 | 说明 |
+|------|------|------|
+| `stop_joystick_control` | Command | 停止当前会话；默认超时 10000 ms。 |
+| `start_joystick_control` | Operation | 建立手柄遥操作会话，返回可轮询、可取消的 Operation；默认时限 45 秒。 |
+| `fault_changed` | Event | 故障集合变化，payload 为 `Faults`。 |
+| `lifecycle_changed` | Event | 生命周期变化，payload 为 `CapabilityLifecycleSnapshot`。 |
 
-以上均为 Command（同步请求-响应），`timeout_ms` 可逐次覆盖。
-
-| 方法 | 请求 | 类型 | 资源 | 默认时限 |
-|------|------|------|------|------|
-| `start_joystick_control` | `Empty` | Operation | joystick_control | 45000 ms |
-
-Operation 立即返回句柄，进度与结果通过快照获取；通用用法见 [命令与长时操作](../../usage/commands-operations.md)。
+Command 同步返回响应，`timeout_ms` 可逐次覆盖；Operation 立即返回句柄，进度与结果通过快照获取，见 [命令与长时操作](../../usage/commands-operations.md)。
 
 ## 方法
 

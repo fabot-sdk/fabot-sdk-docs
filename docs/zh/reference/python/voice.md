@@ -18,31 +18,26 @@ updated: 2026-11-02
 
 ## API 总览
 
-| 方法 | 请求 | 响应 | 默认超时 |
-|------|------|------|------|
-| `stop` | `Empty` | `VoiceStatusApplied` | 1000 ms |
-| `set_volume` | `Volume` | `VoiceStatusApplied` | 3000 ms |
-| `set_mute` | `Mute` | `VoiceStatusApplied` | 1000 ms |
-| `set_wakeword_enabled` | `Wakeword` | `VoiceStatusApplied` | 1000 ms |
-| `get_status` | `Empty` | `VoiceStatusApplied` | 1000 ms |
-| `stop_capture` | `CaptureControl` | `CaptureAccepted` | 3000 ms |
-| `begin_playback` | `PlaybackOptions` | `PlaybackAccepted` | 3000 ms |
-| `write_audio` | `PlaybackChunk` | `PlaybackAccepted` | 3000 ms |
+| 名字 | 类型 | 说明 |
+|------|------|------|
+| `stop` | Command | 停止当前播放或采集；默认超时 1000 ms。 |
+| `set_volume` | Command | 设置音量，取值 0–1；默认超时 3000 ms。 |
+| `set_mute` | Command | 静音或取消静音；默认超时 1000 ms。 |
+| `set_wakeword_enabled` | Command | 启用或停用唤醒词；默认超时 1000 ms。 |
+| `get_status` | Command | 读取语音状态快照（`get_state` 是别名）；默认超时 1000 ms。 |
+| `stop_capture` | Command | 停止指定采集会话；默认超时 3000 ms。 |
+| `begin_playback` | Command | 开始流式播放会话，随后用 `write_audio` 推流；默认超时 3000 ms。 |
+| `write_audio` | Command | 写入一块音频；`final=True` 表示最后一块；默认超时 3000 ms。 |
+| `listen` | Operation | 采集一段语音，返回可取消的 Operation，终态结果为 `CaptureSummary`；默认时限 60 秒。 |
+| `play_audio` | Operation | 播放一个音频资源，返回可取消的 Operation；默认时限 30 秒。 |
+| `wake` | Channel | 唤醒事件流，帧为 `WakeEvent`。 |
+| `capture` | Channel | 采集音频块流，帧为 `CaptureChunk`。 |
+| `playback` | Channel | 播放事件流，帧为 `PlaybackEvent`。 |
+| `audio_wake_word_detected` | Event | 检测到唤醒词时推送，`payload` 为 `WakeEvent`（`keyword` / `timestamp_us`）。 |
+| `fault_changed` | Event | 故障集合变化，payload 为 `Faults`。 |
+| `lifecycle_changed` | Event | 生命周期变化，payload 为 `CapabilityLifecycleSnapshot`。 |
 
-以上均为 Command（同步请求-响应），`timeout_ms` 可逐次覆盖。
-
-| 方法 | 请求 | 类型 | 资源 | 默认时限 |
-|------|------|------|------|------|
-| `listen` | `CaptureOptions` | Operation | speaker, microphone | 60000 ms |
-| `play_audio` | `AudioPlayback` | Operation | speaker | 30000 ms |
-
-Operation 立即返回句柄，进度与结果通过快照获取；通用用法见 [命令与长时操作](../../usage/commands-operations.md)。
-
-| 通道 | 内容 |
-|------|------|
-| `wake()` | `WakeEvent` |
-| `capture()` | `CaptureChunk` |
-| `playback()` | `PlaybackEvent` |
+Command 同步返回响应，`timeout_ms` 可逐次覆盖；Operation 立即返回句柄，进度与结果通过快照获取，见 [命令与长时操作](../../usage/commands-operations.md)。
 
 本页方法用到的枚举：
 

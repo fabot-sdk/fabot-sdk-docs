@@ -19,32 +19,26 @@ updated: 2026-11-02
 
 ## API 总览
 
-| 方法 | 请求 | 响应 | 默认超时 |
-|------|------|------|------|
-| `get_joint` | `Empty` | `WholeBodyJointState` | 1000 ms |
-| `get_wbc_state` | `Empty` | `WbcState` | 1000 ms |
-| `get_center_of_mass` | `Empty` | `CenterOfMass` | 1000 ms |
-| `get_mode` | `Empty` | `Mode` | 1000 ms |
-| `set_mode` | `Mode` | `Mode` | 7000 ms |
-| `servo_pose` | `WholeBodyPoseTarget` | `WholeBodyPoseTarget` | 1000 ms |
+| 名字 | 类型 | 说明 |
+|------|------|------|
+| `get_joint` | Command | 读取全身关节采样（躯干 / 左臂 / 右臂 / 头部）；默认超时 1000 ms。 |
+| `get_wbc_state` | Command | 读取全身控制状态：各部位模式、双臂使能与底盘锁止；默认超时 1000 ms。 |
+| `get_center_of_mass` | Command | 读取质心投影与相对支撑矩形的稳定裕度；默认超时 1000 ms。 |
+| `get_mode` | Command | 读取当前模式；默认超时 1000 ms。 |
+| `set_mode` | Command | 切换运动体制，返回生效体制；默认超时 7000 ms。 |
+| `servo_pose` | Command | 全身位姿伺服：三个部位都给目标位姿，返回实际生效值；默认超时 1000 ms。 |
+| `move_home` | Operation | 回到预设零位；默认时限 60 秒。 |
+| `move_preset` | Operation | 运动到具名预设构型；默认时限 60 秒。 |
+| `move_joint` | Operation | 关节空间运动；默认时限 60 秒。 |
+| `move_joint_path` | Operation | 沿关节路点序列运动；至少两个路点，当前关节接到第一个路点；默认时限 60 秒。 |
+| `move_pose` | Operation | 末端位姿绝对运动；默认时限 60 秒。 |
+| `joint` | Channel | 全身关节状态流，帧为 `WholeBodyJointState`。 |
+| `wbc_state` | Channel | 全身控制状态流，帧为 `WbcState`。 |
+| `center_of_mass` | Channel | 质心与稳定裕度流，帧为 `CenterOfMass`。 |
+| `fault_changed` | Event | 故障集合变化，payload 为 `Faults`。 |
+| `lifecycle_changed` | Event | 生命周期变化，payload 为 `CapabilityLifecycleSnapshot`。 |
 
-以上均为 Command（同步请求-响应），`timeout_ms` 可逐次覆盖。
-
-| 方法 | 请求 | 类型 | 资源 | 默认时限 |
-|------|------|------|------|------|
-| `move_home` | `Home` | Operation | motion_controller | 60000 ms |
-| `move_preset` | `Preset` | Operation | motion_controller | 60000 ms |
-| `move_joint` | `JointMove` | Operation | motion_controller | 60000 ms |
-| `move_joint_path` | `JointPath` | Operation | motion_controller | 60000 ms |
-| `move_pose` | `PoseMove` | Operation | motion_controller | 60000 ms |
-
-Operation 立即返回句柄，进度与结果通过快照获取；通用用法见 [命令与长时操作](../../usage/commands-operations.md)。
-
-| 通道 | 内容 |
-|------|------|
-| `joint()` | `WholeBodyJointState` |
-| `wbc_state()` | `WbcState` |
-| `center_of_mass()` | `CenterOfMass` |
+Command 同步返回响应，`timeout_ms` 可逐次覆盖；Operation 立即返回句柄，进度与结果通过快照获取，见 [命令与长时操作](../../usage/commands-operations.md)。
 
 本页方法用到的枚举：
 

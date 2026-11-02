@@ -18,16 +18,18 @@ updated: 2026-11-02
 
 ## API 总览
 
-| 方法 | 请求 | 响应 | 默认超时 |
-|------|------|------|------|
-| `show_text` | `OverlayText` | `ScreenStatusApplied` | 1000 ms |
-| `show_image` | `Image` | `ScreenStatusApplied` | 3000 ms |
-| `play_video` | `VideoPlayback` | `ScreenStatusApplied` | 3000 ms |
-| `stop` | `Empty` | `ScreenStatusApplied` | 1000 ms |
-| `get_status` | `Empty` | `ScreenStatusApplied` | 1000 ms |
-| `set_battery` | `BatteryLevel` | `ScreenStatusApplied` | 1000 ms |
+| 名字 | 类型 | 说明 |
+|------|------|------|
+| `show_text` | Command | 在面屏上叠加文本；默认超时 1000 ms。 |
+| `show_image` | Command | 在面屏上显示图片；默认超时 3000 ms。 |
+| `play_video` | Command | 播放视频，`loop=True` 表示循环；默认超时 3000 ms。 |
+| `stop` | Command | 停止当前内容；默认超时 1000 ms。 |
+| `get_status` | Command | 读取面屏状态快照（`get_state` 是别名）；默认超时 1000 ms。 |
+| `set_battery` | Command | 同步面屏上显示的电量百分比；默认超时 1000 ms。 |
+| `fault_changed` | Event | 故障集合变化，payload 为 `Faults`。 |
+| `lifecycle_changed` | Event | 生命周期变化，payload 为 `CapabilityLifecycleSnapshot`。 |
 
-以上均为 Command（同步请求-响应），`timeout_ms` 可逐次覆盖。
+Command 同步返回响应，`timeout_ms` 可逐次覆盖；Operation 立即返回句柄，进度与结果通过快照获取，见 [命令与长时操作](../../usage/commands-operations.md)。
 
 ## 方法
 

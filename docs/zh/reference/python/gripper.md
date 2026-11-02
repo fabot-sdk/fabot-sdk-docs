@@ -18,30 +18,24 @@ updated: 2026-11-02
 
 ## API 总览
 
-| 方法 | 请求 | 响应 | 默认超时 |
-|------|------|------|------|
-| `get_opening` | `Empty` | `Float64` | 1000 ms |
-| `get_joint` | `Empty` | `JointState` | 1000 ms |
-| `get_velocity_limit` | `Empty` | `Float64` | 8000 ms |
-| `set_velocity_limit` | `Float64` | `Float64` | 8000 ms |
-| `get_force_limit` | `Empty` | `Float64` | 8000 ms |
-| `set_force_limit` | `Float64` | `Float64` | 8000 ms |
-| `servo_opening` | `Float64` | `Float64` | 1000 ms |
-| `servo_joint` | `Doubles` | `JointPositions` | 1000 ms |
+| 名字 | 类型 | 说明 |
+|------|------|------|
+| `get_opening` | Command | 读取当前开合度；默认超时 1000 ms。 |
+| `get_joint` | Command | 读取当前关节采样：位置、速度、力矩与时间戳；默认超时 1000 ms。 |
+| `get_velocity_limit` | Command | 读取速度上限；默认超时 8000 ms。 |
+| `set_velocity_limit` | Command | 设置速度上限，返回生效值；默认超时 8000 ms。 |
+| `get_force_limit` | Command | 读取力上限；默认超时 8000 ms。 |
+| `set_force_limit` | Command | 设置力上限，返回生效值；默认超时 8000 ms。 |
+| `servo_opening` | Command | 下发一次开合度伺服目标，返回生效值；默认超时 1000 ms。 |
+| `servo_joint` | Command | 关节伺服，返回生效值；默认超时 1000 ms。 |
+| `move_opening` | Operation | 归一化开合度运动。 |
+| `move_joint` | Operation | 物理行程运动。 |
+| `opening` | Channel | 开合度流，帧为 `Float64`。 |
+| `joint` | Channel | 关节位置流，帧为 `JointState`。 |
+| `fault_changed` | Event | 故障集合变化，payload 为 `Faults`。 |
+| `lifecycle_changed` | Event | 生命周期变化，payload 为 `CapabilityLifecycleSnapshot`。 |
 
-以上均为 Command（同步请求-响应），`timeout_ms` 可逐次覆盖。
-
-| 方法 | 请求 | 类型 | 资源 | 默认时限 |
-|------|------|------|------|------|
-| `move_opening` | `OpeningMove` | Operation | gripper | — |
-| `move_joint` | `JointMove` | Operation | gripper | — |
-
-Operation 立即返回句柄，进度与结果通过快照获取；通用用法见 [命令与长时操作](../../usage/commands-operations.md)。
-
-| 通道 | 内容 |
-|------|------|
-| `opening()` | `Float64` |
-| `joint()` | `JointState` |
+Command 同步返回响应，`timeout_ms` 可逐次覆盖；Operation 立即返回句柄，进度与结果通过快照获取，见 [命令与长时操作](../../usage/commands-operations.md)。
 
 ## 方法
 

@@ -18,34 +18,28 @@ All motion Operations share the `head` resource with policy `queue`.
 
 ## API Overview
 
-| Method | Request | Response | Default timeout |
-|------|------|------|------|
-| `get_joint` | `Empty` | `JointState` | 1000 ms |
-| `get_pose` | `PoseQuery` | `Pose3d` | 1000 ms |
-| `get_mode` | `Empty` | `Mode` | 1000 ms |
-| `set_mode` | `Mode` | `Mode` | 1000 ms |
-| `get_joint_velocity_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_joint_velocity_limit` | `Float64` | `Float64` | 1000 ms |
-| `get_joint_acceleration_limit` | `Empty` | `Float64` | 1000 ms |
-| `set_joint_acceleration_limit` | `Float64` | `Float64` | 1000 ms |
-| `servo_pose` | `Pose3d` | `Pose3d` | 1000 ms |
-| `get_arrival_thresholds` | `Empty` | `ArrivalThresholds` | 1000 ms |
-| `set_arrival_thresholds` | `ArrivalThresholds` | `ArrivalThresholdsApplied` | 1000 ms |
+| Name | Kind | Description |
+|------|------|------|
+| `get_joint` | Command | Read the head joint sample (`[yaw, pitch]`); default timeout 1000 ms. |
+| `get_pose` | Command | Read the head pose; default timeout 1000 ms. |
+| `get_mode` | Command | Read the current mode; default timeout 1000 ms. |
+| `set_mode` | Command | Switch the head constraint mode; under `GAZE` the pose position is the gaze point; default timeout 1000 ms. |
+| `get_joint_velocity_limit` | Command | Read the joint velocity limit; default timeout 1000 ms. |
+| `set_joint_velocity_limit` | Command | Set the joint velocity limit and return the applied value; default timeout 1000 ms. |
+| `get_joint_acceleration_limit` | Command | Read the joint acceleration limit; default timeout 1000 ms. |
+| `set_joint_acceleration_limit` | Command | Set the joint acceleration limit and return the applied value; default timeout 1000 ms. |
+| `servo_pose` | Command | Send one pose servo target and get the applied pose; default timeout 1000 ms. |
+| `get_arrival_thresholds` | Command | Read the arrival thresholds for this slot; default timeout 1000 ms. |
+| `set_arrival_thresholds` | Command | Replace the arrival thresholds for this slot; default timeout 1000 ms. |
+| `move_joint` | Operation | Joint-space motion. |
+| `move_joint_path` | Operation | Follow a joint waypoint sequence; at least two waypoints, the first reached from the current joints. |
+| `move_pose` | Operation | Absolute end-effector motion. |
+| `joint` | Channel | Head joint-state stream; frame is `JointState`. |
+| `pose` | Channel | Head pose stream; frame is `Pose3d`. |
+| `fault_changed` | Event | Fault set changed; payload is `Faults`. |
+| `lifecycle_changed` | Event | Lifecycle changed; payload is `CapabilityLifecycleSnapshot`. |
 
-All calls above are Commands (synchronous request/response); `timeout_ms` can be overridden per call.
-
-| Method | Request | Kind | Resources | Default budget |
-|------|------|------|------|------|
-| `move_joint` | `JointMove` | Operation | head | — |
-| `move_joint_path` | `JointPath` | Operation | head | — |
-| `move_pose` | `PoseMove` | Operation | head | — |
-
-Operations return a handle immediately; progress and results come from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
-
-| Channel | Content |
-|------|------|
-| `joint()` | `JointState` |
-| `pose()` | `Pose3d` |
+Commands return their response synchronously, and `timeout_ms` can be overridden per call; Operations return a handle immediately, with progress and results read from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
 
 Enums used on this page:
 

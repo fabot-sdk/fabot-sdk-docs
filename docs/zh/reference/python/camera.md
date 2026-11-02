@@ -19,34 +19,36 @@ updated: 2026-11-02
 
 ## API 总览
 
-| 方法 | 请求 | 响应 | 默认超时 |
-|------|------|------|------|
-| `get_info` | `Empty` | `DeviceInfo` | 1000 ms |
-| `get_state` | `Empty` | `SessionState` | 1000 ms |
-| `open` | `SessionConfig` | `SessionState` | 5000 ms |
-| `close` | `Empty` | `SessionState` | 3000 ms |
-| `capture` | `CaptureOptions` | `FrameSet` | 10000 ms |
-| `trigger` | `TriggerPulse` | `TriggerAck` | 2000 ms |
-| `get_calibration` | `Empty` | `CameraCalibration` | 1000 ms |
-| `get_imaging` | `Empty` | `ImagingState` | 1000 ms |
-| `set_imaging` | `ImagingPatch` | `ImagingState` | 2000 ms |
+| 名字 | 类型 | 说明 |
+|------|------|------|
+| `get_info` | Command | 读取设备信息：厂商、型号、序列号、连接方式与支持能力；默认超时 1000 ms。 |
+| `get_state` | Command | 读取当前会话状态（开流、同步、配准、标定代际与温度）；默认超时 1000 ms。 |
+| `open` | Command | 开启会话；默认超时 5000 ms。 |
+| `close` | Command | 关闭相机会话并停止全部流；默认超时 3000 ms。 |
+| `capture` | Command | 抓取一帧多流集合；默认超时 8000 ms。 |
+| `trigger` | Command | 发出外部触发脉冲，用于 `SOFTWARE_TRIGGER` 同步角色；默认超时 2000 ms。 |
+| `get_calibration` | Command | 读取标定数据：各流内参、深度到彩色 / 左右红外 / IMU 到彩色的外参、双目基线、深度换算系数与有效深度范围；默认超时 1000 ms。 |
+| `get_imaging` | Command | 读取成像控制参数（曝光、增益、白平衡、工频、红外发射器）；默认超时 1000 ms。 |
+| `set_imaging` | Command | 整体替换成像控制参数，返回生效状态；默认超时 2000 ms。 |
+| `frameset` | Channel | 多流成帧快照流，帧为 `FrameSet`。 |
+| `color` | Channel | 彩色图像流，帧为 `ImageFrame`。 |
+| `depth` | Channel | 原始深度流，帧为 `ImageFrame`。 |
+| `registered_depth` | Channel | 配准到彩色的深度流，帧为 `ImageFrame`。 |
+| `infrared` | Channel | 红外流，帧为 `ImageFrame`。 |
+| `infrared_left` | Channel | 左红外流，帧为 `ImageFrame`。 |
+| `infrared_right` | Channel | 右红外流，帧为 `ImageFrame`。 |
+| `confidence` | Channel | 置信度流，帧为 `ImageFrame`。 |
+| `points` | Channel | 点云流，帧为 `PointCloud`。 |
+| `imu` | Channel | IMU 采样流，帧为 `ImuSample`。 |
+| `rtsp` | Channel | RTSP 预览端点；推送的是媒体描述而不是图像帧，帧为 `MediaEndpoint`（媒体端点，非帧迭代）。 |
+| `webrtc` | Channel | WebRTC 预览端点；推送的是媒体描述而不是图像帧，帧为 `MediaEndpoint`（媒体端点，非帧迭代）。 |
+| `camera_session_changed` | Event | 会话状态变化时推送，`payload` 为 `SessionState`。 |
+| `camera_calibration_changed` | Event | 标定更新时推送，`payload` 为 `CameraCalibration`；收到后应重新读取内参与外参。 |
+| `camera_device_connection_changed` | Event | 设备连断时推送，`payload` 为 `DeviceConnectionEvent`。 |
+| `fault_changed` | Event | 故障集合变化，payload 为 `Faults`。 |
+| `lifecycle_changed` | Event | 生命周期变化，payload 为 `CapabilityLifecycleSnapshot`。 |
 
-以上均为 Command（同步请求-响应），`timeout_ms` 可逐次覆盖。
-
-| 通道 | 内容 |
-|------|------|
-| `frameset()` | `FrameSet` |
-| `color()` | `ImageFrame` |
-| `depth()` | `ImageFrame` |
-| `registered_depth()` | `ImageFrame` |
-| `infrared()` | `ImageFrame` |
-| `infrared_left()` | `ImageFrame` |
-| `infrared_right()` | `ImageFrame` |
-| `confidence()` | `ImageFrame` |
-| `points()` | `PointCloud` |
-| `imu()` | `ImuSample` |
-| `rtsp()` | `MediaEndpoint`（媒体端点，非帧迭代） |
-| `webrtc()` | `MediaEndpoint`（媒体端点，非帧迭代） |
+Command 同步返回响应，`timeout_ms` 可逐次覆盖；Operation 立即返回句柄，进度与结果通过快照获取，见 [命令与长时操作](../../usage/commands-operations.md)。
 
 本页方法用到的枚举：
 
