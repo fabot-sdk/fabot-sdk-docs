@@ -1,11 +1,11 @@
 ---
-title: 导航
+title: 底盘示例
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# 导航
+# 底盘示例
 
 执行底盘导航任务并跟踪进度。长时任务模型见 [命令与长时操作](../../usage/commands-operations.md)，接口见 [底盘](../../reference/python/chassis.md)。
 

@@ -2,7 +2,7 @@
 title: 通用类型与枚举
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # 通用类型与枚举
@@ -26,6 +26,10 @@ updated: 2026-11-02
 | `Transform3d` | `target_frame` / `source_frame` / `tx` / `ty` / `tz` / `qx`…`qw` / `stamp_ns` | 刚体变换 `^target T_source` |
 | `PoseArcByPoints` | `via` / `end` | 三点圆弧（起点为当前位姿） |
 | `PoseArcByCenter` | `center` / `axis` / `angle` / `end_orientation` | 圆心圆弧 |
+
+:::warning `Transform3d` 有两个同名类
+`fabot.types.Transform3d` 是 wire 层表对象（仅 `target_frame` / `source_frame` / 平移 / 四元数 / `stamp_ns` 字段）；带 `compose()` / `inverse()` / `from_euler()` / `identity()` 等代数的是 `fabot.frames.Transform3d`，也可从 `fabot` 顶层导入。做坐标运算请用后者。
+:::
 
 `Pose3d` 还有若干便捷成员：`position` / `quaternion` / `euler_rpy` / `to_matrix()` / `to_transform()`，以及 `from_euler()` / `from_matrix()` 等构造器。`Transform3d` 的完整代数见 [坐标系与变换](../../usage/frames.md)。
 
@@ -64,7 +68,8 @@ updated: 2026-11-02
 | `OperationState` / `OperationSnapshot` | Operation 状态与快照 |
 | `LogLevel` / `LogRecord` / `LogIdentity` | 日志，见 [日志、指标与可观测性](../../usage/observability.md) |
 | `MetricType` / `MetricRecord` / `MetricValue` / `MetricIdentity` / `SdkMetricSnapshot` | 指标 |
-| `FreezeRequest` / `PingReport` / `PingSample` | 冻结与往返时延探测 |
+| `FreezeRequest` / `ObsStore` / `ObsDirectory` / `ObsFreeze` | 冻结请求与机器人端观测存储快照 |
+| `PingReport` / `PingSample`（`fabot.core.types`） | 往返时延探测结果；`fabot.core` 不导出这两个名字 |
 | `QosProfile` / `SubscribeOptions` / `ChannelDescriptor` / `ChannelFrame` | 通道订阅 |
 | `ClientConfig` / `ClientOptions` / `CallOptions` | 客户端选项，见 [连接与 Robot 入口](../../usage/connection.md) |
 | `ConfigState` / `SlotRuntime` / `ServiceState` | 配置与服务状态 |

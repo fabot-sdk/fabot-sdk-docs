@@ -2,59 +2,103 @@
 title: Your First Program (Python)
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Your First Program (Python)
 
-This tutorial walks through a complete session in a dozen lines: connect to the robot → wait until ready → read robot-wide info → call two capabilities → disconnect automatically.
+This tutorial has three stages: verify the connection only (no capability involved), discover which capabilities this robot actually has, and only then call them. With that order, any failure points straight at its cause.
 
 ## Prerequisites
 
-- The SDK is installed and `import fabot` works; see [Installing the Python SDK](../install/python.md) and [Requirements](../install/requirements.md).
-- The robot's control-plane endpoint (IP + port, default 7557) is reachable over the network.
-- No real robot? Run the same flow offline with `Robot.mock()`; see [Mock Testing](../usage/mock.md).
+- The SDK is installed and `import fabot` works, see [Install the Python SDK](../install/python.md); environment requirements are in [Requirements](../install/requirements.md).
+- The robot control-plane endpoint is reachable (IP + port, default 7557).
+- No robot at hand? `Robot.mock()` works for local development, but it returns shell responses by default. Stage 1 runs as-is; stages 2 and 3 need hooks first, see [Mock Testing](../usage/mock.md).
 
-## Complete code
+## Stage 1: connection only
+
+This stage touches the connection and robot-wide queries only, so it works even if the robot has no screen or IO.
 
 ```python
 from fabot import Robot
+
+with Robot.connect("192.168.1.10", 7557) as robot:
+    robot.wait_ready()
+    print("platform:", robot.version())
+    print("sdk:", robot.sdk_version)
+    state = robot.state()
+    print("mode:", state.mode.name, "health:", state.health.name)
+# leaving the with block closes the connection
+```
+
+Expected output looks like:
+
+```console
+platform: 1.1.0-alpha.1
+sdk: 1.1.0-alpha.1
+mode: Idle health: Normal
+```
+
+The exact `mode` / `health` values follow the live state; printing them at all proves the connection, slot resolution and robot-wide queries work. If this stage fails, go straight to [Troubleshooting](../troubleshooting.md).
+
+Under `Robot.mock()`, `version()` returns the `0.0.0` sentinel and `mode` / `health` are `Unknown`. That is normal mock behaviour, not a fault.
+
+## Stage 2: discover what the robot has
+
+Whether a capability slot is usable depends on the robot configuration. List them before deciding what to call:
+
+```python
+with Robot.connect("192.168.1.10", 7557) as robot:
+    robot.wait_ready()
+    for slot_id, proxy in sorted(robot.slots.items()):
+        lc = proxy.lifecycle()
+        print(f"{slot_id:22s} adapter={proxy.has_adapter!s:5s} lifecycle={lc.lifecycle.name}")
+```
+
+You should see roughly 24 lines, one per slot. Only slots with `adapter=True` and `lifecycle=Active` are safe to use directly; `adapter=False` means this robot does not carry that capability, and later calls will fail or time out.
+
+## Stage 3: call two capabilities
+
+Call only what you discovered. The code below checks first:
+
+```python
 from fabot.capabilities.io import PinDirection
 
 with Robot.connect("192.168.1.10", 7557) as robot:
-    robot.wait_ready()                       # wait for bound and essential slots to become ready
+    robot.wait_ready()
 
-    print("Platform version:", robot.version())
-    print("SDK version:", robot.sdk_version)
-    state = robot.state()
-    print("Run mode:", state.mode, "health:", state.health)
+    if robot.screen.has_adapter:
+        applied = robot.screen.show_text("Hello, fabot!")
+        print("screen:", applied.outcome.success, applied.status.overlay_text)
 
-    # Call a capability: show text on the face screen
-    applied = robot.screen.show_text("Hello, fabot!")
-    print("Screen result:", applied.outcome.success)
-
-    # Acquire an IO pin and read its level
-    robot.io.acquire(17, direction=PinDirection.INPUT)
-    level = robot.io.get_level(17)
-    print("pin 17 =", level.value)
-    robot.io.release(17)
-# close() runs automatically when the with block exits
+    if robot.io.has_adapter:
+        robot.io.acquire(17, direction=PinDirection.INPUT)
+        try:
+            print("pin 17 =", robot.io.get_level(17).value)
+        finally:
+            robot.io.release(17)
 ```
 
-Replace the IP with your robot's address, save as `hello_fabot.py`, and run `python3 hello_fabot.py`.
+Swap in your robot's address, save it as `hello_fabot.py`, and run `python3 hello_fabot.py`.
 
-## Walkthrough
+:::note `outcome.success` may be `None`
+`ScreenStatusApplied.outcome` and `PinApplied.outcome` can be `None` when the platform did not fill them in. For a strict check write `bool(applied.outcome and applied.outcome.success)`; failure details live in `Outcome.status_message`.
+:::
 
-- `Robot.connect(host, port)`: connects to the control-plane endpoint; the `with` block guarantees `close()` on exit. For other connection styles (`from_endpoint` / `from_config` / `mock`) and `ClientOptions`, see [Connection & Robot Entry](../usage/connection.md).
-- `wait_ready()`: blocks until the bound, enabled and essential slots are ready; unbound optional slots do not block startup. The wait budget comes from `ClientOptions.resolve_timeout_ms`.
-- `version()` returns the platform version string and `sdk_version` the local SDK version. `state()` returns a `RobotState` snapshot: `mode` is the run mode (`RobotMode`) and `health` the health (`HealthState`), see [Status, Faults & Lifecycle](../usage/status-faults.md).
-- Capabilities are accessed through read-only slot properties (`robot.screen`, `robot.io`, … — 23 in total). Every call returns a result object: `applied.outcome.success` from `show_text` reports success, and `level.value` from `get_level` is the current level. Acquire a pin before reading or writing it, and `release` it afterwards. Field details are on the [Screen](../reference/python/screen.md) and [IO](../reference/python/io.md) pages.
-- Calling an unbound slot fails (the platform rejects or times out); on a real robot check `robot.io.has_adapter` first. See [Error Handling](../usage/errors.md).
+## What the code does
+
+- `Robot.connect(host, port)` opens the connection; `with` guarantees `close()` on exit. Other entry points (`from_endpoint` / `from_config` / `mock`) and `ClientOptions` are in [Connection & Robot Entry](../usage/connection.md).
+- `wait_ready()` blocks until slots that are **bound, enabled and marked essential** are ready. Unbound or non-essential slots are skipped silently — neither blocking nor raising. That is exactly why stage 2 probes the slots itself. The per-slot wait bound is `ClientOptions.resolve_timeout_ms`.
+- `version()` returns the platform version string, `sdk_version` the local SDK version; `state()` returns a `RobotState` snapshot where `mode` is `RobotMode` and `health` is `HealthState`, see [Status, Faults & Lifecycle](../usage/status-faults.md). Both are `IntEnum`s: printing them yields numbers, and `.name` gives names like `Idle` / `Normal`.
+- `robot.slots` maps slot ids to proxies (24 entries). `has_adapter` and `lifecycle()` are the two most direct "can I call this" checks. Full list in [Robot Entry](../reference/python/robot.md#slots).
+- Acquire a pin before reading or writing it and `release` it afterwards (inside `finally`, so an exception still releases). Field details are in [Screen](../reference/python/screen.md) and [IO](../reference/python/io.md).
+- On an unbound slot capability methods are still dispatched and fail or time out platform-side, while `get_config()` / `as_adapter()` raise `AdapterUnbound`. See [Error Handling](../usage/errors.md).
 
 ## Next steps
 
-- No robot? Develop offline with [Mock Testing](../usage/mock.md): `Robot.mock()`.
-- Understand the call model: [Commands & Operations](../usage/commands-operations.md), [Events & Data Channels](../usage/events-channels.md).
-- Log, measure, and capture the scene: [Logs, Metrics & Observability](../usage/observability.md).
-- Look up a capability: [Reference](../reference/python/index.md).
-- More complete code: [Examples (Python)](../examples/python/index.md).
+- No robot? Develop offline with `Robot.mock()`, see [Mock Testing](../usage/mock.md).
+- Read the conventions first: [Time Bases and Coordinate Conventions](../usage/conventions.md), [Concurrency, Threading and Safety](../usage/concurrency-and-safety.md).
+- Learn the call model: [Commands & Operations](../usage/commands-operations.md), [Events & Data Channels](../usage/events-channels.md).
+- Log, measure and capture the scene: [Logs, Metrics & Observability](../usage/observability.md).
+- Look up a capability: [API Reference](../reference/python/index.md).
+- More complete code: [Python Examples](../examples/python/index.md).

@@ -1,11 +1,11 @@
 ---
-title: Python 示例
+title: 示例索引
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Python 示例
+# 示例索引
 
 按能力查阅完整示例。通用机制见 [常规操作](../../usage/index.md)，接口签名见 [Python API](../../reference/python/index.md)。
 
@@ -25,6 +25,7 @@ updated: 2026-11-02
 | 面屏文本、图片与视频 | [面屏](screen.md) |
 | 灯带模式、颜色与亮度 | [灯效](light.md) |
 | 电量与充电状态 | [电源](power.md) |
+| 升降柱高度、回零与伺服 | [升降柱](lift.md) |
 | 抓拍、标定与图像流 | [相机](camera.md) |
 | 音频采集、播放与唤醒 | [语音](voice.md) |
 | 手柄遥操作会话 | [遥操作](teleop.md) |

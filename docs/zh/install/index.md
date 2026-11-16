@@ -1,11 +1,11 @@
 ---
-title: 安装与配置
+title: 安装总览
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# 安装与配置
+# 安装总览
 
 本节说明 fabot Python SDK 的环境要求、安装步骤与版本配套原则。SDK 以 Python wheel 形式分发，安装后的导入名为 `fabot`，不依赖 ROS。
 

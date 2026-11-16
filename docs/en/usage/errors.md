@@ -2,7 +2,7 @@
 title: Error Handling
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Error Handling
@@ -94,7 +94,7 @@ The Command / Operation model itself is in [Commands & Operations](commands-oper
 
 - Errors with `retryable == True` (`Timeout` / `Unavailable` / `TransportError` / `ResourceConflict`) can be retried with exponential backoff, bounded by total time or attempt count.
 - `InvalidArgument`, `ProtocolIncompatible` and friends are not retryable: fix the call, or check SDK and platform version compatibility (see [Version Compatibility](../install/compatibility.md)).
-- `ConfigurationConflict` is a special case: `retryable` is `False`, but the correct handling *is* to retry — re-`get()`, merge your change (`merge_touched`) and `apply()` again, see [Configuration](configuration.md).
+- `ConfigurationConflict` is a special case: it subclasses `ResourceConflict`, so `retryable` is actually `True`, but do not replay the same call — re-`get()`, merge your change (`merge_touched`) and `apply()` again, see [Configuration](configuration.md).
 - Stale-slot errors (for example an instance replaced underneath you) trigger one internal re-resolve in the SDK; the application should not repeat that.
 
 ## Common local errors

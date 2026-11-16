@@ -2,7 +2,7 @@
 title: 状态、故障与生命周期
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # 状态、故障与生命周期
@@ -43,11 +43,11 @@ SDK 把机器人运行时信息分三层暴露：**整机聚合状态**（`robot
 
 ```python
 st = robot.state()
-print(st.mode, st.health)
+print(st.mode.name, st.health.name)
 for cause in st.root_causes:
     print(hex(cause.code), cause.source)
 for domain in st.domains:
-    print(domain.domain, domain.health)
+    print(domain.domain, domain.health.name)
 ```
 
 ### RobotStatus
@@ -60,12 +60,13 @@ for domain in st.domains:
 | `head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera` | `Status` | 相机状态袋，见 [相机 Camera](../reference/python/camera.md) |
 | `screen` | `Status` | 面屏状态袋，见 [面屏 Screen](../reference/python/screen.md) |
 | `voice` | `Status` | 语音状态袋，见 [语音 Voice](../reference/python/voice.md) |
+| `lift` | `Status` | 升降柱状态袋，见 [升降柱 Lift](../reference/python/lift.md) |
 
 只有提供 `status()` 的能力参与聚合，其余槽位不参与（对应字段保持默认值）。
 
 ## 能力状态袋（Status）
 
-提供 `status() -> Status` 的能力：
+提供 `status() -> Status` 的能力（power / 5 路相机 / screen / voice / lift）：
 
 | 能力 | 状态袋字段 | 参考 |
 |------|-----------|------|
@@ -73,6 +74,7 @@ for domain in st.domains:
 | `robot.head_camera` 等 5 个相机 | `state`（`disconnected` / `idle` / `streaming` / `fault`）/ `sync_mode` / `registration_mode` / `color_active` / `depth_active` / `infrared_active` / `imu_active` / `calibration_generation` / `temperature_c` | [相机 Camera](../reference/python/camera.md) |
 | `robot.screen` | `activity`：`Activity.Idle` / `Image` / `Video`（StrEnum） | [面屏 Screen](../reference/python/screen.md) |
 | `robot.voice` | `activity`：`Activity.Idle` / `Listening` / `Speaking`（StrEnum） | [语音 Voice](../reference/python/voice.md) |
+| `robot.lift` | `height` / `velocity` / `enabled` / `homed` / `moving` | [升降柱 Lift](../reference/python/lift.md) |
 
 其余模块没有 `status()`，也不参与 `robot.status()` 聚合；它们的状态通过各自的查询方法获取（如灯带用 `light.get_status()`）。
 

@@ -2,7 +2,7 @@
 title: Power
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Power
@@ -52,7 +52,7 @@ Query with `robot.<slot>.faults()`, which returns `Faults` (`revision` plus `rec
 | `severity` | `int` | Severity, aligned with `HealthState` |
 | `timestamp_us` | `int` | Latest timestamp in microseconds |
 
-For human-readable fault text use `Catalogs.format_fault(record, capability_id="...")`; see [Catalogs](../../usage/catalogs.md).
+For human-readable fault text use `Catalogs.format_fault(record)`; see [Catalogs](../../usage/catalogs.md).
 
 ## Status
 

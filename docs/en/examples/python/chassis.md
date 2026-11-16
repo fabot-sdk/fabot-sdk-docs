@@ -1,11 +1,11 @@
 ---
-title: Navigation
+title: Chassis example
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Navigation
+# Chassis example
 
 Run chassis navigation tasks and track progress. The long-running task model is in [Commands & Operations](../../usage/commands-operations.md), the API in [Chassis](../../reference/python/chassis.md).
 

@@ -2,12 +2,12 @@
 title: Skills & Extensions
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Skills & Extensions
 
-Besides the 15 capability modules, the SDK exposes **skills**: units that combine several capability slots into a higher-level semantic feature. Skills are reached through `robot.skills` and look like a capability proxy (`slot_id` / `handle` / `events` / `health()` / `lifecycle()` / `faults()` / `ping()` plus config access), but they operate a skill unit on the robot rather than a single capability slot.
+Besides the 16 capability modules, the SDK exposes **skills**: units that combine several capability slots into a higher-level semantic feature. Skills are reached through `robot.skills` and look like a capability proxy (`slot_id` / `handle` / `events` / `health()` / `lifecycle()` / `faults()` / `ping()` plus config access), but they operate a skill unit on the robot rather than a single capability slot.
 
 | Skill | Entry | Purpose |
 |-------|-------|---------|
@@ -78,7 +78,7 @@ for member in frame_set.members:
     print(member.slot, member.stream, member.match_status, member.delta_ns)
 ```
 
-`synced_frames()` is the continuous stream (`SyncedFramesChannel`); `sync_groups()` announces group-list changes (`SyncGroupsChannel`, which exposes only `info()` and lease operations).
+`synced_frames()` is the continuous stream (`SyncedFramesChannel`); `sync_groups()` announces group-list changes (`SyncGroupsChannel`, which exposes only the `info` property and lease operations).
 
 The skill config domains (groups, tolerances, missing policy, frame-region retention) are read and written with `get_config()` / `set_config()` / `edit_config()`, following the same rules as capability config, see [Configuration](configuration.md).
 

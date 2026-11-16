@@ -1,11 +1,11 @@
 ---
-title: Gripper
+title: Gripper example
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Gripper
+# Gripper example
 
 Control the left / right gripper opening, velocity and force limits, and subscribe to the opening stream. The two grippers share one API on independent slots (`robot.left_gripper` / `robot.right_gripper`). The long-running task model is in [Commands & Operations](../../usage/commands-operations.md), channels in [Events & Data Channels](../../usage/events-channels.md), and the API in [Gripper](../../reference/python/gripper.md).
 

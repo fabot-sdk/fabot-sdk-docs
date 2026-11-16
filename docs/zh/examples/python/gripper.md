@@ -1,11 +1,11 @@
 ---
-title: 夹爪
+title: 夹爪示例
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# 夹爪
+# 夹爪示例
 
 控制左 / 右夹爪的开合运动、速度与力上限，并订阅开合度流。左右夹爪是同一套 API、各自独立的槽位（`robot.left_gripper` / `robot.right_gripper`）。长时任务模型见 [命令与长时操作](../../usage/commands-operations.md)，通道用法见 [事件与数据通道](../../usage/events-channels.md)，接口全表见 [夹爪 Gripper](../../reference/python/gripper.md)。
 

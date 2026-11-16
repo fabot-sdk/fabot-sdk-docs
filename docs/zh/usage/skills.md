@@ -2,12 +2,12 @@
 title: 技能与扩展
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # 技能与扩展
 
-除了 15 个能力模块，SDK 还提供**技能（Skill）**：跨多个能力槽位、在 SDK 侧组合出更高层语义的封装。技能通过 `robot.skills` 访问，形态与能力 Proxy 一致（有 `slot_id` / `handle` / `events` / `health()` / `lifecycle()` / `faults()` / `ping()` 与配置读写），但操作的是机器人上的技能单元，而不是单个能力槽位。
+除了 16 个能力模块，SDK 还提供**技能（Skill）**：跨多个能力槽位、在 SDK 侧组合出更高层语义的封装。技能通过 `robot.skills` 访问，形态与能力 Proxy 一致（有 `slot_id` / `handle` / `events` / `health()` / `lifecycle()` / `faults()` / `ping()` 与配置读写），但操作的是机器人上的技能单元，而不是单个能力槽位。
 
 | 技能 | 入口 | 说明 |
 |------|------|------|
@@ -78,7 +78,7 @@ for member in frame_set.members:
     print(member.slot, member.stream, member.match_status, member.delta_ns)
 ```
 
-`synced_frames()` 是持续推送的通道（`SyncedFramesChannel`），`sync_groups()` 推送同步组清单变化（`SyncGroupsChannel`，只有 `info()` 与租约操作，不产出帧）。
+`synced_frames()` 是持续推送的通道（`SyncedFramesChannel`），`sync_groups()` 推送同步组清单变化（`SyncGroupsChannel`，只有 `info` 属性与租约操作，不产出帧）。
 
 技能的配置域（同步组、容差、缺失策略、帧区域保留）经 `get_config()` / `set_config()` / `edit_config()` 读写，规则与能力配置相同，见 [配置管理](configuration.md)。
 

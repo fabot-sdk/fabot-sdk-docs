@@ -2,7 +2,7 @@
 title: Events & Data Channels
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Events & Data Channels
@@ -94,7 +94,7 @@ Payload fields are documented in the events / state sections of [Robot Entry](..
 
 ### Capability events
 
-All 15 capability modules provide two events:
+All 16 capability modules provide two events:
 
 - `robot.<slot>.events.fault_changed`: this slot's fault set changed; payload is that module's `Faults` (`revision` plus `records`).
 - `robot.<slot>.events.lifecycle_changed`: lifecycle or health changed; payload is a `CapabilityLifecycleSnapshot`.
@@ -107,6 +107,7 @@ Three modules add specific events:
 | `robot.<camera>.events.camera_calibration_changed` | `CameraCalibration` | Calibration updated; re-read intrinsics and extrinsics |
 | `robot.<camera>.events.camera_device_connection_changed` | `DeviceConnectionEvent` | Device connected or disconnected |
 | `robot.voice.events.audio_wake_word_detected` | `WakeEvent` | Wake word fired (`keyword` / `timestamp_us`) |
+| `robot.lift.events.lift_state_changed` | `LiftEvent` | Lift state event (`kind` / `height` / `enabled` / `homed` / `message`) |
 
 Per-module event definitions are in the matching reference page, for example [Camera](../reference/python/camera.md).
 
@@ -151,6 +152,7 @@ finally:
 | motion (`motion`) | `joint()` / `wbc_state()` / `center_of_mass()` |
 | chassis (`chassis`) | `pose()` / `twist()` / `stage()` |
 | camera (5 camera slots) | `frameset()` / `color()` / `depth()` / `registered_depth()` / `infrared()` / `infrared_left()` / `infrared_right()` / `confidence()` / `points()` / `imu()` / `rtsp()` / `webrtc()` |
+| lift (`lift`) | `height()` |
 | voice (`voice`) | `wake()` / `capture()` / `playback()` |
 | skills.camera_sync | `sync_groups()` / `synced_frames()` |
 
@@ -172,7 +174,7 @@ Any other value raises `ValueError`.
 
 Platform event types live in `fabot.core`: `EstopChangedEvent`, `RobotStateChangedEvent`, `RegistryChangedEvent`, `ConfigChangedEvent`, `ServiceStateChangedEvent`, `FaultChangedEvent`, `FaultsChangedEvent`, `LifecycleChangedEvent`, `ManagerConnectionChangedEvent`. Each capability module's `events` also has a `FaultChangedEvent` bound to that module's `Faults` type. All provide `matches()` / `from_event()` / `try_from_event()`.
 
-`robot.events.FaultsChangedEvent` (imported from `fabot.robot`) is the product-layer variant of the same event: its payload is a typed `RobotFaults` rather than a flat `RobotFaultSnapshot`.
+`fabot.robot.FaultsChangedEvent` (the product-layer variant, imported from `fabot.robot` — not an attribute of `robot.events`) is the product-layer variant of the same event: its payload is a typed `RobotFaults` rather than a flat `RobotFaultSnapshot`.
 
 ## Related
 

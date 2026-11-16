@@ -2,7 +2,7 @@
 title: 错误处理
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # 错误处理
@@ -94,7 +94,7 @@ Command / Operation 模型本身见 [命令与长时操作](commands-operations.
 
 - `retryable` 为 `True` 的错误（`Timeout` / `Unavailable` / `TransportError` / `ResourceConflict`）可按指数退避重试，并设置总时长或次数上限。
 - `InvalidArgument`、`ProtocolIncompatible` 等不可重试：修正调用参数，或检查 SDK 与机器人端的版本配套（见 [版本配套](../install/compatibility.md)）。
-- `ConfigurationConflict` 是特例：`retryable` 为 `False`，但语义上的处理就是重试——重新 `get()`、合并修改（`merge_touched`）后再 `apply()`，见 [配置管理](configuration.md)。
+- `ConfigurationConflict` 是特例：它继承 `ResourceConflict`，因此 `retryable` 实际为 `True`，但正确做法不是原样重放——重新 `get()`、合并修改（`merge_touched`）后再 `apply()`，见 [配置管理](configuration.md)。
 - 槽位失效类错误（如实例被替换）SDK 内部会做一次重新解析；应用层不必重复。
 
 ## 常见本地错误

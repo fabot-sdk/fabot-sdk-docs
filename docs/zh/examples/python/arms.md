@@ -1,11 +1,11 @@
 ---
-title: 双臂运动
+title: 双臂示例
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# 双臂运动
+# 双臂示例
 
 控制双臂按关节角或末端位姿协同运动，切换耦合与导纳模式，并订阅关节流。长时任务模型见 [命令与长时操作](../../usage/commands-operations.md)，通道用法见 [事件与数据通道](../../usage/events-channels.md)，接口见 [双臂](../../reference/python/arms.md)。
 

@@ -1,11 +1,11 @@
 ---
-title: Body
+title: Body example
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Body
+# Body example
 
 Control the torso joints and the waist lift / forward reach / pitch. The long-running task model is in [Commands & Operations](../../usage/commands-operations.md), channels in [Events & Data Channels](../../usage/events-channels.md), and the API in [Body](../../reference/python/body.md).
 

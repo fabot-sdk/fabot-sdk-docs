@@ -15,7 +15,7 @@ docs/
 │   ├── usage/              # 常规操作
 │   ├── tutorials/          # 入门教程（python.md）
 │   ├── examples/python/    # 使用示例（index + 按能力的完整示例）
-│   ├── reference/python/   # 接口参考（Robot 入口 + 15 个能力模块）
+│   ├── reference/python/   # 接口参考（Robot 入口 + 16 个能力模块）
 │   ├── troubleshooting.md  # 故障排除
 │   └── changelog.md        # 更新日志（按版本倒序）
 └── en/                     # 英文（URL 前缀 /en/），页面路径与 zh 一一对应
@@ -43,6 +43,7 @@ docs/
 npm install
 
 npm run dev       # 本地预览（含热重载），右上角切换语言
+npm run check:api  # 校验文档里出现的 robot.<slot>.<method> 在当前 SDK 上都存在
 npm run build     # 只构建，输出 doc_build/（中文无前缀，英文在 en/），不启动服务
 npm run preview   # 用本地 HTTP 服务预览已构建的 doc_build/
 npm run serve     # 构建 + 预览一步到位（要验证下载用这个）

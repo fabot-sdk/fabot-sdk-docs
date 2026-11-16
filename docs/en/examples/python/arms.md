@@ -1,11 +1,11 @@
 ---
-title: Dual-Arm Motion
+title: Arms example
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Dual-Arm Motion
+# Arms example
 
 Move both arms together by joint angles or end-effector poses, switch coupling and impedance modes, and subscribe to joint streams. The long-running task model is in [Commands & Operations](../../usage/commands-operations.md), channels in [Events & Data Channels](../../usage/events-channels.md), and the API in [Arms](../../reference/python/arms.md).
 

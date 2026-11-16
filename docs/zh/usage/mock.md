@@ -2,7 +2,7 @@
 title: Mock 测试
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Mock 测试
@@ -21,7 +21,7 @@ robot = Robot.mock()                     # MockRobot：Robot 的子类
 robot.connection.is_connected()          # True：创建即"已连接"，无需 connect()/wait_ready()
 ```
 
-- `MockRobot` 与 `Robot` 的 23 个槽位属性同名，应用代码无需区分；只是每个 proxy 是对应的 Mock proxy（如 `ChassisMockProxy`，继承 `ChassisProxy`），额外暴露一组 `on_<command>` 钩子。
+- `MockRobot` 与 `Robot` 的 24 个槽位属性同名，应用代码无需区分；只是每个 proxy 是对应的 Mock proxy（如 `ChassisMockProxy`，继承 `ChassisProxy`），额外暴露一组 `on_<command>` 钩子。
 - 技能也有 Mock proxy：`robot.skills.camera_sync` / `robot.skills.voice_aiui` 的 `is_available` 为 `True`。
 - `robot.services`、`robot.metrics`、`robot.logs`、`robot.frames` 与真实连接同样可用（服务控制只返回成功、状态保持原值）。
 
@@ -29,7 +29,7 @@ robot.connection.is_connected()          # True：创建即"已连接"，无需 
 
 钩子名是 `on_` 加方法名（`on_get_pose`、`on_show_text`、`on_move_joint` 等），签名与对应调用一致，返回值决定行为：
 
-- 返回 `None`（或不返回）：使用默认成功响应（空壳对象，字段均为默认值）；
+- 返回 `None`（或不返回）：使用默认响应——一个字段全为默认值的空壳对象。注意 `Outcome` 的默认 `success` 是 `False`，`ScreenStatusApplied` / `PinApplied` 这类带 `outcome` 的响应里 `outcome` 可能是 `None`，不要断言“默认成功”；需要成功结果时显式返回响应对象；
 - 返回响应对象：替换默认响应；
 - 抛出异常：本次调用以 `FabotError`（`Internal`）失败——可用来测试错误处理路径。
 
@@ -42,7 +42,7 @@ robot = Robot.mock()
 # 返回自定义响应
 robot.chassis.on_get_pose = lambda: Pose2d(x=1.5, y=2.0)
 
-# 记录参数；返回 None -> 默认成功响应
+# 记录参数；返回 None -> 默认空壳响应
 calls = []
 robot.chassis.on_servo_twist = lambda **kwargs: calls.append(kwargs)
 
@@ -77,16 +77,22 @@ assert snap.state == OperationState.Succeeded and snap.terminal
 
 | 面 | 默认行为 |
 |----|----------|
-| Command | 成功空壳响应（字段为默认值） |
-| Operation | 立即 `Succeeded`，空壳 `result` |
+| Command | 空壳响应（字段为默认值，`Outcome.success` 为 `False`） |
+| Operation | 立即 `Succeeded`，`result` 为空壳 `Outcome`（`success=False`） |
 | Channel | 打开通道会以 `NotFound`（"not stubbed"）失败：Mock 没有为任何通道注册默认处理器 |
 | 事件 | 不自发产生 |
 | 整机状态 | `state()` / `status()` / `faults()` 返回空快照 |
 | 急停 / 配置 / 服务 | 急停 `engage` / `release` 更新内存中的 `EstopState`；`configuration` 的 `get` / `apply` 维护内存配置与 revision；`services` 控制操作返回成功、运行状态保持 `Unknown` |
 | 技能 | `skills.camera_sync` 等 Proxy 可用，`is_available` 为 `True` |
 
-:::note 未绑定 adapter 的槽位
-Mock 里槽位是否「已绑定 adapter」取决于内存配置，默认全部未绑定。因此 `robot.<slot>.get_config()` 会抛 `AdapterUnbound`，与真机上配置未就绪时的行为一致——这正是需要覆盖的路径之一。
+:::note 状态袋与配置在 Mock 里的表现
+Mock 里槽位默认全部未绑定 adapter，所以：
+
+- `robot.<slot>.get_config()` 抛 `AdapterUnbound`，与真机配置未就绪时一致；
+- `robot.<slot>.status()` 抛 `RuntimeError: empty status payload`（没有任何状态袋内容）；
+- `robot.status()` 仍能返回完整的空状态袋对象。
+
+要测试状态相关代码，请在钩子里注入 `status` 的返回值，或直接用 `MockBackend` 手工构造载荷，不要假设 Mock 会给出默认状态。
 :::
 
 ## 高级用法：`MockBackend`
@@ -113,7 +119,7 @@ backend.set_manager_connected(False)
 - `set_manager_connected(bool)`：模拟连接状态变化。
 
 :::warning
-`Robot.from_backend(MockBackend())` 不注册任何默认处理器：未注册的 Command / Operation / Channel 调用都会以 `NotFound`（"not stubbed"）失败。想要「默认成功 + 手工注入」的组合，请用 `Robot.mock()` 并替换个别钩子。
+`Robot.from_backend(MockBackend())` 不注册任何默认处理器：未注册的 Command / Operation / Channel 调用都会以 `NotFound`（"not stubbed"）失败。想要「默认响应 + 手工注入」的组合，请用 `Robot.mock()` 并替换个别钩子。
 :::
 
 ## 限制

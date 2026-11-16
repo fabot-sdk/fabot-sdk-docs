@@ -2,7 +2,7 @@
 title: Overview & Architecture
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Overview & Architecture
@@ -31,7 +31,7 @@ from fabot import Robot
 
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready()                                        # wait for bound, essential slots
-    print(robot.state().mode, robot.state().health)           # run mode and health
+    print(robot.state().mode.name, robot.state().health.name)  # run mode and health
     robot.chassis.servo_twist(vx=0.2, vy=0.0, vtheta=0.0)    # chassis velocity command
 ```
 
@@ -39,7 +39,7 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 
 ## Capabilities, slots and proxies
 
-The SDK ships typed proxies for 15 capability modules, reached through 23 slot properties on `Robot` (`robot.<slot>`). One capability can be installed in several slots (left and right arm), and each slot is an independent instance of the same API.
+The SDK ships typed proxies for 16 capability modules, reached through 24 slot properties on `Robot` (`robot.<slot>`). One capability can be installed in several slots (left and right arm), and each slot is an independent instance of the same API.
 
 | Module | Slot properties | Description |
 |--------|-----------------|-------------|
@@ -58,6 +58,7 @@ The SDK ships typed proxies for 15 capability modules, reached through 23 slot p
 | Light `light` | `robot.light` | Strip mode, color, brightness and period → [light](reference/python/light.md) |
 | Voice `voice` | `robot.voice` | Microphone capture, speaker playback, volume and wake word → [voice](reference/python/voice.md) |
 | Teleop `teleop` | `robot.teleop` | Joystick teleop session start and stop → [teleop](reference/python/teleop.md) |
+| Lift `lift` | `robot.lift` | Height read/write, absolute and relative moves, homing and servo → [lift](reference/python/lift.md) |
 
 Every proxy also has a common surface: `slot_id`, `handle`, `events`, `health()`, `lifecycle()`, `faults()`, `ping()`, `has_adapter`, `as_adapter(...)` and config access, see [Capability Interfaces Overview](reference/python/index.md).
 
@@ -71,11 +72,13 @@ Every proxy also has a common surface: `slot_id`, `handle`, `events`, `health()`
 | `robot.metrics` | Metrics: subscription, SDK counter snapshots, custom gauge / counter / histogram |
 | `robot.frames` | Frame queries and transforms (`lookup` / `transform` / `transform_points`) with no ROS dependency, see [Frames & Transforms](usage/frames.md) |
 | `robot.services` | Platform service start / stop / restart / config / state, see [Platform Services](usage/services.md) |
+| `robot.environments` | Runtime environment configuration (currently ROS 2 domain / communication settings); config only, see [Platform Services](usage/services.md) |
+| `robot.obs` | Robot-side observability store snapshot: quota, per-directory usage and freeze files, see [Logs, Metrics & Observability](usage/observability.md) |
 | `robot.skills` | Skill entries: `camera_sync` (multi-camera sync) / `voice_aiui` (voice semantics), see [Skills & Extensions](usage/skills.md) |
 | `robot.configuration` | Robot config read/write (`get()` / `apply()`), see [Configuration](usage/configuration.md) |
 | `robot.connection` | Connection state query and subscription (`is_connected()` / `subscribe()`), see [Connection & Lifecycle](usage/connection.md) |
 | `robot.state()` | Robot state snapshot `RobotState` (`mode` / `health` / `root_causes` / `domains`), see [Status, Faults & Lifecycle](usage/status-faults.md) |
-| `robot.status()` | Aggregated status bags `RobotStatus` (power, five cameras, screen, voice) |
+| `robot.status()` | Aggregated status bags `RobotStatus` (power, five cameras, screen, voice, lift) |
 | `robot.faults()` | Fault snapshot aggregated per slot `RobotFaults` |
 | `robot.ping()` / `robot.freeze()` | Runtime round-trip probe; freeze the observability flight recorder |
 | `robot.wait_ready()` | Wait for bound, essential slots; `close()` / `with` releases the connection |
@@ -121,4 +124,4 @@ Protocol failures raise subclasses of `FabotError` carrying `code` (a diagnostic
 - [Installation & Configuration](install/index.md): requirements, installing the Python SDK, version compatibility
 - [Tutorial](tutorials/python.md): run your first Python program
 - [Usage](usage/index.md): connection, commands and operations, events and channels, status and faults, logs and metrics, frames, configuration, errors, catalogs, mock
-- [Python API Reference](reference/python/index.md): Robot entry, catalogs, shared types and the 15 capability modules
+- [Python API Reference](reference/python/index.md): Robot entry, catalogs, shared types and the 16 capability modules

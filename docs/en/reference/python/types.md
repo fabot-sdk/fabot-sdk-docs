@@ -27,6 +27,10 @@ The data types reused across capability requests and responses live in `fabot.ty
 | `PoseArcByPoints` | `via` / `end` | Three-point arc (start is the current pose) |
 | `PoseArcByCenter` | `center` / `axis` / `angle` / `end_orientation` | Center arc |
 
+:::warning Two classes are named `Transform3d`
+`fabot.types.Transform3d` is the wire-level table object (fields only); the algebra (`compose()`, `inverse()`, `from_euler()`, `identity()`, …) lives on `fabot.frames.Transform3d`, which is also re-exported at the `fabot` top level. Use the latter for coordinate maths.
+:::
+
 `Pose3d` also carries conveniences: `position` / `quaternion` / `euler_rpy` / `to_matrix()` / `to_transform()` plus `from_euler()` / `from_matrix()` constructors. Full `Transform3d` algebra is in [Frames & Transforms](../../usage/frames.md).
 
 ## Joints and containers
@@ -64,7 +68,8 @@ The wire format requires every root type to be a table, so a single scalar needs
 | `OperationState` / `OperationSnapshot` | Operation state and snapshots |
 | `LogLevel` / `LogRecord` / `LogIdentity` | Logs, see [Logs, Metrics & Observability](../../usage/observability.md) |
 | `MetricType` / `MetricRecord` / `MetricValue` / `MetricIdentity` / `SdkMetricSnapshot` | Metrics |
-| `FreezeRequest` / `PingReport` / `PingSample` | Freezing and round-trip probing |
+| `FreezeRequest` / `ObsStore` / `ObsDirectory` / `ObsFreeze` | Freeze requests and the robot-side observability store snapshot |
+| `PingReport` / `PingSample` (`fabot.core.types`) | Round-trip probe results; `fabot.core` does not re-export these names |
 | `QosProfile` / `SubscribeOptions` / `ChannelDescriptor` / `ChannelFrame` | Channel subscription |
 | `ClientConfig` / `ClientOptions` / `CallOptions` | Client options, see [Connection & Robot Entry](../../usage/connection.md) |
 | `ConfigState` / `SlotRuntime` / `ServiceState` | Config and service state |

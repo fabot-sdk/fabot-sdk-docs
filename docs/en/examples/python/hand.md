@@ -1,11 +1,11 @@
 ---
-title: Dexterous Hand
+title: Hand example
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Dexterous Hand
+# Hand example
 
 Control dexterous hand opening, read five-finger tactile arrays, and subscribe to opening and tactile streams. Both hands share one API on independent slots (`robot.left_hand` / `robot.right_hand`). The long-running task model is in [Commands & Operations](../../usage/commands-operations.md), the API in [Hand](../../reference/python/hand.md).
 

@@ -2,7 +2,7 @@
 title: 事件与数据通道
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # 事件与数据通道
@@ -94,7 +94,7 @@ robot.events.emit(
 
 ### 能力事件
 
-15 个能力模块都提供下面两个事件：
+16 个能力模块都提供下面两个事件：
 
 - `robot.<slot>.events.fault_changed`：该槽位故障集合变化，payload 为该模块的 `Faults`（`revision` + `records`）。
 - `robot.<slot>.events.lifecycle_changed`：该槽位生命周期或健康度变化，payload 为 `CapabilityLifecycleSnapshot`。
@@ -107,6 +107,7 @@ robot.events.emit(
 | `robot.<camera>.events.camera_calibration_changed` | `CameraCalibration` | 标定更新，收到后应重新读取内参与外参 |
 | `robot.<camera>.events.camera_device_connection_changed` | `DeviceConnectionEvent` | 设备连断 |
 | `robot.voice.events.audio_wake_word_detected` | `WakeEvent` | 检测到唤醒词（`keyword` / `timestamp_us`） |
+| `robot.lift.events.lift_state_changed` | `LiftEvent` | 升降柱状态事件（`kind` / `height` / `enabled` / `homed` / `message`） |
 
 各模块的事件定义见对应的 API 参考，如 [相机 Camera](../reference/python/camera.md)。
 
@@ -151,6 +152,7 @@ finally:
 | motion（`motion`） | `joint()` / `wbc_state()` / `center_of_mass()` |
 | chassis（`chassis`） | `pose()` / `twist()` / `stage()` |
 | camera（5 个相机槽位） | `frameset()` / `color()` / `depth()` / `registered_depth()` / `infrared()` / `infrared_left()` / `infrared_right()` / `confidence()` / `points()` / `imu()` / `rtsp()` / `webrtc()` |
+| lift（`lift`） | `height()` |
 | voice（`voice`） | `wake()` / `capture()` / `playback()` |
 | skills.camera_sync | `sync_groups()` / `synced_frames()` |
 
@@ -172,7 +174,7 @@ finally:
 
 平台事件类型统一定义在 `fabot.core`：`EstopChangedEvent`、`RobotStateChangedEvent`、`RegistryChangedEvent`、`ConfigChangedEvent`、`ServiceStateChangedEvent`、`FaultChangedEvent`、`FaultsChangedEvent`、`LifecycleChangedEvent`、`ManagerConnectionChangedEvent`。各能力模块的 `events` 中还有绑定本模块 `Faults` 类型的 `FaultChangedEvent`，均提供 `matches()` / `from_event()` / `try_from_event()`。
 
-`robot.events.FaultsChangedEvent`（从 `fabot.robot` 导入）是同一个事件的产品层变体：payload 是类型化的 `RobotFaults` 而不是扁平的 `RobotFaultSnapshot`。
+`fabot.robot.FaultsChangedEvent`（产品层变体，从 `fabot.robot` 导入；不是 `robot.events` 的属性）：payload 是类型化的 `RobotFaults` 而不是扁平的 `RobotFaultSnapshot`。
 
 ## 相关
 

@@ -1,11 +1,11 @@
 ---
-title: Frames
+title: Frames example
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Frames
+# Frames example
 
 Query the coordinate tree in-process, transform poses and point clouds between frames, and deproject depth images into point clouds. The mechanics are in [Frames & Transforms](../../usage/frames.md).
 

@@ -2,7 +2,7 @@
 title: Installing the Python SDK
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Installing the Python SDK
@@ -37,8 +37,8 @@ These are installed by pip automatically:
 
 A mismatched `eclipse-zenoh` version against the robot side breaks the connection; see [Version Compatibility](compatibility.md) when upgrading.
 
-:::note numpy is optional
-The point-cloud helpers in `robot.frames` (`deproject_depth_to_points` and friends) and `transform_points` return `ndarray` and use matrix math when `numpy` is installed. Without it they fall back to a pure-Python path (lists, per-point loops): correct but noticeably slower. Install `numpy` yourself if you process point clouds.
+:::warning numpy is required for point-cloud deprojection
+`deproject_depth_to_points()` (alias `depth_to_points`) **requires numpy** and raises `ImportError` without it. `transform_points()` returns `ndarray` and uses matrix math when `numpy` is installed, and falls back to a per-point pure-Python loop otherwise: correct but noticeably slower. Install `numpy` if you process point clouds.
 :::
 
 ## Verify
@@ -58,7 +58,7 @@ with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready()
     print("SDK version:", robot.sdk_version)
     print("Platform version:", robot.version())
-    print("Run mode:", robot.state().mode, "health:", robot.state().health)
+    print("Run mode:", robot.state().mode.name, "health:", robot.state().health.name)
 ```
 
 Without a robot, verify the installation and your code offline with `Robot.mock()` from [Mock Testing](../usage/mock.md):

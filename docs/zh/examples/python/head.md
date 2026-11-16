@@ -1,11 +1,11 @@
 ---
-title: 头部运动
+title: 头部示例
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# 头部运动
+# 头部示例
 
 控制头部俯仰 / 偏航关节，并跟踪运动进度。长时任务模型见 [命令与长时操作](../../usage/commands-operations.md)，接口见 [头部](../../reference/python/head.md)。
 

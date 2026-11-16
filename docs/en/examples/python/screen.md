@@ -1,11 +1,11 @@
 ---
-title: Screen
+title: Screen example
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Screen
+# Screen example
 
 Control the face screen: overlay text, images, video and the battery readout. The write model is in [Commands & Operations](../../usage/commands-operations.md), the API in [Screen](../../reference/python/screen.md).
 

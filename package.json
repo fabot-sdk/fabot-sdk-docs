@@ -1,6 +1,6 @@
 {
   "name": "fabot-sdk-docs",
-  "version": "1.1.0-dev",
+  "version": "1.1.0-alpha.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,8 @@
     "serve": "npm run build && npm run preview",
     "build:versions": "node scripts/build-all-versions.mjs",
     "preview:versions": "RSPRESS_OUT_DIR=dist rspress preview",
-    "serve:versions": "npm run build:versions && npm run preview:versions"
+    "serve:versions": "npm run build:versions && npm run preview:versions",
+    "check:api": "python3 -I scripts/check-doc-api.py"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

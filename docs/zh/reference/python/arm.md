@@ -2,7 +2,7 @@
 title: 机械臂 Arm
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # 机械臂 Arm
@@ -91,7 +91,7 @@ get_joint(*, timeout_ms: int = 1000) -> JointState
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `positions` | `list[float]` | 位置数组；点云按 X/Y/Z 依次展开 |
+| `positions` | `list[float]` | 关节位置数组，弧度 |
 | `velocities` | `list[float]` | 关节速度数组 |
 | `efforts` | `list[float]` | 关节力矩数组 |
 | `stamp_ns` | `int` | 机器人时基上的时间戳（纳秒）；0 表示最新 |
@@ -668,7 +668,7 @@ servo_pose(target: Pose3d | None = None, *, x: float = 0.0, y: float = 0.0, z: f
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `target` | `Pose3d | None` | `None` | 目标值 |
+| `target` | `Pose3d \| None` | `None` | 目标值 |
 | `x` | `float` | `0.0` | X 分量，米 |
 | `y` | `float` | `0.0` | Y 分量，米 |
 | `z` | `float` | `0.0` | Z 分量，米 |
@@ -707,7 +707,7 @@ servo_twist(*, linear: Vector3d, angular: Vector3d, frame_id: str = "", stamp_ns
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
 | `linear` | `Vector3d` | （必填） | 线速度矢量，米/秒 |
-| `angular` | `Vector3d` | （必填） | 角速度矢量，米/秒或弧度/秒 |
+| `angular` | `Vector3d` | （必填） | 角速度矢量，弧度/秒 |
 | `frame_id` | `str` | `""` | 参考坐标系；空串表示槽位缺省基准 |
 | `stamp_ns` | `int` | `0` | 目标时刻（纳秒）；0 表示最新 |
 | `timeout_ms` | `int` | `1000` | 调用超时（毫秒） |
@@ -741,7 +741,7 @@ get_arrival_thresholds(*, timeout_ms: int = 1000) -> ArrivalThresholds
 |------|------|------|
 | `joint_tolerance` | `float` | 关节到位容差（弧度）；须为有限正数 |
 | `pose_position_tolerance` | `float` | 位姿位置到位容差（米）；须为有限正数 |
-| `pose_orientation_tolerance` | `float` | 位姿姿态容差，取 `1 - |dot(q, q_target)|`，不是弧度 |
+| `pose_orientation_tolerance` | `float` | 位姿姿态容差，取 `1 - \|dot(q, q_target)\|`，不是弧度 |
 | `max_timeout_s` | `float` | 在运动时长之上追加的到位等待上限（秒） |
 
 ### set_arrival_thresholds
@@ -758,7 +758,7 @@ set_arrival_thresholds(*, joint_tolerance: float = 0.02, pose_position_tolerance
 |------|------|------|------|
 | `joint_tolerance` | `float` | `0.02` | 关节到位容差（弧度） |
 | `pose_position_tolerance` | `float` | `0.02` | 位姿位置容差（米） |
-| `pose_orientation_tolerance` | `float` | `0.05` | 位姿姿态容差，取 `1 - |dot(q, q_target)|` |
+| `pose_orientation_tolerance` | `float` | `0.05` | 位姿姿态容差，取 `1 - \|dot(q, q_target)\|` |
 | `max_timeout_s` | `float` | `5.0` | 追加到位等待上限（秒） |
 | `timeout_ms` | `int` | `1000` | 调用超时（毫秒） |
 
@@ -951,7 +951,7 @@ joint(qos_profile: str = "latest") -> Channel
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `positions` | `list[float]` | 位置数组；点云按 X/Y/Z 依次展开 |
+| `positions` | `list[float]` | 关节位置数组，弧度 |
 | `velocities` | `list[float]` | 关节速度数组 |
 | `efforts` | `list[float]` | 关节力矩数组 |
 | `stamp_ns` | `int` | 机器人时基上的时间戳（纳秒）；0 表示最新 |
@@ -1033,7 +1033,7 @@ filtered_wrench(qos_profile: str = "latest") -> Channel
 | `severity` | `int` | 严重度，与 `HealthState` 对齐 |
 | `timestamp_us` | `int` | 最近一次时间戳（微秒） |
 
-展示给人看的故障文本用 `Catalogs.format_fault(record, capability_id="...")`，见 [文本目录 Catalogs](../../usage/catalogs.md)。
+展示给人看的故障文本用 `Catalogs.format_fault(record)`，见 [文本目录 Catalogs](../../usage/catalogs.md)。
 
 ## 状态
 

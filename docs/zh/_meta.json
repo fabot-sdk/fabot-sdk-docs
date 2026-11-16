@@ -16,13 +16,13 @@
   },
   {
     "type": "dir-section-header",
-    "name": "usage",
-    "label": "usage"
+    "name": "tutorials",
+    "label": "quickStart"
   },
   {
     "type": "dir-section-header",
-    "name": "tutorials",
-    "label": "tutorials"
+    "name": "usage",
+    "label": "usage"
   },
   {
     "type": "dir-section-header",

@@ -2,7 +2,7 @@
 title: 概述与架构
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # 概述与架构
@@ -31,7 +31,7 @@ from fabot import Robot
 
 with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready()                                        # 等待已绑定且必需的槽位就绪
-    print(robot.state().mode, robot.state().health)           # 运行模式与健康度
+    print(robot.state().mode.name, robot.state().health.name)  # 运行模式与健康度
     robot.chassis.servo_twist(vx=0.2, vy=0.0, vtheta=0.0)     # 底盘速度指令
 ```
 
@@ -39,7 +39,7 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 
 ## 能力、槽位与 Proxy
 
-SDK 内置 15 个能力模块的类型化 Proxy，经 `Robot` 的 23 个槽位属性访问（`robot.<slot>`）。同一能力可安装在多个槽位（如左右臂），各槽位是同一套 API、彼此独立的实例。
+SDK 内置 16 个能力模块的类型化 Proxy，经 `Robot` 的 24 个槽位属性访问（`robot.<slot>`）。同一能力可安装在多个槽位（如左右臂），各槽位是同一套 API、彼此独立的实例。
 
 | 模块 | 槽位属性 | 说明 |
 |------|----------|------|
@@ -58,6 +58,7 @@ SDK 内置 15 个能力模块的类型化 Proxy，经 `Robot` 的 23 个槽位�
 | 灯效 `light` | `robot.light` | 灯带模式、颜色、亮度与动画周期 → [light](reference/python/light.md) |
 | 语音 `voice` | `robot.voice` | 麦克风采集、扬声器播放、音量与唤醒词 → [voice](reference/python/voice.md) |
 | 遥操作 `teleop` | `robot.teleop` | 手柄遥操作会话的建立与停止 → [teleop](reference/python/teleop.md) |
+| 升降柱 `lift` | `robot.lift` | 高度读写、绝对 / 相对运动、回零与伺服 → [lift](reference/python/lift.md) |
 
 每个能力 Proxy 还有一组公共成员：`slot_id`、`handle`、`events`、`health()`、`lifecycle()`、`faults()`、`ping()`、`has_adapter`、`as_adapter(...)` 与配置读写，见 [能力接口概述](reference/python/index.md)。
 
@@ -73,6 +74,8 @@ SDK 内置 15 个能力模块的类型化 Proxy，经 `Robot` 的 23 个槽位�
 | `robot.metrics` | 指标：订阅、SDK 自身计数快照、自定义 gauge / counter / histogram |
 | `robot.frames` | 坐标系查询与变换（`lookup` / `transform` / `transform_points`），不依赖 ROS，见 [坐标系与变换](usage/frames.md) |
 | `robot.services` | 平台服务的启动 / 停止 / 重启 / 配置 / 状态查询，见 [服务管理](usage/services.md) |
+| `robot.environments` | 运行环境配置（当前为 `ros2` 的 domain / 通信设置），只读写配置，见 [服务管理](usage/services.md) |
+| `robot.obs` | 机器人端观测存储快照：配额、目录占用与冻结文件清单，见 [日志、指标与可观测性](usage/observability.md) |
 | `robot.skills` | 技能入口：`camera_sync`（多相机同步）/ `voice_aiui`（语音语义），见 [技能与扩展](usage/skills.md) |
 | `robot.configuration` | 整机配置的读取与下发（`get()` / `apply()`），见 [配置管理](usage/configuration.md) |
 | `robot.connection` | 连接状态查询与订阅（`is_connected()` / `subscribe()`），见 [连接与生命周期](usage/connection.md) |
@@ -123,4 +126,4 @@ SDK 抛出的协议错误统一是 `FabotError` 的子类，携带 `code`（诊�
 - [安装与配置](install/index.md)：环境要求、安装 Python SDK、版本配套
 - [入门教程](tutorials/python.md)：跑通第一个 Python 程序
 - [常规操作](usage/index.md)：连接、命令与长时操作、事件与通道、状态与故障、日志与指标、坐标系、配置、错误、文本目录、Mock
-- [Python API 参考](reference/python/index.md)：Robot 入口、文本目录、通用类型与 15 个能力模块的完整接口
+- [Python API 参考](reference/python/index.md)：Robot 入口、文本目录、通用类型与 16 个能力模块的完整接口

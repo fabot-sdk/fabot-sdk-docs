@@ -1,32 +1,35 @@
 ---
-title: Usage
+title: Usage Overview
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Usage
+# Usage Overview
 
 This section covers the mechanics that apply across every capability module: connecting to the robot, issuing commands and tracking long-running operations, subscribing to events and data, reading status and faults, handling logs and metrics, converting between coordinate frames, handling errors and localized text, plus configuration, skills, mock testing and platform services.
 
-`Robot` provides all of these uniformly for the 15 capability modules (arm, arms, body, camera, chassis, gripper, hand, head, io, light, motion, power, screen, teleop, voice). Per-module API details are in the [Python API Reference](../reference/python/index.md).
+`Robot` provides all of these uniformly for the 16 capability modules (arm, arms, body, camera, chassis, gripper, hand, head, io, lift, light, motion, power, screen, teleop, voice). Per-module API details are in the [Python API Reference](../reference/python/index.md).
 
 ## Reading order
 
-Read in this order: models and connection first, then data and operations topics:
+Read in this order: get connected and the conventions straight first, then move on to data and operations topics:
 
 1. [Connection & Robot Entry](connection.md) — `Robot.connect` and the other entries, `ClientOptions`, connection-state subscription, resource release.
-2. [Commands & Operations](commands-operations.md) — Commands, Operation progress tracking, cancellation and resource queueing policies.
-3. [Events & Data Channels](events-channels.md) — events (`EventHeader`, `SubscriptionToken`) and channels (frame iteration, QoS, renewal, closing).
-4. [Status, Faults & Lifecycle](status-faults.md) — `robot.state()` run mode and health, status bags, lifecycle and health, fault bags.
-5. [Logs, Metrics & Observability](observability.md) — log subscription and history, custom log / metric emission, freezing the flight recorder.
-6. [Frames & Transforms](frames.md) — `robot.frames` queries, pose and point-cloud transforms, pixel deprojection.
-7. [Error Handling](errors.md) — the `FabotError` hierarchy, diagnostic codes and retryability, trace ids.
-8. [Catalogs](catalogs.md) — turning diagnostic codes, log keys and metric names into display text.
-9. [Configuration](configuration.md) — robot bindings and capability / skill config domains, CAS conflicts.
-10. [Skills & Extensions](skills.md) — multi-camera sync and voice semantics through `robot.skills`.
+2. [Time Bases and Coordinate Conventions](conventions.md) — units, quaternion order, `stamp_ns` semantics, time bases and joint ordering.
+3. [Commands & Operations](commands-operations.md) — Commands, Operation progress tracking, cancellation and resource queueing policies.
+4. [Concurrency, Threading and Safety](concurrency-and-safety.md) — thread model, I/O-thread rules, servo safety, idempotency and reconnects.
+5. [Events & Data Channels](events-channels.md) — events (`EventHeader`, `SubscriptionToken`) and channels (frame iteration, QoS, renewal, closing).
+6. [Status, Faults & Lifecycle](status-faults.md) — `robot.state()` run mode and health, status bags, lifecycle and health, fault bags.
+7. [Logs, Metrics & Observability](observability.md) — log subscription and history, custom log / metric emission, freezing the flight recorder and the observability store.
+8. [Frames & Transforms](frames.md) — `robot.frames` queries, pose and point-cloud transforms, pixel deprojection.
+9. [Error Handling](errors.md) — the `FabotError` hierarchy, diagnostic codes and retryability, trace ids.
+10. [Catalogs](catalogs.md) — turning diagnostic codes, log keys and metric names into display text.
 11. [Mock Testing](mock.md) — offline development and its limits.
-12. [Platform Services](services.md) — starting, stopping, configuring and inspecting platform services.
+12. [Skills & Extensions](skills.md) — multi-camera sync and voice semantics through `robot.skills`.
+13. [Configuration](configuration.md) — robot bindings and capability / skill config domains, CAS conflicts.
+14. [Platform Services](services.md) — lifecycle, config and state for `robot.services` / `robot.environments`.
+15. [Migrating from 1.0.x to 1.1.0](migration-1.0-to-1.1.md) — symbol mapping and a checklist for upgrades.
 
 ## Cheat sheet
 

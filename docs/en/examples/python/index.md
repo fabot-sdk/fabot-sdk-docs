@@ -1,11 +1,11 @@
 ---
-title: Python Examples
+title: Example Index
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Python Examples
+# Example Index
 
 Browse complete examples by capability. See [Usage](../../usage/index.md) for shared mechanisms and the [Python API](../../reference/python/index.md) for signatures.
 
@@ -25,6 +25,7 @@ Browse complete examples by capability. See [Usage](../../usage/index.md) for sh
 | Screen text, image and video | [Screen](screen.md) |
 | Light strip mode, color and brightness | [Light](light.md) |
 | Battery level and charging state | [Power](power.md) |
+| Lift height, homing and servo | [Lift](lift.md) |
 | Capture, calibration and image streams | [Camera](camera.md) |
 | Audio capture, playback and wake word | [Voice](voice.md) |
 | Joystick teleop sessions | [Teleop](teleop.md) |

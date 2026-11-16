@@ -2,7 +2,7 @@
 title: Status, Faults & Lifecycle
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Status, Faults & Lifecycle
@@ -43,7 +43,7 @@ Robot-state changes are pushed through `robot.events.robot_state_changed`.
 
 ```python
 st = robot.state()
-print(st.mode, st.health)
+print(st.mode.name, st.health.name)
 for cause in st.root_causes:
     print(hex(cause.code), cause.source)
 for domain in st.domains:
@@ -60,12 +60,13 @@ for domain in st.domains:
 | `head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera` | `Status` | Camera status bags, see [Camera](../reference/python/camera.md) |
 | `screen` | `Status` | Screen status bag, see [Screen](../reference/python/screen.md) |
 | `voice` | `Status` | Voice status bag, see [Voice](../reference/python/voice.md) |
+| `lift` | `Status` | Lift status bag, see [Lift](../reference/python/lift.md) |
 
 Only capabilities that implement `status()` participate; the remaining slots stay at their defaults.
 
 ## Capability status bags
 
-Capabilities that provide `status() -> Status`:
+Capabilities that provide `status() -> Status` (power / five cameras / screen / voice / lift):
 
 | Capability | Status fields | Page |
 |------------|---------------|------|
@@ -73,6 +74,7 @@ Capabilities that provide `status() -> Status`:
 | the five camera slots | `state` (`disconnected` / `idle` / `streaming` / `fault`) / `sync_mode` / `registration_mode` / `color_active` / `depth_active` / `infrared_active` / `imu_active` / `calibration_generation` / `temperature_c` | [Camera](../reference/python/camera.md) |
 | `robot.screen` | `activity`: `Activity.Idle` / `Image` / `Video` (StrEnum) | [Screen](../reference/python/screen.md) |
 | `robot.voice` | `activity`: `Activity.Idle` / `Listening` / `Speaking` (StrEnum) | [Voice](../reference/python/voice.md) |
+| `robot.lift` | `height` / `velocity` / `enabled` / `homed` / `moving` | [Lift](../reference/python/lift.md) |
 
 Other modules have no `status()` and do not take part in `robot.status()` aggregation; their state comes from their own queries (for example `light.get_status()`).
 

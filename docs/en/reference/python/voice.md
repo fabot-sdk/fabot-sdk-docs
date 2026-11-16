@@ -2,7 +2,7 @@
 title: Voice
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Voice
@@ -24,6 +24,7 @@ Semantic features (transcripts, intents, speech synthesis) live in the `robot.sk
 | `set_volume` | Command | Set the volume from 0 to 1; default timeout 3000 ms. |
 | `set_mute` | Command | Mute or unmute; default timeout 1000 ms. |
 | `set_wakeword_enabled` | Command | Enable or disable the wake word; default timeout 1000 ms. |
+| `configure_wakeword` | Operation | Set the wake phrase and trigger threshold. |
 | `get_status` | Command | Read the voice status snapshot; `get_state` is an alias; default timeout 1000 ms. |
 | `stop_capture` | Command | Stop the given capture session; default timeout 3000 ms. |
 | `begin_playback` | Command | Begin a streaming playback session, then push chunks with `write_audio`; default timeout 3000 ms. |
@@ -150,6 +151,28 @@ set_wakeword_enabled(enabled: bool, *, timeout_ms: int = 1000) -> VoiceStatusApp
 |------|------|------|
 | `outcome` | `Outcome` | Call result |
 | `status` | `VoiceStatus` | Status snapshot |
+
+### configure_wakeword
+
+Set the wake phrase and trigger threshold. Returns an Operation that reaches a terminal state once written.
+
+```python
+configure_wakeword(*, keyword: str, threshold: int = 1000) -> ConfigureWakewordOperation
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `keyword` | `str` | (required) | Wake phrase |
+| `threshold` | `int` | `1000` | Trigger threshold; higher is harder to trip |
+
+```python
+op = robot.voice.configure_wakeword(keyword="hello fabot", threshold=1200)
+print(op.wait(timeout=10.0))
+```
+
+The wake-word configuration is persisted robot-side and survives power cycles; `set_wakeword_enabled()` only toggles it and does not change the phrase.
 
 ### get_status
 
@@ -379,7 +402,7 @@ Query with `robot.<slot>.faults()`, which returns `Faults` (`revision` plus `rec
 | `severity` | `int` | Severity, aligned with `HealthState` |
 | `timestamp_us` | `int` | Latest timestamp in microseconds |
 
-For human-readable fault text use `Catalogs.format_fault(record, capability_id="...")`; see [Catalogs](../../usage/catalogs.md).
+For human-readable fault text use `Catalogs.format_fault(record)`; see [Catalogs](../../usage/catalogs.md).
 
 ## Status
 

@@ -66,5 +66,9 @@
   "versionUnavailable": {
     "zh": "该版本文档尚未发布",
     "en": "Docs for this version are not published yet"
+  },
+  "quickStart": {
+    "zh": "快速开始",
+    "en": "Quick Start"
   }
 }

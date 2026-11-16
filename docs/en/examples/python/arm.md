@@ -1,11 +1,11 @@
 ---
-title: Arm Motion
+title: Arm example
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Arm Motion
+# Arm example
 
 Drive the left (`robot.left_arm`) or right (`robot.right_arm`) arm with joint motion and end-effector pose motion, and subscribe to live state streams. The long-running task model is in [Commands & Operations](../../usage/commands-operations.md), channels in [Events & Data Channels](../../usage/events-channels.md), and the full API in [Arm](../../reference/python/arm.md).
 

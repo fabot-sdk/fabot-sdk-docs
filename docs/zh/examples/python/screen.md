@@ -1,11 +1,11 @@
 ---
-title: 面屏
+title: 面屏示例
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# 面屏
+# 面屏示例
 
 控制机器人面屏：叠加文本、图片、视频与底部电量。写操作模型见 [命令与长时操作](../../usage/commands-operations.md)，接口见 [面屏](../../reference/python/screen.md)。
 

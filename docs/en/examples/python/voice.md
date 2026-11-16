@@ -1,11 +1,11 @@
 ---
-title: Voice
+title: Voice example
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Voice
+# Voice example
 
 Audio capture, playback and hardware control. Semantic features (transcripts, intents, synthesized speech) live in the `robot.skills.voice_aiui` skill, see [Skills & Extensions](../../usage/skills.md). The long-running task model is in [Commands & Operations](../../usage/commands-operations.md), channels in [Events & Data Channels](../../usage/events-channels.md), and the API in [Voice](../../reference/python/voice.md).
 

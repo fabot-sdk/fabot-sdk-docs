@@ -1,7 +1,9 @@
 [
   "index",
   "connection",
+  "conventions",
   "commands-operations",
+  "concurrency-and-safety",
   "events-channels",
   "status-faults",
   "observability",
@@ -11,5 +13,6 @@
   "mock",
   "skills",
   "configuration",
-  "services"
+  "services",
+  "migration-1.0-to-1.1"
 ]

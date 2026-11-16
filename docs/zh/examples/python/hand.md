@@ -1,11 +1,11 @@
 ---
-title: 灵巧手
+title: 灵巧手示例
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# 灵巧手
+# 灵巧手示例
 
 控制灵巧手关节开合，读取五指触觉阵列，并订阅开合度与触觉流。左右手是同一套 API、各自独立的槽位（`robot.left_hand` / `robot.right_hand`）。长时任务模型见 [命令与长时操作](../../usage/commands-operations.md)，接口见 [灵巧手](../../reference/python/hand.md)。
 

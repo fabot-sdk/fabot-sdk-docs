@@ -1,11 +1,11 @@
 ---
-title: 机械臂运动
+title: 机械臂示例
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# 机械臂运动
+# 机械臂示例
 
 控制左臂（`robot.left_arm`）或右臂（`robot.right_arm`）做关节运动与末端位姿运动，并订阅实时状态流。长时任务模型见 [命令与长时操作](../../usage/commands-operations.md)，通道用法见 [事件与数据通道](../../usage/events-channels.md)，接口全表见 [机械臂 Arm](../../reference/python/arm.md)。
 

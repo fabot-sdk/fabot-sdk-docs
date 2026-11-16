@@ -1,11 +1,11 @@
 ---
-title: Mock
+title: Mock example
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Mock
+# Mock example
 
 Use `Robot.mock()` to develop, integrate and unit test without a real robot. Mechanics and limits are in [Mock Testing](../../usage/mock.md).
 
@@ -105,5 +105,5 @@ print(seen)          # [True, False]
 ```
 
 :::warning
-`Robot.from_backend(MockBackend())` registers no default handlers, so unregistered calls fail with `NotFound` ("not stubbed"). For "default success with a few overrides", use `Robot.mock()`.
+`Robot.from_backend(MockBackend())` registers no default handlers, so unregistered calls fail with `NotFound` ("not stubbed"). For "default responses plus a few overrides", use `Robot.mock()`.
 :::

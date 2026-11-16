@@ -2,7 +2,7 @@
 title: Head
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Head
@@ -74,7 +74,7 @@ get_joint(*, timeout_ms: int = 1000) -> JointState
 
 | Field | Type | Description |
 |------|------|------|
-| `positions` | `list[float]` | Position list; point clouds store X/Y/Z interleaved |
+| `positions` | `list[float]` | Joint positions in radians |
 | `velocities` | `list[float]` | Joint velocity array |
 | `efforts` | `list[float]` | Joint effort array |
 | `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
@@ -241,7 +241,7 @@ servo_pose(target: Pose3d | None = None, *, x: float = 0.0, y: float = 0.0, z: f
 
 | Name | Type | Default | Description |
 |------|------|------|------|
-| `target` | `Pose3d | None` | `None` | Goal value |
+| `target` | `Pose3d \| None` | `None` | Goal value |
 | `x` | `float` | `0.0` | X component in meters |
 | `y` | `float` | `0.0` | Y component in meters |
 | `z` | `float` | `0.0` | Z component in meters |
@@ -392,7 +392,7 @@ Frame payload is `JointState`:
 
 | Field | Type | Description |
 |------|------|------|
-| `positions` | `list[float]` | Position list; point clouds store X/Y/Z interleaved |
+| `positions` | `list[float]` | Joint positions in radians |
 | `velocities` | `list[float]` | Joint velocity array |
 | `efforts` | `list[float]` | Joint effort array |
 | `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
@@ -440,7 +440,7 @@ Query with `robot.<slot>.faults()`, which returns `Faults` (`revision` plus `rec
 | `severity` | `int` | Severity, aligned with `HealthState` |
 | `timestamp_us` | `int` | Latest timestamp in microseconds |
 
-For human-readable fault text use `Catalogs.format_fault(record, capability_id="...")`; see [Catalogs](../../usage/catalogs.md).
+For human-readable fault text use `Catalogs.format_fault(record)`; see [Catalogs](../../usage/catalogs.md).
 
 ## Status
 

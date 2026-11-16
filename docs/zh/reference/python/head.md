@@ -2,7 +2,7 @@
 title: 头部 Head
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # 头部 Head
@@ -74,7 +74,7 @@ get_joint(*, timeout_ms: int = 1000) -> JointState
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `positions` | `list[float]` | 位置数组；点云按 X/Y/Z 依次展开 |
+| `positions` | `list[float]` | 关节位置数组，弧度 |
 | `velocities` | `list[float]` | 关节速度数组 |
 | `efforts` | `list[float]` | 关节力矩数组 |
 | `stamp_ns` | `int` | 机器人时基上的时间戳（纳秒）；0 表示最新 |
@@ -241,7 +241,7 @@ servo_pose(target: Pose3d | None = None, *, x: float = 0.0, y: float = 0.0, z: f
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `target` | `Pose3d | None` | `None` | 目标值 |
+| `target` | `Pose3d \| None` | `None` | 目标值 |
 | `x` | `float` | `0.0` | X 分量，米 |
 | `y` | `float` | `0.0` | Y 分量，米 |
 | `z` | `float` | `0.0` | Z 分量，米 |
@@ -392,7 +392,7 @@ joint(qos_profile: str = "latest") -> Channel
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `positions` | `list[float]` | 位置数组；点云按 X/Y/Z 依次展开 |
+| `positions` | `list[float]` | 关节位置数组，弧度 |
 | `velocities` | `list[float]` | 关节速度数组 |
 | `efforts` | `list[float]` | 关节力矩数组 |
 | `stamp_ns` | `int` | 机器人时基上的时间戳（纳秒）；0 表示最新 |
@@ -440,7 +440,7 @@ pose(qos_profile: str = "latest") -> Channel
 | `severity` | `int` | 严重度，与 `HealthState` 对齐 |
 | `timestamp_us` | `int` | 最近一次时间戳（微秒） |
 
-展示给人看的故障文本用 `Catalogs.format_fault(record, capability_id="...")`，见 [文本目录 Catalogs](../../usage/catalogs.md)。
+展示给人看的故障文本用 `Catalogs.format_fault(record)`，见 [文本目录 Catalogs](../../usage/catalogs.md)。
 
 ## 状态
 

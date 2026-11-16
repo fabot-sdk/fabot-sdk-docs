@@ -1,11 +1,11 @@
 ---
-title: 坐标系
+title: 坐标系示例
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# 坐标系
+# 坐标系示例
 
 在应用进程内查询坐标树、把位姿或点云换算到别的参考系，并把深度图反投影成点云。机制细节见 [坐标系与变换](../../usage/frames.md)。
 

@@ -2,7 +2,7 @@
 title: Mock Testing
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Mock Testing
@@ -21,7 +21,7 @@ robot = Robot.mock()                     # MockRobot, a Robot subclass
 robot.connection.is_connected()          # True: connected from the start, no connect()/wait_ready()
 ```
 
-- `MockRobot` exposes the same 23 slot properties as `Robot`, so application code does not branch; each proxy is the matching mock proxy (for example `ChassisMockProxy`, a `ChassisProxy` subclass) with extra `on_<command>` hooks.
+- `MockRobot` exposes the same 24 slot properties as `Robot`, so application code does not branch; each proxy is the matching mock proxy (for example `ChassisMockProxy`, a `ChassisProxy` subclass) with extra `on_<command>` hooks.
 - Skills have mock proxies too: `robot.skills.camera_sync` / `robot.skills.voice_aiui` report `is_available == True`.
 - `robot.services`, `robot.metrics`, `robot.logs` and `robot.frames` work as with a real connection (service control merely succeeds and keeps the previous state).
 
@@ -29,7 +29,7 @@ robot.connection.is_connected()          # True: connected from the start, no co
 
 Hook names are `on_` plus the method name (`on_get_pose`, `on_show_text`, `on_move_joint`, …) with the same signature as the call. The return value decides the behaviour:
 
-- `None` (or no return): use the default success response (an empty object with default fields);
+- `None` (or no return): use the default response — a shell object whose fields are all defaults. Note that `Outcome.success` defaults to `False`, and responses that carry an `outcome` (such as `ScreenStatusApplied` / `PinApplied`) may have `outcome=None`; do not assert "default success". Return a response object explicitly when you need one;
 - a response object: replace the default;
 - raising: the call fails with a `FabotError` (`Internal`) — perfect for exercising error paths.
 
@@ -42,7 +42,7 @@ robot = Robot.mock()
 # Return a custom response
 robot.chassis.on_get_pose = lambda: Pose2d(x=1.5, y=2.0)
 
-# Record arguments; returning None keeps the default success response
+# Record arguments; returning None keeps the default shell response
 calls = []
 robot.chassis.on_servo_twist = lambda **kwargs: calls.append(kwargs)
 
@@ -85,8 +85,14 @@ For custom terminal states or intermediate snapshots use `MockBackend.set_operat
 | E-stop / config / services | `engage` / `release` update an in-memory `EstopState`; `configuration` `get` / `apply` maintain an in-memory config and revision; service control succeeds while state stays `Unknown` |
 | Skills | Skill proxies are available and `is_available` is `True` |
 
-:::note Slots start unbound
-Whether a slot "has an adapter" in the mock comes from the in-memory configuration, and by default none is bound. So `robot.<slot>.get_config()` raises `AdapterUnbound`, matching a real robot whose configuration is not ready yet — a path worth testing.
+:::note Status bags and config in the mock
+Slots start unbound in the mock, so:
+
+- `robot.<slot>.get_config()` raises `AdapterUnbound`, matching a real robot whose configuration is not ready yet;
+- `robot.<slot>.status()` raises `RuntimeError: empty status payload` (there is no status content to decode);
+- `robot.status()` still returns a complete set of empty status bags.
+
+To exercise status-dependent code, inject a return value through a hook or build the payload by hand with `MockBackend`; do not assume the mock fabricates status.
 :::
 
 ## Advanced: `MockBackend`
@@ -113,7 +119,7 @@ Injection points:
 - `set_manager_connected(bool)`: simulate connection changes.
 
 :::warning
-`Robot.from_backend(MockBackend())` registers no default handlers: unregistered Command / Operation / Channel calls fail with `NotFound` ("not stubbed"). For "default success with a few overrides", use `Robot.mock()` and replace individual hooks.
+`Robot.from_backend(MockBackend())` registers no default handlers: unregistered Command / Operation / Channel calls fail with `NotFound` ("not stubbed"). For "default responses plus a few overrides", use `Robot.mock()` and replace individual hooks.
 :::
 
 ## Limits

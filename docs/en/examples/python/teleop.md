@@ -1,11 +1,11 @@
 ---
-title: Teleop
+title: Teleop example
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Teleop
+# Teleop example
 
 Start and stop joystick teleop sessions. The long-running task model is in [Commands & Operations](../../usage/commands-operations.md), the API in [Teleop](../../reference/python/teleop.md).
 

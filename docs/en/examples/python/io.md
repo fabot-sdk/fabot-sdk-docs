@@ -1,11 +1,11 @@
 ---
-title: IO Pins
+title: IO example
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# IO Pins
+# IO example
 
 Acquire a digital pin, write a level, then read it back. The API is in [IO](../../reference/python/io.md).
 

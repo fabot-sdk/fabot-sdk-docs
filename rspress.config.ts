@@ -8,8 +8,9 @@ export default defineConfig({
   base: process.env.RSPRESS_BASE ?? '/',
   // 多版本汇总产物在 dist/，用 `npm run preview:versions` 预览
   outDir: process.env.RSPRESS_OUT_DIR ?? 'doc_build',
-  title: 'fabot SDK 文档',
-  description: 'fabot 机器人软件平台 SDK 使用文档（Python）',
+  // 顶层 title 只能用语言中立的文案：Rspress 用它作为每页 <title> 后缀与 llms.txt 标题，
+  // 写成中文会让英文站也带中文后缀。各语言的完整名称放在 locales 里。
+  title: 'fabot SDK',
   lang: 'zh',
   locales: [
     {

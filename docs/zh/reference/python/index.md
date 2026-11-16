@@ -2,12 +2,12 @@
 title: 能力接口概述
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # 能力接口概述
 
-SDK 内置 15 个能力模块的类型化 Proxy。能力经 `Robot` 的槽位属性访问（`robot.<slot>`），槽位与模块的对应关系见 [Robot 入口](robot.md)。
+SDK 内置 16 个能力模块的类型化 Proxy。能力经 `Robot` 的槽位属性访问（`robot.<slot>`），槽位与模块的对应关系见 [Robot 入口](robot.md)。
 
 ## 模块清单
 
@@ -31,6 +31,7 @@ SDK 内置 15 个能力模块的类型化 Proxy。能力经 `Robot` 的槽位属
 | 电源 | `power` | [power.md](power.md) |
 | 遥操作 | `teleop` | [teleop.md](teleop.md) |
 | 语音 | `voice` | [voice.md](voice.md) |
+| 升降柱 | `lift` | [lift.md](lift.md) |
 | 相机 | `camera` | [camera.md](camera.md) |
 
 技能（`robot.skills`）的接口见 [技能与扩展](../../usage/skills.md)。
@@ -64,3 +65,7 @@ SDK 内置 15 个能力模块的类型化 Proxy。能力经 `Robot` 的槽位属
 - **异常**统一说明 `Faults` / `FaultState` 结构。
 - **状态**说明该模块是否有 `status()` 状态袋，以及公共的 `health()` / `lifecycle()`。
 - **资源**说明该模块的 Operation 占用哪些资源、排队还是拒绝。
+
+## 文档对应的 SDK 基线
+
+本站对应 **fabot-sdk 1.1.0-alpha.1**。当页面描述与已安装的 wheel 不一致时，以已安装的包为准：先看 `fabot.__version__` 与 `robot.sdk_version`，再查 [版本配套](../../install/compatibility.md)。

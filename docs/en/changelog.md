@@ -2,18 +2,18 @@
 title: Changelog
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Changelog
 
-User-visible changes listed in reverse version order. Each release pairs with the robot platform of the same version number; see [Version Compatibility](install/compatibility.md) for version semantics and upgrade steps.
+User-visible changes listed in reverse version order. Each release pairs with the robot platform of the same version number; the newest is the pre-release `1.1.0-alpha.1`. Version semantics and upgrade steps are in [Version Compatibility](install/compatibility.md).
 
 The version dropdown in the top bar switches the documentation for each version; the changelog of a historical version only lists entries up to that version.
 
-## 1.1.0
+## 1.1.0-alpha.1
 
-2026-11-02 · Current development release
+2026-11-02 · Pre-release
 
 ### Added
 
@@ -23,6 +23,14 @@ The version dropdown in the top bar switches the documentation for each version;
 - Events: `robot.events.emit()` publishes custom events; `robot.events.subscribe()` accepts `name` / `slot` filters.
 - Skills: new `robot.skills.camera_sync` (multi-camera time pairing) and `robot.skills.voice_aiui` (transcripts, intents and synthesized speech) — see [Skills & Extensions](usage/skills.md).
 - Telemetry: `robot.ping()` probes runtime round-trip latency, and every slot proxy exposes the same method.
+- Lift: new `lift` capability (`robot.lift`) — height read/write, absolute and relative moves, homing, servo and a height stream, see [Lift](reference/python/lift.md).
+- Observability store: new `robot.obs.store()` to inspect the collector's quota, per-directory usage and freeze files, see [Logs, Metrics & Observability](usage/observability.md).
+- Runtime environment: new `robot.environments.ros2` (domain id / communication settings, config only), see [Platform Services](usage/services.md).
+- Platform services: new `robot.services.ros2` (ROS 2 graph access) and `robot.services.obs_collector` (observability collection), see [Platform Services](usage/services.md).
+- Chassis: new `stop()` (platform-side braking) and `get_odometer()` (accumulated travel).
+- Voice: new `configure_wakeword()` to set the wake phrase and threshold.
+- Camera: new `perf_frame_shm()` to time the shared-memory frame path with a synthetic frame.
+- Docs: new [Diagnostic Codes](reference/python/error-codes.md), [Concurrency, Threading and Safety](usage/concurrency-and-safety.md), [Time Bases and Coordinate Conventions](usage/conventions.md) and [Migrating from 1.0.x to 1.1.0](usage/migration-1.0-to-1.1.md).
 
 ### Changed
 
@@ -30,7 +38,7 @@ The version dropdown in the top bar switches the documentation for each version;
 - Faults: every fault bag is now `Faults(revision, records: list[FaultState])`, where a `FaultState` is `code` (diagnostic code) / `source` / `state` / `severity` / `timestamp_us`, replacing the per-name fields.
 - Errors: `FabotError` is identified by a 32-bit diagnostic code; `category` is only a local construction tag used to pick a subclass and is not transmitted. `retryable` is derived from the subclass (`Timeout` / `ResourceConflict` / `TransportError` / `Unavailable`).
 - Catalogs: lookups are keyed by diagnostic code `0xXXXXXXXX`, `format_metric` is new, and `format_fault` no longer takes `capability_id`.
-- Camera: `capture()` returns a full `FrameSet` (color / depth / registered depth / infrared / confidence); `get_calibration()` (intrinsics, extrinsics, baseline, depth scale), `get_imaging()` / `set_imaging()`, `trigger()` and `perf_frame_shm()` are new; channels grow from 5 to 12. Cameras now start streaming automatically once active.
+- Camera: `capture()` returns a full `FrameSet` (color / depth / registered depth / infrared / confidence); `get_calibration()` (intrinsics, extrinsics, baseline, depth scale), `get_imaging()` / `set_imaging()` and `perf_frame_shm()` are new; channels grow from 5 to 12. Cameras now start streaming automatically once active.
 - Chassis: `servo_twist` / `move_pose` / `move_pose_relative` / `move_station` replace `move` / `move_relative` / `navigate_to_station` / `stop` / `pause` / `resume`; `get_station()` replaces `list_stations()`; `set_pose` (relocalization), `get_twist`, `get_stage`, parking / lock / pause accessors and velocity / acceleration limits are new.
 - Arm / arms / body / head: motion is unified as `move_joint` / `move_joint_path` / `move_pose` / `move_pose_relative` / `move_pose_path` / `move_pose_arc_by_points` / `move_pose_arc_by_center`, with `servo_pose` / `servo_twist` for short-cycle servoing, plus arrival thresholds and velocity / acceleration limits.
 - Motion: `get_mode` / `set_mode` (`MotionMode`) replace the FSM interface; `get_wbc_state`, `get_center_of_mass`, `move_home`, `move_preset` and whole-body joint / pose goals are new.
@@ -69,6 +77,6 @@ The version dropdown in the top bar switches the documentation for each version;
 
 2026-09-17 · First stable release
 
-- First published `fabot-sdk` (import name `fabot`): 15 capability modules, 22 slots, `fabot/v1` interfaces, Python ≥ 3.12 required.
+- First published `fabot-sdk` (import name `fabot`): 16 capability modules, 22 slots, `fabot/v1` interfaces, Python ≥ 3.12 required.
 - Runtime dependencies are pinned to exact versions; see the dependency table in [Installing the Python SDK](install/python.md).
 - Starting from scratch? Read [Your First Program (Python)](tutorials/python.md) first.

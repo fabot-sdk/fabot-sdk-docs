@@ -1,11 +1,11 @@
 ---
-title: Mock
+title: Mock 示例
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Mock
+# Mock 示例
 
 用 `Robot.mock()` 在没有真实机器人的环境里开发、联调与单元测试。机制与适用边界见 [Mock 测试](../../usage/mock.md)。
 
@@ -25,7 +25,7 @@ print(robot.chassis.get_pose())             # 默认 Pose2d(0, 0, 0)
 
 ## 注入命令响应
 
-钩子名是 `on_` 加方法名，返回值即响应；返回 `None` 表示用默认空壳响应，抛异常则调用方收到 `FabotError`。
+钩子名是 `on_` 加方法名，返回值即响应；返回 `None` 表示用默认空壳响应（`Outcome.success` 为 `False`，带 `outcome` 的响应可能为 `None`），抛异常则调用方收到 `FabotError`。
 
 ```python
 from fabot import Robot
@@ -105,5 +105,5 @@ print(seen)          # [True, False]
 ```
 
 :::warning
-`Robot.from_backend(MockBackend())` 不注册任何默认处理器，未注册的调用会以 `NotFound`（"not stubbed"）失败。需要「默认成功 + 个别替换」时用 `Robot.mock()`。
+`Robot.from_backend(MockBackend())` 不注册任何默认处理器，未注册的调用会以 `NotFound`（"not stubbed"）失败。需要「默认响应 + 个别替换」时用 `Robot.mock()`。
 :::

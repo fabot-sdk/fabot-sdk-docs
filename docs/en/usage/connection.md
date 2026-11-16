@@ -2,7 +2,7 @@
 title: Connection & Robot Entry
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Connection & Robot Entry
@@ -48,7 +48,6 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 | `client_id` | `str` | `"fabot_sdk"` | Client identifier |
 | `zenoh_config_file` | `str` | `""` | Custom transport config file |
 | `auth_token` | `bytes` | `b""` | Auth token |
-| `max_control_message_bytes` | `int` | `1048576` | Control message ceiling in bytes |
 
 `ClientOptions` (timeouts and caches; every field is optional):
 
@@ -98,7 +97,7 @@ token.close()    # unsubscribe; robot.close() closes every subscription
 
 ## Capability slots
 
-Capabilities are exposed as **read-only properties**, 23 slots in total; `robot.slots` returns a mapping from slot id to proxy:
+Capabilities are exposed as **read-only properties**, 24 slots in total; `robot.slots` returns a mapping from slot id to proxy:
 
 | Slot property | Capability | Slot property | Capability |
 |---------------|------------|---------------|------------|

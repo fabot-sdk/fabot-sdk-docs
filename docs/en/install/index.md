@@ -1,11 +1,11 @@
 ---
-title: Installation & Configuration
+title: Installation Overview
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Installation & Configuration
+# Installation Overview
 
 This section covers the environment requirements, installation steps, and version compatibility rules of the fabot Python SDK. The SDK is distributed as a Python wheel; the import name after installation is `fabot`, with no dependency on ROS.
 

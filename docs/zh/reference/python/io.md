@@ -2,7 +2,7 @@
 title: IO（数字引脚）
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # IO（数字引脚）
@@ -170,7 +170,7 @@ get_level(pin: int, *, timeout_ms: int = 1000) -> PinLevelApplied
 | `severity` | `int` | 严重度，与 `HealthState` 对齐 |
 | `timestamp_us` | `int` | 最近一次时间戳（微秒） |
 
-展示给人看的故障文本用 `Catalogs.format_fault(record, capability_id="...")`，见 [文本目录 Catalogs](../../usage/catalogs.md)。
+展示给人看的故障文本用 `Catalogs.format_fault(record)`，见 [文本目录 Catalogs](../../usage/catalogs.md)。
 
 ## 状态
 

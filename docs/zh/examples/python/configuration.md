@@ -1,11 +1,11 @@
 ---
-title: 配置重试
+title: 配置 CAS 重试示例
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# 配置重试
+# 配置 CAS 重试示例
 
 读取并修改机器人配置，遇到并发冲突时重试。CAS 机制与 `RobotConfig` / `SlotBinding` 结构见 [配置管理](../../usage/configuration.md)，错误类型见 [错误处理](../../usage/errors.md)。
 

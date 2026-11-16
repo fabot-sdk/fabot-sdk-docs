@@ -2,6 +2,7 @@
   "index",
   "robot",
   "catalogs",
+  "error-codes",
   "frames",
   "types",
   "io",
@@ -18,5 +19,6 @@
   "power",
   "teleop",
   "voice",
+  "lift",
   "camera"
 ]

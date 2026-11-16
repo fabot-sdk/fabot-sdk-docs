@@ -2,7 +2,7 @@
 title: Logs, Metrics & Observability
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Logs, Metrics & Observability
@@ -204,6 +204,31 @@ robot.logs.freeze(
 ```
 
 Freezing returns nothing to the caller: the snapshot stays on the robot and is retrieved through the deployment's operations process.
+
+## Observability store
+
+`robot.obs.store()` queries the on-disk state of the robot-side observability collector in one call: quota, per-directory usage and existing freeze files.
+
+```python
+store = robot.obs.store()
+print(store.root, store.quota_percent, store.used_bytes, store.quota_bytes)
+for d in store.directories:
+    print(d.name, d.bytes, d.files)
+for fz in store.freezes:
+    print(fz.file, fz.bytes, fz.code, fz.source)
+```
+
+| Type | Fields |
+|------|--------|
+| `ObsStore` | `root` / `quota_percent` / `quota_bytes` / `used_bytes` / `directories` / `freezes` / `freezes_truncated` |
+| `ObsDirectory` | `name` / `bytes` / `files` |
+| `ObsFreeze` | `file` / `bytes` / `modified_us` / `code` / `source` |
+
+- `quota_bytes == 0` means the collector could not stat the partition (a mount problem, for instance); treat `used_bytes` as unreliable in that case.
+- `freezes` is newest first and capped by the collector; `freezes_truncated` is `True` when older snapshots were left out.
+- Freeze files are named `<utc>_<code>_<source>.jsonl.gz`; `code` and `source` are parsed from the name, falling back to `0` and an empty string.
+
+`robot.freeze()` / `robot.logs.freeze()` only create the snapshot. Use `store()` to list what exists, then follow your deployment's retrieval procedure to read the files. Quota and retention live in `robot.services.obs_collector`, see [Platform Services](services.md).
 
 ## Related
 

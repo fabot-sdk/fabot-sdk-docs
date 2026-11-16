@@ -1,11 +1,11 @@
 ---
-title: 运动
+title: 运动示例
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# 运动
+# 运动示例
 
 查询与切换全身运动控制体制，读取全身控制状态与质心稳定裕度，并执行回零与全身运动。命令与超时模型见 [命令与长时操作](../../usage/commands-operations.md)，通道用法见 [事件与数据通道](../../usage/events-channels.md)，接口全表见 [运动](../../reference/python/motion.md)。
 

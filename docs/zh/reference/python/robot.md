@@ -2,7 +2,7 @@
 title: Robot 入口
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Robot 入口
@@ -41,7 +41,6 @@ robot.close() -> None
 | `client_id` | `str` | `"fabot_sdk"` | 客户端标识 |
 | `zenoh_config_file` | `str` | `""` | 自定义传输配置文件路径 |
 | `auth_token` | `bytes` | `b""` | 认证令牌 |
-| `max_control_message_bytes` | `int` | `1048576` | 控制消息上限（字节） |
 
 `ClientOptions`（超时与缓存）：
 
@@ -77,7 +76,7 @@ wait_ready(slots: Sequence[str] | None = None) -> None
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `slots` | `Sequence[str]` | `None` | 要等待的槽位 id；`None` 表示全部 23 个槽位 |
+| `slots` | `Sequence[str]` | `None` | 要等待的槽位 id；`None` 表示全部 24 个槽位 |
 
 语义：读取当前槽位配置，对每个**已启用、必需（`essential`）且已绑定 adapter** 的目标槽位阻塞解析句柄；未绑定、被禁用或非必需的槽位直接跳过。单槽位解析超时由 `ClientOptions.resolve_timeout_ms` 控制，解析失败抛异常。
 
@@ -88,7 +87,7 @@ robot.wait_ready(["left_arm", "io"])     # 只等指定槽位
 
 ## slots
 
-能力以只读属性按槽位暴露，共 23 个槽位；`robot.slots` 返回 `dict[str, object]` 形式的全部槽位 Proxy。
+能力以只读属性按槽位暴露，共 24 个槽位；`robot.slots` 返回 `dict[str, object]` 形式的全部槽位 Proxy。
 
 | 槽位属性 | 能力 id | 文档 |
 |----------|---------|------|
@@ -108,6 +107,7 @@ robot.wait_ready(["left_arm", "io"])     # 只等指定槽位
 | `screen` | `screen` | [面屏 Screen](screen.md) |
 | `light` | `light` | [灯效 Light](light.md) |
 | `voice` | `voice` | [语音 Voice](voice.md) |
+| `lift` | `lift` | [升降柱 Lift](lift.md) |
 
 所有槽位 Proxy 的公共成员：
 
@@ -199,13 +199,13 @@ print(robot.estop.state().asserted)
 
 便捷属性：`is_running` / `is_idle` / `is_estopped`（看 `mode`），`is_normal` / `is_degraded` / `is_fault` / `is_fatal`（看 `health`）。运行模式与健康度是两条独立的轴：急停只改变 `mode`，`health` 仍由故障与自检决定。
 
-`RobotStatus`：`generation` / `revision` 加上各能力状态袋字段 `power_1` / `power_2` / `head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera` / `screen` / `voice`。只有提供 `status()` 的能力参与聚合，其余字段保持默认值。
+`RobotStatus`：`generation` / `revision` 加上各能力状态袋字段 `power_1` / `power_2` / `head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera` / `screen` / `voice` / `lift`。只有提供 `status()` 的能力参与聚合，其余字段保持默认值。
 
-`RobotFaults`：`revision` 加 23 个槽位故障袋字段（`body` / `left_arm` / `right_arm` / `left_hand` / `right_hand` / `left_gripper` / `right_gripper` / `head` / `chassis` / `power_1` / `power_2` / `io` / `motion` / `teleop` / `arms` / `head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera` / `screen` / `light` / `voice`），每袋含 `revision` 与 `records: list[FaultState]`。
+`RobotFaults`：`revision` 加 24 个槽位故障袋字段（`body` / `left_arm` / `right_arm` / `left_hand` / `right_hand` / `left_gripper` / `right_gripper` / `head` / `chassis` / `power_1` / `power_2` / `io` / `motion` / `teleop` / `arms` / `head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera` / `screen` / `light` / `voice` / `lift`），每袋含 `revision` 与 `records: list[FaultState]`。
 
 ```python
 st = robot.state()
-print(st.mode, st.health)
+print(st.mode.name, st.health.name)
 for cause in st.root_causes:
     print(cause.code, cause.source)
 
@@ -374,7 +374,9 @@ print(robot.frames.to_mermaid())
 |------|------|
 | `robot.configuration` | 整机配置读写（`get()` / `apply()`），CAS 提交，见 [配置管理](../../usage/configuration.md) |
 | `robot.connection` | 连接状态查询与订阅（`is_connected()` / `connected` / `subscribe()`） |
-| `robot.services` | 平台服务句柄（`ocs2` / `orbbec_sdk_ros2`），见 [平台服务管理](../../usage/services.md) |
+| `robot.services` | 平台服务句柄（`ocs2` / `orbbec_sdk_ros2` / `ros2` / `obs_collector`），见 [平台服务管理](../../usage/services.md) |
+| `robot.environments` | 运行环境配置（目前只有 `ros2`），只读写配置，见 [平台服务管理](../../usage/services.md) |
+| `robot.obs` | 观测存储快照（`store()`），见 [日志、指标与可观测性](../../usage/observability.md) |
 | `robot.skills` | 技能句柄（`camera_sync` / `voice_aiui`），见 [技能与扩展](../../usage/skills.md) |
 
 ## ping / freeze
@@ -394,4 +396,24 @@ robot.freeze(reason: str = "", *, code: int = 0, source: str = "", attrs=None) -
 | `count` | `int` | `1` | 采样次数 |
 | `timeout_ms` | `int` | `1000` | 单次探测超时（毫秒）；`timeout` 为同义的秒制写法 |
 
-`PingReport` 给出 `samples`（每条的 `rtt_us` / `handler_us` / `shm_read_us` / `byte_count`）与汇总 `min_us` / `max_us` / `mean_us` / `p50_us` / `p99_us`。槽位 Proxy 上也有同名 `ping`，只测该槽位。
+`PingReport` 给出 `samples`（每条的 `sequence` / `rtt_us` / `handler_us` / `shm_read_us` / `byte_count` / `probe` / `result_schema` / `result`）与汇总 `min_us` / `max_us` / `mean_us` / `p50_us` / `p99_us`。槽位 Proxy 上也有同名 `ping`，只测该槽位。
+
+`PingReport` / `PingSample` 不在 `fabot.core` 的导出列表里，需要类型注解时从 `fabot.core.types` 导入：
+
+```python
+from fabot.core.types import PingReport
+```
+
+## obs
+
+`robot.obs.store()` 返回机器人端观测存储快照 `ObsStore`：配额、各目录占用与冻结文件清单。
+
+```python
+robot.obs.store(*, timeout_ms: int = 0) -> ObsStore
+```
+
+`timeout_ms` 为 `0` 表示沿用客户端缺省超时。字段与用法见 [日志、指标与可观测性](../../usage/observability.md) 的「观测存储」一节。
+
+## environments
+
+`robot.environments` 读写运行环境配置，目前只有 `ros2`（`Ros2EnvironmentHandle`：`get_config()` / `set_config()` / `edit_config()`）。它与 `robot.services.ros2` 的区别见 [平台服务管理](../../usage/services.md)。

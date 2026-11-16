@@ -1,11 +1,11 @@
 ---
-title: Camera
+title: Camera example
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Camera
+# Camera example
 
 Capture multi-stream frames, read calibration and intrinsics, control imaging parameters, and subscribe to image streams and preview endpoints. There are five camera slots (`head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera`) sharing one API on independent slots. The channel model is in [Events & Data Channels](../../usage/events-channels.md), and fields are in [Camera](../../reference/python/camera.md).
 
@@ -94,11 +94,11 @@ Use the enum constants for enum fields (such as `ExposureMode.MANUAL`); passing 
 
 ## Software trigger
 
-A camera whose sync role is `SOFTWARE_TRIGGER` can be triggered explicitly with `trigger()`:
+A camera in the `SOFTWARE_TRIGGER` sync role does not emit frames on its own — an external signal (hardware trigger line or a coordinating controller) drives it, and the SDK exposes no call to pulse it. Check `get_state().awaiting_external_trigger` to see whether the camera is waiting.
 
 ```python
-ack = robot.head_camera.trigger(frame_count=1)
-print(ack.trigger_sequence, ack.accepted_at_ns)
+state = robot.head_camera.get_state()
+print(state.sync_mode, state.awaiting_external_trigger)
 ```
 
 ## Subscribe to image streams

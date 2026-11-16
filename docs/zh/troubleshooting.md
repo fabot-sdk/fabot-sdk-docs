@@ -2,7 +2,7 @@
 title: 故障排除
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # 故障排除
@@ -132,6 +132,25 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 `capture()` 抛 `Timeout` 时按顺序检查：
 
 1. 相机是否在出流：`robot.head_camera.status().color_active` 与 `state`（应为 `streaming`）。能力激活后会自动开流；配置异常时用 `open()` 显式开。
-2. 会话状态：`get_state()` 的 `awaiting_external_trigger` 为 `True` 表示在等外部触发，需要 `trigger()` 或外部信号。
+2. 会话状态：`get_state()` 的 `awaiting_external_trigger` 为 `True` 表示在等外部触发，需要外部触发信号。
 3. 帧年龄：`wait_for_fresh=True` 且 `max_age_ms` 很小时，低帧率流会频繁超时，适当放大 `max_age_ms` 或放宽 `timeout_ms`。
 4. 传输方式：大帧优先走共享内存，跨主机时共享内存不可用，SDK 会自动回退内联传输；内联传大图会明显变慢。
+
+## 升降柱不动
+
+`robot.lift` 的运动被拒通常只有三类原因：
+
+1. **未使能**：先 `robot.lift.set_enable(True)`，再下发运动；
+2. **未回零**：`robot.lift.get_height().homed` 为 `False` 时绝对高度目标会被拒，先 `move_home()`；
+3. **槽位没装**：`robot.lift.has_adapter` 为 `False` 说明这台机器人没有升降柱。
+
+驱动器侧故障用 `robot.lift.faults()` 与 `robot.lift.get_height().fault_code` 对照，雷赛适配器还可用 `as_adapter(LiftLeadshine).get_diagnostics()` 读原始诊断。
+
+## 电机 / 底盘 / 相机的码去哪里查
+
+按诊断码的高位定位域与模块，见 [诊断码参考](reference/python/error-codes.md)。查文案用 `Catalogs.format_error()` / `format_fault()`；查不到说明 SDK 比平台旧。
+
+## 多线程与断线
+
+- 回调里调用阻塞 API 会抛 `ClientThreadError`；线程模型与推荐写法见 [并发、线程与安全](usage/concurrency-and-safety.md)。
+- 断线后 `SubscriptionToken` 与 Channel 不再保证有效，需要重建；`Robot` 不支持重连，见同一页的「断线与重连」。

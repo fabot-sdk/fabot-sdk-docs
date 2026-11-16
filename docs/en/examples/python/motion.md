@@ -1,11 +1,11 @@
 ---
-title: Motion
+title: Motion example
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Motion
+# Motion example
 
 Query and switch the whole-body motion regime, read whole-body control state and center-of-mass margin, and run homing plus whole-body motions. The command and timeout model is in [Commands & Operations](../../usage/commands-operations.md), channels in [Events & Data Channels](../../usage/events-channels.md), and the full API in [Motion](../../reference/python/motion.md).
 

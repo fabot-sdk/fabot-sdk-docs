@@ -1,11 +1,11 @@
 ---
-title: IO 引脚
+title: IO 示例
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# IO 引脚
+# IO 示例
 
 占用数字引脚、写电平、再读回确认。接口见 [IO](../../reference/python/io.md)。
 

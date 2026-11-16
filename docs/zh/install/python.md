@@ -2,7 +2,7 @@
 title: 安装 Python SDK
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # 安装 Python SDK
@@ -38,7 +38,7 @@ $ pip install fabot-sdk
 `eclipse-zenoh` 版本与机器人端不匹配会导致连接失败，升级 SDK 时参见 [版本配套](compatibility.md)。
 
 :::note numpy 是可选依赖
-`robot.frames` 的点云相关函数（`deproject_depth_to_points` 等）与 `transform_points` 在装了 `numpy` 时返回 `ndarray` 并走矩阵加速；没装时退化为纯 Python 实现（返回列表、逐点计算），功能可用但明显更慢。处理点云时建议自行安装 `numpy`。
+`deproject_depth_to_points()`（别名 `depth_to_points`）**必需 numpy**，未安装时直接抛 `ImportError`。`transform_points()` 在装了 `numpy` 时返回 `ndarray` 并走矩阵加速，没装时退化为纯 Python 逐点计算（返回列表），功能可用但明显更慢。处理点云时请安装 `numpy`。
 :::
 
 ## 验证安装
@@ -58,7 +58,7 @@ with Robot.connect("192.168.1.10", 7557) as robot:
     robot.wait_ready()
     print("SDK 版本:", robot.sdk_version)
     print("平台版本:", robot.version())
-    print("运行模式:", robot.state().mode, "健康度:", robot.state().health)
+    print("运行模式:", robot.state().mode.name, "健康度:", robot.state().health.name)
 ```
 
 没有机器人时，可用 [Mock 测试](../usage/mock.md) 中的 `Robot.mock()` 离线验证安装与开发代码：

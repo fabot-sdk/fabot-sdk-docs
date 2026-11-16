@@ -2,7 +2,7 @@
 title: 底盘 Chassis
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # 底盘 Chassis
@@ -25,6 +25,7 @@ updated: 2026-11-02
 | `set_pose` | Command | 把地图系位姿重置为给定值（重定位），返回生效位姿；默认超时 5000 ms。 |
 | `get_twist` | Command | 读取当前速度；默认超时 3000 ms。 |
 | `get_stage` | Command | 读取当前运动阶段；默认超时 3000 ms。 |
+| `get_odometer` | Command | 读取里程计累计位移（`Odometer`）；默认超时 3000 ms。 |
 | `get_station` | Command | 读取地图站点列表（`get_stations` 是别名）；默认超时 5000 ms。 |
 | `get_mode` | Command | 读取当前模式；默认超时 3000 ms。 |
 | `set_mode` | Command | 切换手动 / 自主方式；默认超时 3000 ms。 |
@@ -43,6 +44,7 @@ updated: 2026-11-02
 | `get_angular_acceleration_limit` | Command | 读取角加速度上限；默认超时 3000 ms。 |
 | `set_angular_acceleration_limit` | Command | 设置角加速度上限，返回生效值；默认超时 3000 ms。 |
 | `servo_twist` | Command | 速度伺服，返回实际生效速度；默认超时 2000 ms。 |
+| `stop` | Command | 立即停止底盘运动；默认超时 5000 ms。 |
 | `move_pose` | Operation | 地图系绝对位姿导航；默认时限 180 秒。 |
 | `move_pose_relative` | Operation | 车体系相对位移导航，`target.x` / `y` / `theta` 即 `dx` / `dy` / `dyaw`；默认时限 180 秒。 |
 | `move_station` | Operation | 导航到地图站点，`station_id` 取自 `get_station()`；默认时限 180 秒。 |
@@ -178,6 +180,37 @@ get_stage(*, timeout_ms: int = 3000) -> ChassisStage
 | `MOVING` | 运动中 |
 | `PAUSED` | 已暂停 |
 | `FAULTED` | 故障 |
+
+### get_odometer
+
+读取里程计累计位移，用于航位推算与打滑判断。
+
+```python
+get_odometer(*, timeout_ms: int = 3000) -> Odometer
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `timeout_ms` | `int` | `3000` | 调用超时（毫秒） |
+
+**返回** `Odometer`
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `x` | `float` | 累计前进距离，米 |
+| `y` | `float` | 累计横向距离，米 |
+| `w` | `float` | 累计转向角，弧度 |
+| `available` | `bool` | 里程计是否可用 |
+
+`available` 为 `False` 时其余字段无意义（底盘适配器没有里程计或尚未标定），不要用它做闭环判断。
+
+```python
+odom = robot.chassis.get_odometer()
+if odom.available:
+    print(odom.x, odom.y, odom.w)
+```
 
 ### get_station
 
@@ -557,6 +590,28 @@ robot.chassis.servo_twist(vx=0.2, vy=0.0, vtheta=0.1)
 robot.chassis.servo_twist(vx=0.0, vy=0.0, vtheta=0.0)
 ```
 
+### stop
+
+立即停止底盘运动。与「把 `servo_twist` 目标设为零」不同，`stop` 由平台直接刹停，不依赖上一次速度目标。
+
+```python
+stop(*, timeout_ms: int = 5000) -> Outcome
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `timeout_ms` | `int` | `5000` | 调用超时（毫秒） |
+
+**返回** `Outcome`（`success` / `status_message`）。
+
+在途的 `move_*` Operation 需要单独 `cancel()`；`stop()` 只中止当前运动，不改变句柄状态。
+
+```python
+robot.chassis.stop()
+```
+
 ### move_pose
 
 地图系绝对位姿导航。
@@ -698,7 +753,7 @@ stage(qos_profile: str = "latest") -> Channel
 | `severity` | `int` | 严重度，与 `HealthState` 对齐 |
 | `timestamp_us` | `int` | 最近一次时间戳（微秒） |
 
-展示给人看的故障文本用 `Catalogs.format_fault(record, capability_id="...")`，见 [文本目录 Catalogs](../../usage/catalogs.md)。
+展示给人看的故障文本用 `Catalogs.format_fault(record)`，见 [文本目录 Catalogs](../../usage/catalogs.md)。
 
 ## 状态
 

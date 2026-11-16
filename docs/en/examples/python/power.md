@@ -1,11 +1,11 @@
 ---
-title: Power
+title: Power example
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Power
+# Power example
 
 Read energy and charging state from both power rails, and subscribe to fault and lifecycle events. Power has no Commands, Operations or data channels, only read-only queries and events; the event model is in [Events & Data Channels](../../usage/events-channels.md), faults and lifecycle in [Status, Faults & Lifecycle](../../usage/status-faults.md), and the API in [Power](../../reference/python/power.md).
 

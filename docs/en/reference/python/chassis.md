@@ -2,7 +2,7 @@
 title: Chassis
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Chassis
@@ -25,6 +25,7 @@ The `ChassisStage` from `get_stage()` / `stage()` is a read-only projection of t
 | `set_pose` | Command | Reset the map-frame pose to the given value and return the applied pose; default timeout 5000 ms. |
 | `get_twist` | Command | Read the current velocity; default timeout 3000 ms. |
 | `get_stage` | Command | Read the current motion stage; default timeout 3000 ms. |
+| `get_odometer` | Command | Read the accumulated odometer reading (`Odometer`); default timeout 3000 ms. |
 | `get_station` | Command | Read the map station list; `get_stations` is an alias; default timeout 5000 ms. |
 | `get_mode` | Command | Read the current mode; default timeout 3000 ms. |
 | `set_mode` | Command | Switch between manual and autonomous modes; default timeout 3000 ms. |
@@ -43,6 +44,7 @@ The `ChassisStage` from `get_stage()` / `stage()` is a read-only projection of t
 | `get_angular_acceleration_limit` | Command | Read the angular acceleration limit; default timeout 3000 ms. |
 | `set_angular_acceleration_limit` | Command | Set the angular acceleration limit and return the applied value; default timeout 3000 ms. |
 | `servo_twist` | Command | Velocity servo returning the applied velocity; only allowed in `MANUAL` mode; default timeout 2000 ms. |
+| `stop` | Command | Stop the chassis immediately; default timeout 5000 ms. |
 | `move_pose` | Operation | Navigate to an absolute map-frame pose; default budget 180 s. |
 | `move_pose_relative` | Operation | Body-frame relative navigation; `target.x` / `y` / `theta` are `dx` / `dy` / `dyaw`; default budget 180 s. |
 | `move_station` | Operation | Navigate to a map station; `station_id` comes from `get_station()`; default budget 180 s. |
@@ -178,6 +180,37 @@ The proxy unwraps `Stage` into `ChassisStage`.
 | `MOVING` | Moving |
 | `PAUSED` | Paused |
 | `FAULTED` | Faulted |
+
+### get_odometer
+
+Read the accumulated odometer, for dead reckoning and slip detection.
+
+```python
+get_odometer(*, timeout_ms: int = 3000) -> Odometer
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `timeout_ms` | `int` | `3000` | Call timeout (ms) |
+
+**Returns** `Odometer`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `x` | `float` | Accumulated forward distance, metres |
+| `y` | `float` | Accumulated lateral distance, metres |
+| `w` | `float` | Accumulated heading, radians |
+| `available` | `bool` | Whether the odometer is usable |
+
+When `available` is `False` the other fields are meaningless (no odometer on this adapter, or it is uncalibrated) — do not close a loop on them.
+
+```python
+odom = robot.chassis.get_odometer()
+if odom.available:
+    print(odom.x, odom.y, odom.w)
+```
 
 ### get_station
 
@@ -557,6 +590,28 @@ robot.chassis.servo_twist(vx=0.2, vy=0.0, vtheta=0.1)
 robot.chassis.servo_twist(vx=0.0, vy=0.0, vtheta=0.0)
 ```
 
+### stop
+
+Stop the chassis immediately. Unlike sending a zero `servo_twist` target, `stop` brakes through the platform and does not depend on the previous velocity target.
+
+```python
+stop(*, timeout_ms: int = 5000) -> Outcome
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `timeout_ms` | `int` | `5000` | Call timeout (ms) |
+
+**Returns** `Outcome` (`success` / `status_message`).
+
+An in-flight `move_*` Operation still needs its own `cancel()`; `stop()` only aborts the current motion and does not change the handle state.
+
+```python
+robot.chassis.stop()
+```
+
 ### move_pose
 
 Navigate to an absolute map-frame pose.
@@ -698,7 +753,7 @@ Query with `robot.<slot>.faults()`, which returns `Faults` (`revision` plus `rec
 | `severity` | `int` | Severity, aligned with `HealthState` |
 | `timestamp_us` | `int` | Latest timestamp in microseconds |
 
-For human-readable fault text use `Catalogs.format_fault(record, capability_id="...")`; see [Catalogs](../../usage/catalogs.md).
+For human-readable fault text use `Catalogs.format_fault(record)`; see [Catalogs](../../usage/catalogs.md).
 
 ## Status
 

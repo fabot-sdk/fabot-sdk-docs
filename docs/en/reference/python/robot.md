@@ -2,7 +2,7 @@
 title: Robot Entry
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Robot Entry
@@ -41,7 +41,6 @@ Passing both `host` and `config` raises `TypeError`. `from_endpoint` is the expl
 | `client_id` | `str` | `"fabot_sdk"` | Client identifier |
 | `zenoh_config_file` | `str` | `""` | Custom transport config file |
 | `auth_token` | `bytes` | `b""` | Auth token |
-| `max_control_message_bytes` | `int` | `1048576` | Control message ceiling in bytes |
 
 `ClientOptions` (timeouts and caches):
 
@@ -77,7 +76,7 @@ wait_ready(slots: Sequence[str] | None = None) -> None
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `slots` | `Sequence[str]` | `None` | Slot ids to wait for; `None` means all 23 slots |
+| `slots` | `Sequence[str]` | `None` | Slot ids to wait for; `None` means all 24 slots |
 
 It reads the current slot configuration and blocks resolving each target slot that is **enabled, essential and has an adapter bound**. Unbound, disabled or non-essential slots are skipped. The per-slot budget comes from `ClientOptions.resolve_timeout_ms`, and a failed resolution raises.
 
@@ -88,7 +87,7 @@ robot.wait_ready(["left_arm", "io"])     # only these slots
 
 ## slots
 
-Capabilities are exposed as read-only properties, 23 in total; `robot.slots` returns all proxies as `dict[str, object]`.
+Capabilities are exposed as read-only properties, 24 in total; `robot.slots` returns all proxies as `dict[str, object]`.
 
 | Slot property | Capability | Page |
 |---------------|------------|------|
@@ -108,6 +107,7 @@ Capabilities are exposed as read-only properties, 23 in total; `robot.slots` ret
 | `screen` | `screen` | [Screen](screen.md) |
 | `light` | `light` | [Light](light.md) |
 | `voice` | `voice` | [Voice](voice.md) |
+| `lift` | `lift` | [Lift](lift.md) |
 
 Shared members of every slot proxy:
 
@@ -199,13 +199,13 @@ Robot state comes in three layers: run state (`state()`), aggregated status bags
 
 Convenience properties: `is_running` / `is_idle` / `is_estopped` (from `mode`), `is_normal` / `is_degraded` / `is_fault` / `is_fatal` (from `health`). Mode and health are independent axes: an e-stop only changes `mode`, while `health` stays driven by faults and self-test.
 
-`RobotStatus`: `generation` / `revision` plus one status bag per capability — `power_1` / `power_2` / `head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera` / `screen` / `voice`. Only capabilities providing `status()` participate.
+`RobotStatus`: `generation` / `revision` plus one status bag per capability — `power_1` / `power_2` / `head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera` / `screen` / `voice` / `lift`. Only capabilities providing `status()` participate.
 
-`RobotFaults`: `revision` plus 23 slot fault bags (`body` / `left_arm` / `right_arm` / `left_hand` / `right_hand` / `left_gripper` / `right_gripper` / `head` / `chassis` / `power_1` / `power_2` / `io` / `motion` / `teleop` / `arms` / `head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera` / `screen` / `light` / `voice`), each holding `revision` and `records: list[FaultState]`.
+`RobotFaults`: `revision` plus 24 slot fault bags (`body` / `left_arm` / `right_arm` / `left_hand` / `right_hand` / `left_gripper` / `right_gripper` / `head` / `chassis` / `power_1` / `power_2` / `io` / `motion` / `teleop` / `arms` / `head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera` / `screen` / `light` / `voice` / `lift`), each holding `revision` and `records: list[FaultState]`.
 
 ```python
 st = robot.state()
-print(st.mode, st.health)
+print(st.mode.name, st.health.name)
 for cause in st.root_causes:
     print(cause.code, cause.source)
 
@@ -372,9 +372,11 @@ Remaining robot-wide entries:
 
 | Entry | Description |
 |-------|-------------|
-| `robot.configuration` | Robot config read/write (`get()` / `apply()`) with CAS, see [Configuration](../../usage/configuration.md) |
+| `robot.configuration` | Robot config read/write (`get()` / `apply()`), CAS-committed, see [Configuration](../../usage/configuration.md) |
 | `robot.connection` | Connection state query and subscription (`is_connected()` / `connected` / `subscribe()`) |
-| `robot.services` | Platform service handles (`ocs2` / `orbbec_sdk_ros2`), see [Platform Services](../../usage/services.md) |
+| `robot.services` | Platform service handles (`ocs2` / `orbbec_sdk_ros2` / `ros2` / `obs_collector`), see [Platform Services](../../usage/services.md) |
+| `robot.environments` | Runtime environment config (currently `ros2`), config only, see [Platform Services](../../usage/services.md) |
+| `robot.obs` | Observability store snapshot (`store()`), see [Logs, Metrics & Observability](../../usage/observability.md) |
 | `robot.skills` | Skill handles (`camera_sync` / `voice_aiui`), see [Skills & Extensions](../../usage/skills.md) |
 
 ## ping / freeze
@@ -394,4 +396,24 @@ robot.freeze(reason: str = "", *, code: int = 0, source: str = "", attrs=None) -
 | `count` | `int` | `1` | Number of samples |
 | `timeout_ms` | `int` | `1000` | Per-probe timeout in ms; `timeout` is the seconds spelling |
 
-`PingReport` gives `samples` (each with `rtt_us` / `handler_us` / `shm_read_us` / `byte_count`) plus `min_us` / `max_us` / `mean_us` / `p50_us` / `p99_us`. Slot proxies carry the same `ping`, scoped to that slot.
+`PingReport` gives `samples` (each with `sequence` / `rtt_us` / `handler_us` / `shm_read_us` / `byte_count` / `probe` / `result_schema` / `result`) plus `min_us` / `max_us` / `mean_us` / `p50_us` / `p99_us`. Slot proxies carry the same `ping`, scoped to that slot.
+
+`PingReport` / `PingSample` are not in the `fabot.core` export list; import them from `fabot.core.types` when you need the annotations:
+
+```python
+from fabot.core.types import PingReport
+```
+
+## obs
+
+`robot.obs.store()` returns the robot-side observability store snapshot `ObsStore`: quota, per-directory usage and the freeze file list.
+
+```python
+robot.obs.store(*, timeout_ms: int = 0) -> ObsStore
+```
+
+`timeout_ms` of `0` keeps the client default. Fields and usage are in the "Observability store" section of [Logs, Metrics & Observability](../../usage/observability.md).
+
+## environments
+
+`robot.environments` reads and writes runtime environment config; currently only `ros2` (`Ros2EnvironmentHandle`: `get_config()` / `set_config()` / `edit_config()`). The difference from `robot.services.ros2` is explained in [Platform Services](../../usage/services.md).

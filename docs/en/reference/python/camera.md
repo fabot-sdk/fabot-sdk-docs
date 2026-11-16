@@ -2,7 +2,7 @@
 title: Camera
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Camera
@@ -26,10 +26,10 @@ Cameras start streaming automatically once the capability is active, so `open()`
 | `open` | Command | Open the session; default timeout 5000 ms. |
 | `close` | Command | Close the camera session and stop every stream; default timeout 3000 ms. |
 | `capture` | Command | Capture one multi-stream frame set; default timeout 8000 ms. |
-| `trigger` | Command | Emit an external trigger pulse for the `SOFTWARE_TRIGGER` sync role; default timeout 2000 ms. |
 | `get_calibration` | Command | Read calibration data: per-stream intrinsics, depth-to-color / left-right infrared / IMU-to-color extrinsics, stereo baseline, depth scale and the valid depth range; default timeout 1000 ms. |
 | `get_imaging` | Command | Read imaging controls (exposure, gain, white balance, mains frequency, emitter); default timeout 1000 ms. |
 | `set_imaging` | Command | Replace the imaging controls and return the applied state; default timeout 2000 ms. |
+| `perf_frame_shm` | Command | Time the shared-memory frame path with a synthetic frame, returns `PingReport`; default timeout 1000 ms. |
 | `frameset` | Channel | Multi-stream frame-set stream; frame is `FrameSet`. |
 | `color` | Channel | Color image stream; frame is `ImageFrame`. |
 | `depth` | Channel | Raw depth stream; frame is `ImageFrame`. |
@@ -159,7 +159,7 @@ open(*, profiles: list[StreamProfile] | None = None, enable_stream_sync: bool = 
 
 | Name | Type | Default | Description |
 |------|------|------|------|
-| `profiles` | `list[StreamProfile] | None` | `None` | Profiles to open; `None` keeps the device defaults |
+| `profiles` | `list[StreamProfile] \| None` | `None` | Profiles to open; `None` keeps the device defaults |
 | `enable_stream_sync` | `bool` | `True` | Whether to enable multi-stream time pairing |
 | `registration_mode` | `RegistrationMode` | `RegistrationMode.NONE` | Pixel registration mode |
 | `enable_imu` | `bool` | `False` | Whether to enable the IMU |
@@ -221,7 +221,7 @@ capture(*, streams: list[StreamKind] | None = None, wait_for_fresh: bool = True,
 
 | Name | Type | Default | Description |
 |------|------|------|------|
-| `streams` | `list[StreamKind] | None` | `None` | Streams to capture; `None` means every available stream |
+| `streams` | `list[StreamKind] \| None` | `None` | Streams to capture; `None` means every available stream |
 | `wait_for_fresh` | `bool` | `True` | Whether to wait for a fresh frame |
 | `max_age_ms` | `int` | `500` | Maximum frame age in milliseconds |
 | `timeout_ms` | `int` | `8000` | Timeout in milliseconds |
@@ -252,29 +252,6 @@ print(frame_set.sequence, frame_set.sync_status)
 if frame_set.color is not None:
     print(frame_set.color.width, frame_set.color.height, frame_set.color.frame_id)
 ```
-
-### trigger
-
-Emit an external trigger pulse for the `SOFTWARE_TRIGGER` sync role.
-
-```python
-trigger(*, frame_count: int = 1, timeout_ms: int = 2000) -> TriggerAck
-```
-
-**Parameters**
-
-| Name | Type | Default | Description |
-|------|------|------|------|
-| `frame_count` | `int` | `1` | Number of frames to trigger |
-| `timeout_ms` | `int` | `2000` | Timeout in milliseconds |
-
-**Returns** `TriggerAck`
-
-| Field | Type | Description |
-|------|------|------|
-| `slot` | `str` | Slot id |
-| `trigger_sequence` | `int` | Trigger sequence number |
-| `accepted_at_ns` | `int` | Acceptance time in ns |
 
 ### get_calibration
 
@@ -379,6 +356,24 @@ state = robot.head_camera.set_imaging(
 print(state.ae_strategy)
 ```
 
+### perf_frame_shm
+
+Time the shared-memory frame path with a synthetic frame and return a `PingReport`. Use it to check whether cross-host or shared-memory settings meet your budget; no real image is produced.
+
+```python
+perf_frame_shm(*, width: int = 640, height: int = 480, format: PixelFormat = PixelFormat.RGB8, timeout_ms: int = 1000) -> PingReport
+```
+
+**Parameters**
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `width` / `height` | `int` | `640` / `480` | Synthetic frame size in pixels |
+| `format` | `PixelFormat` | `PixelFormat.RGB8` | Pixel format |
+| `timeout_ms` | `int` | `1000` | Call timeout (ms) |
+
+`PingReport.samples[].shm_read_us` is the shared-memory read cost; across hosts that path is unavailable and the value becomes obviously wrong.
+
 ## Channels
 
 Opening a channel takes a lease and returns a handle: iterate with `frames()`, take one sample with `next()`, renew with `renew()`, release with `close()`. See [Events & Data Channels](../../usage/events-channels.md).
@@ -440,7 +435,7 @@ Frame payload is `ImageFrame`:
 | `step` | `int` | Row stride in bytes |
 | `is_bigendian` | `bool` | Whether big-endian |
 | `depth_scale` | `float` | Depth scale in meters per LSB |
-| `data` | `list[int]` | Audio bytes |
+| `data` | `list[int]` | Row-major pixel bytes (`step × height`); layout follows `format` and `step` |
 
 ```python
 ch = robot.head_camera.color(qos_profile="latest")
@@ -482,7 +477,7 @@ Frame payload is `ImageFrame`:
 | `step` | `int` | Row stride in bytes |
 | `is_bigendian` | `bool` | Whether big-endian |
 | `depth_scale` | `float` | Depth scale in meters per LSB |
-| `data` | `list[int]` | Audio bytes |
+| `data` | `list[int]` | Row-major pixel bytes (`step × height`); layout follows `format` and `step` |
 
 ### registered_depth()
 
@@ -515,7 +510,7 @@ Frame payload is `ImageFrame`:
 | `step` | `int` | Row stride in bytes |
 | `is_bigendian` | `bool` | Whether big-endian |
 | `depth_scale` | `float` | Depth scale in meters per LSB |
-| `data` | `list[int]` | Audio bytes |
+| `data` | `list[int]` | Row-major pixel bytes (`step × height`); layout follows `format` and `step` |
 
 ### infrared()
 
@@ -548,7 +543,7 @@ Frame payload is `ImageFrame`:
 | `step` | `int` | Row stride in bytes |
 | `is_bigendian` | `bool` | Whether big-endian |
 | `depth_scale` | `float` | Depth scale in meters per LSB |
-| `data` | `list[int]` | Audio bytes |
+| `data` | `list[int]` | Row-major pixel bytes (`step × height`); layout follows `format` and `step` |
 
 ### infrared_left()
 
@@ -581,7 +576,7 @@ Frame payload is `ImageFrame`:
 | `step` | `int` | Row stride in bytes |
 | `is_bigendian` | `bool` | Whether big-endian |
 | `depth_scale` | `float` | Depth scale in meters per LSB |
-| `data` | `list[int]` | Audio bytes |
+| `data` | `list[int]` | Row-major pixel bytes (`step × height`); layout follows `format` and `step` |
 
 ### infrared_right()
 
@@ -614,7 +609,7 @@ Frame payload is `ImageFrame`:
 | `step` | `int` | Row stride in bytes |
 | `is_bigendian` | `bool` | Whether big-endian |
 | `depth_scale` | `float` | Depth scale in meters per LSB |
-| `data` | `list[int]` | Audio bytes |
+| `data` | `list[int]` | Row-major pixel bytes (`step × height`); layout follows `format` and `step` |
 
 ### confidence()
 
@@ -647,7 +642,7 @@ Frame payload is `ImageFrame`:
 | `step` | `int` | Row stride in bytes |
 | `is_bigendian` | `bool` | Whether big-endian |
 | `depth_scale` | `float` | Depth scale in meters per LSB |
-| `data` | `list[int]` | Audio bytes |
+| `data` | `list[int]` | Row-major pixel bytes (`step × height`); layout follows `format` and `step` |
 
 ### points()
 
@@ -670,7 +665,7 @@ Frame payload is `PointCloud`:
 | `clock_quality` | `ClockQuality` | Timestamp quality (`ClockQuality`) |
 | `calibration_generation` | `int` | Calibration generation; a change means intrinsics must be re-read |
 | `decimation` | `int` | Point cloud decimation stride |
-| `positions` | `list[float]` | Position list; point clouds store X/Y/Z interleaved |
+| `positions` | `list[float]` | Joint positions in radians |
 | `colors` | `list[int]` | Color list, RGB interleaved |
 
 ### imu()
@@ -748,9 +743,9 @@ Subscribe through `robot.<slot>.events`. Callbacks run on the SDK I/O thread: ke
 
 | Entry | Event type | payload |
 |------|------|------|
-| `robot.<slot>.events.camera_session_changed` | `CameraSessionChangedEvent` | `camera_session_changed` |
-| `robot.<slot>.events.camera_calibration_changed` | `CameraCalibrationChangedEvent` | `camera_calibration_changed` |
-| `robot.<slot>.events.camera_device_connection_changed` | `CameraDeviceConnectionChangedEvent` | `camera_device_connection_changed` |
+| `robot.<slot>.events.camera_session_changed` | `CameraSessionChangedEvent` | `camera_session`: `SessionState` |
+| `robot.<slot>.events.camera_calibration_changed` | `CameraCalibrationChangedEvent` | `camera_calibration`: `CameraCalibration` |
+| `robot.<slot>.events.camera_device_connection_changed` | `CameraDeviceConnectionChangedEvent` | `camera_device_connection`: `DeviceConnectionEvent` |
 | `robot.<slot>.events.fault_changed` | `FaultChangedEvent` | `FaultChangedEvent.faults`: `Faults` |
 | `robot.<slot>.events.lifecycle_changed` | `LifecycleChangedEvent` | `LifecycleChangedEvent.lifecycle`: `CapabilityLifecycleSnapshot` |
 
@@ -778,7 +773,7 @@ Query with `robot.<slot>.faults()`, which returns `Faults` (`revision` plus `rec
 | `severity` | `int` | Severity, aligned with `HealthState` |
 | `timestamp_us` | `int` | Latest timestamp in microseconds |
 
-For human-readable fault text use `Catalogs.format_fault(record, capability_id="...")`; see [Catalogs](../../usage/catalogs.md).
+For human-readable fault text use `Catalogs.format_fault(record)`; see [Catalogs](../../usage/catalogs.md).
 
 ## Status
 

@@ -1,11 +1,11 @@
 ---
-title: Head Motion
+title: Head example
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Head Motion
+# Head example
 
 Control head yaw / pitch joints and track motion progress. The long-running task model is in [Commands & Operations](../../usage/commands-operations.md), the API in [Head](../../reference/python/head.md).
 

@@ -1,11 +1,11 @@
 ---
-title: 电源
+title: 电源示例
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# 电源
+# 电源示例
 
 读取两路电源的电量与充电状态，并订阅故障与生命周期事件。电源能力没有 Command / Operation 与数据通道，只有只读查询与事件；事件模型见 [事件与数据通道](../../usage/events-channels.md)，故障与生命周期见 [状态、故障与生命周期](../../usage/status-faults.md)，接口与字段见 [电源](../../reference/python/power.md)。
 

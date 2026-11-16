@@ -2,7 +2,7 @@
 title: 日志、指标与可观测性
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # 日志、指标与可观测性
@@ -204,6 +204,31 @@ robot.logs.freeze(
 ```
 
 冻结本身不返回内容：快照留在机器人端，按发布方的运维流程取回。
+
+## 观测存储（Obs Store）
+
+`robot.obs.store()` 一次查询机器人端观测采集器的落盘状态：配额、各目录占用与已有的冻结文件。
+
+```python
+store = robot.obs.store()
+print(store.root, store.quota_percent, store.used_bytes, store.quota_bytes)
+for d in store.directories:
+    print(d.name, d.bytes, d.files)
+for fz in store.freezes:
+    print(fz.file, fz.bytes, fz.code, fz.source)
+```
+
+| 类型 | 字段 |
+|------|------|
+| `ObsStore` | `root` / `quota_percent` / `quota_bytes` / `used_bytes` / `directories` / `freezes` / `freezes_truncated` |
+| `ObsDirectory` | `name` / `bytes` / `files` |
+| `ObsFreeze` | `file` / `bytes` / `modified_us` / `code` / `source` |
+
+- `quota_bytes` 为 `0` 表示采集器无法读取分区用量（例如挂载异常），此时 `used_bytes` 不可信。
+- `freezes` 按时间从新到旧排列，条数由采集器限制；`freezes_truncated` 为 `True` 表示还有更早的快照没返回。
+- 冻结文件名形如 `<utc>_<code>_<source>.jsonl.gz`，`code` 与 `source` 由文件名解析；无法解析时 `code` 为 `0`、`source` 为空。
+
+`robot.freeze()` / `robot.logs.freeze()` 只负责生成快照，取回内容用 `store()` 看清单，再按发布方运维流程读取文件。采集器的配额与保留策略在 `robot.services.obs_collector` 里，见 [平台服务管理](services.md)。
 
 ## 与其他页面的关系
 

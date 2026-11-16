@@ -1,11 +1,11 @@
 ---
-title: Light
+title: Light example
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Light
+# Light example
 
 Control the light strip: mode, color, brightness and animation period. All five methods are short commands; the command model is in [Commands & Operations](../../usage/commands-operations.md) and the API in [Light](../../reference/python/light.md).
 

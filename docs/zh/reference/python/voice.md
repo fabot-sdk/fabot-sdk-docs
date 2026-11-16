@@ -2,7 +2,7 @@
 title: 语音 Voice
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # 语音 Voice
@@ -24,6 +24,7 @@ updated: 2026-11-02
 | `set_volume` | Command | 设置音量，取值 0–1；默认超时 3000 ms。 |
 | `set_mute` | Command | 静音或取消静音；默认超时 1000 ms。 |
 | `set_wakeword_enabled` | Command | 启用或停用唤醒词；默认超时 1000 ms。 |
+| `configure_wakeword` | Operation | 设置唤醒词短语与触发阈值。 |
 | `get_status` | Command | 读取语音状态快照（`get_state` 是别名）；默认超时 1000 ms。 |
 | `stop_capture` | Command | 停止指定采集会话；默认超时 3000 ms。 |
 | `begin_playback` | Command | 开始流式播放会话，随后用 `write_audio` 推流；默认超时 3000 ms。 |
@@ -150,6 +151,28 @@ set_wakeword_enabled(enabled: bool, *, timeout_ms: int = 1000) -> VoiceStatusApp
 |------|------|------|
 | `outcome` | `Outcome` | 调用结果 |
 | `status` | `VoiceStatus` | 状态快照 |
+
+### configure_wakeword
+
+设置唤醒词短语与触发阈值。返回 Operation，写入完成后进入终态。
+
+```python
+configure_wakeword(*, keyword: str, threshold: int = 1000) -> ConfigureWakewordOperation
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `keyword` | `str` | （必填） | 唤醒词短语 |
+| `threshold` | `int` | `1000` | 触发阈值；越大越难触发 |
+
+```python
+op = robot.voice.configure_wakeword(keyword="hello fabot", threshold=1200)
+print(op.wait(timeout=10.0))
+```
+
+唤醒词配置在机器人侧持久保存，重新上电仍生效；`set_wakeword_enabled()` 只控制开关，不改短语。
 
 ### get_status
 
@@ -379,7 +402,7 @@ playback(qos_profile: str = "latest") -> Channel
 | `severity` | `int` | 严重度，与 `HealthState` 对齐 |
 | `timestamp_us` | `int` | 最近一次时间戳（微秒） |
 
-展示给人看的故障文本用 `Catalogs.format_fault(record, capability_id="...")`，见 [文本目录 Catalogs](../../usage/catalogs.md)。
+展示给人看的故障文本用 `Catalogs.format_fault(record)`，见 [文本目录 Catalogs](../../usage/catalogs.md)。
 
 ## 状态
 

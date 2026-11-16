@@ -2,7 +2,7 @@
 title: 相机 Camera
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # 相机 Camera
@@ -26,10 +26,10 @@ updated: 2026-11-02
 | `open` | Command | 开启会话；默认超时 5000 ms。 |
 | `close` | Command | 关闭相机会话并停止全部流；默认超时 3000 ms。 |
 | `capture` | Command | 抓取一帧多流集合；默认超时 8000 ms。 |
-| `trigger` | Command | 发出外部触发脉冲，用于 `SOFTWARE_TRIGGER` 同步角色；默认超时 2000 ms。 |
 | `get_calibration` | Command | 读取标定数据：各流内参、深度到彩色 / 左右红外 / IMU 到彩色的外参、双目基线、深度换算系数与有效深度范围；默认超时 1000 ms。 |
 | `get_imaging` | Command | 读取成像控制参数（曝光、增益、白平衡、工频、红外发射器）；默认超时 1000 ms。 |
 | `set_imaging` | Command | 整体替换成像控制参数，返回生效状态；默认超时 2000 ms。 |
+| `perf_frame_shm` | Command | 用合成帧测共享内存分帧时延，返回 `PingReport`；默认超时 1000 ms。 |
 | `frameset` | Channel | 多流成帧快照流，帧为 `FrameSet`。 |
 | `color` | Channel | 彩色图像流，帧为 `ImageFrame`。 |
 | `depth` | Channel | 原始深度流，帧为 `ImageFrame`。 |
@@ -159,7 +159,7 @@ open(*, profiles: list[StreamProfile] | None = None, enable_stream_sync: bool = 
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `profiles` | `list[StreamProfile] | None` | `None` | 要开启的流配置；`None` 表示沿用设备缺省 |
+| `profiles` | `list[StreamProfile] \| None` | `None` | 要开启的流配置；`None` 表示沿用设备缺省 |
 | `enable_stream_sync` | `bool` | `True` | 是否开启多流时间配对 |
 | `registration_mode` | `RegistrationMode` | `RegistrationMode.NONE` | 像素配准方式 |
 | `enable_imu` | `bool` | `False` | 是否开启 IMU |
@@ -221,7 +221,7 @@ capture(*, streams: list[StreamKind] | None = None, wait_for_fresh: bool = True,
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `streams` | `list[StreamKind] | None` | `None` | 要抓取的流；`None` 表示全部可用流 |
+| `streams` | `list[StreamKind] \| None` | `None` | 要抓取的流；`None` 表示全部可用流 |
 | `wait_for_fresh` | `bool` | `True` | 是否等待新帧 |
 | `max_age_ms` | `int` | `500` | 缓存帧最大年龄（毫秒） |
 | `timeout_ms` | `int` | `8000` | 调用超时（毫秒） |
@@ -252,29 +252,6 @@ print(frame_set.sequence, frame_set.sync_status)
 if frame_set.color is not None:
     print(frame_set.color.width, frame_set.color.height, frame_set.color.frame_id)
 ```
-
-### trigger
-
-发出外部触发脉冲，用于 `SOFTWARE_TRIGGER` 同步角色。
-
-```python
-trigger(*, frame_count: int = 1, timeout_ms: int = 2000) -> TriggerAck
-```
-
-**参数**
-
-| 名称 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `frame_count` | `int` | `1` | 触发帧数 |
-| `timeout_ms` | `int` | `2000` | 调用超时（毫秒） |
-
-**返回** `TriggerAck`
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `slot` | `str` | 槽位 id |
-| `trigger_sequence` | `int` | 触发序号 |
-| `accepted_at_ns` | `int` | 受理时刻（纳秒） |
 
 ### get_calibration
 
@@ -379,6 +356,24 @@ state = robot.head_camera.set_imaging(
 print(state.ae_strategy)
 ```
 
+### perf_frame_shm
+
+用合成帧测共享内存通路的分帧时延，返回 `PingReport`。用于判断跨主机 / 共享内存配置是否达标，不产生真实图像。
+
+```python
+perf_frame_shm(*, width: int = 640, height: int = 480, format: PixelFormat = PixelFormat.RGB8, timeout_ms: int = 1000) -> PingReport
+```
+
+**参数**
+
+| 名称 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `width` / `height` | `int` | `640` / `480` | 合成帧尺寸（像素） |
+| `format` | `PixelFormat` | `PixelFormat.RGB8` | 像素格式 |
+| `timeout_ms` | `int` | `1000` | 调用超时（毫秒） |
+
+`PingReport` 的 `samples[].shm_read_us` 是共享内存读取耗时；跨主机时该通路不可用，值会明显异常。
+
 ## 通道
 
 打开即建立租约并返回 Channel 句柄；用 `frames()` 迭代，`next()` 取一帧，`renew()` 续租，`close()` 释放。通用用法见 [事件与数据通道](../../usage/events-channels.md)。
@@ -440,7 +435,7 @@ color(qos_profile: str = "latest") -> Channel
 | `step` | `int` | 行字节宽度 |
 | `is_bigendian` | `bool` | 是否大端字节序 |
 | `depth_scale` | `float` | 深度换算系数，米 / LSB |
-| `data` | `list[int]` | 音频字节 |
+| `data` | `list[int]` | 行优先的像素字节（长度 `step × height`），布局由 `format` 与 `step` 决定 |
 
 ```python
 ch = robot.head_camera.color(qos_profile="latest")
@@ -482,7 +477,7 @@ depth(qos_profile: str = "latest") -> Channel
 | `step` | `int` | 行字节宽度 |
 | `is_bigendian` | `bool` | 是否大端字节序 |
 | `depth_scale` | `float` | 深度换算系数，米 / LSB |
-| `data` | `list[int]` | 音频字节 |
+| `data` | `list[int]` | 行优先的像素字节（长度 `step × height`），布局由 `format` 与 `step` 决定 |
 
 ### registered_depth()
 
@@ -515,7 +510,7 @@ registered_depth(qos_profile: str = "latest") -> Channel
 | `step` | `int` | 行字节宽度 |
 | `is_bigendian` | `bool` | 是否大端字节序 |
 | `depth_scale` | `float` | 深度换算系数，米 / LSB |
-| `data` | `list[int]` | 音频字节 |
+| `data` | `list[int]` | 行优先的像素字节（长度 `step × height`），布局由 `format` 与 `step` 决定 |
 
 ### infrared()
 
@@ -548,7 +543,7 @@ infrared(qos_profile: str = "latest") -> Channel
 | `step` | `int` | 行字节宽度 |
 | `is_bigendian` | `bool` | 是否大端字节序 |
 | `depth_scale` | `float` | 深度换算系数，米 / LSB |
-| `data` | `list[int]` | 音频字节 |
+| `data` | `list[int]` | 行优先的像素字节（长度 `step × height`），布局由 `format` 与 `step` 决定 |
 
 ### infrared_left()
 
@@ -581,7 +576,7 @@ infrared_left(qos_profile: str = "latest") -> Channel
 | `step` | `int` | 行字节宽度 |
 | `is_bigendian` | `bool` | 是否大端字节序 |
 | `depth_scale` | `float` | 深度换算系数，米 / LSB |
-| `data` | `list[int]` | 音频字节 |
+| `data` | `list[int]` | 行优先的像素字节（长度 `step × height`），布局由 `format` 与 `step` 决定 |
 
 ### infrared_right()
 
@@ -614,7 +609,7 @@ infrared_right(qos_profile: str = "latest") -> Channel
 | `step` | `int` | 行字节宽度 |
 | `is_bigendian` | `bool` | 是否大端字节序 |
 | `depth_scale` | `float` | 深度换算系数，米 / LSB |
-| `data` | `list[int]` | 音频字节 |
+| `data` | `list[int]` | 行优先的像素字节（长度 `step × height`），布局由 `format` 与 `step` 决定 |
 
 ### confidence()
 
@@ -647,7 +642,7 @@ confidence(qos_profile: str = "latest") -> Channel
 | `step` | `int` | 行字节宽度 |
 | `is_bigendian` | `bool` | 是否大端字节序 |
 | `depth_scale` | `float` | 深度换算系数，米 / LSB |
-| `data` | `list[int]` | 音频字节 |
+| `data` | `list[int]` | 行优先的像素字节（长度 `step × height`），布局由 `format` 与 `step` 决定 |
 
 ### points()
 
@@ -670,7 +665,7 @@ points(qos_profile: str = "latest") -> Channel
 | `clock_quality` | `ClockQuality` | 时戳质量（`ClockQuality`） |
 | `calibration_generation` | `int` | 标定代际；变化表示需要重新读取内参 |
 | `decimation` | `int` | 点云抽样步长 |
-| `positions` | `list[float]` | 位置数组；点云按 X/Y/Z 依次展开 |
+| `positions` | `list[float]` | 关节位置数组，弧度 |
 | `colors` | `list[int]` | 颜色数组，RGB 依次展开 |
 
 ### imu()
@@ -748,9 +743,9 @@ webrtc(qos_profile: str = "latest") -> Channel
 
 | 入口 | 事件类型 | payload |
 |------|------|------|
-| `robot.<slot>.events.camera_session_changed` | `CameraSessionChangedEvent` | `camera_session_changed` |
-| `robot.<slot>.events.camera_calibration_changed` | `CameraCalibrationChangedEvent` | `camera_calibration_changed` |
-| `robot.<slot>.events.camera_device_connection_changed` | `CameraDeviceConnectionChangedEvent` | `camera_device_connection_changed` |
+| `robot.<slot>.events.camera_session_changed` | `CameraSessionChangedEvent` | `camera_session`：`SessionState` |
+| `robot.<slot>.events.camera_calibration_changed` | `CameraCalibrationChangedEvent` | `camera_calibration`：`CameraCalibration` |
+| `robot.<slot>.events.camera_device_connection_changed` | `CameraDeviceConnectionChangedEvent` | `camera_device_connection`：`DeviceConnectionEvent` |
 | `robot.<slot>.events.fault_changed` | `FaultChangedEvent` | `FaultChangedEvent.faults`：`Faults` |
 | `robot.<slot>.events.lifecycle_changed` | `LifecycleChangedEvent` | `LifecycleChangedEvent.lifecycle`：`CapabilityLifecycleSnapshot` |
 
@@ -778,7 +773,7 @@ webrtc(qos_profile: str = "latest") -> Channel
 | `severity` | `int` | 严重度，与 `HealthState` 对齐 |
 | `timestamp_us` | `int` | 最近一次时间戳（微秒） |
 
-展示给人看的故障文本用 `Catalogs.format_fault(record, capability_id="...")`，见 [文本目录 Catalogs](../../usage/catalogs.md)。
+展示给人看的故障文本用 `Catalogs.format_fault(record)`，见 [文本目录 Catalogs](../../usage/catalogs.md)。
 
 ## 状态
 

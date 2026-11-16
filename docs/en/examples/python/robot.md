@@ -1,11 +1,11 @@
 ---
-title: E-Stop
+title: E-stop and fault events example
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# E-Stop
+# E-stop and fault events example
 
 Subscribe to robot-wide e-stop and fault events, and walk through engaging and releasing the e-stop. The event model is in [Events & Data Channels](../../usage/events-channels.md), faults and lifecycle in [Status, Faults & Lifecycle](../../usage/status-faults.md), and the API in [Robot](../../reference/python/robot.md).
 

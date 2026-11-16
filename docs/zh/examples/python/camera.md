@@ -1,11 +1,11 @@
 ---
-title: 相机
+title: 相机示例
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# 相机
+# 相机示例
 
 抓取多流帧、读取标定与内参、控制成像参数，并订阅图像流与预览地址。相机有五个槽位（`head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera`），同一套 API、各自独立。通道模型见 [事件与数据通道](../../usage/events-channels.md)，接口与字段见 [相机](../../reference/python/camera.md)。
 
@@ -94,11 +94,11 @@ print(state.ae_strategy)
 
 ## 软件触发
 
-同步角色为 `SOFTWARE_TRIGGER` 的相机可用 `trigger()` 主动出帧：
+同步角色为 `SOFTWARE_TRIGGER` 的相机不自行出帧，需要外部信号（硬件触发线或协同控制器）驱动；SDK 不提供主动打触发的接口。用 `get_state().awaiting_external_trigger` 判断相机是否在等触发。
 
 ```python
-ack = robot.head_camera.trigger(frame_count=1)
-print(ack.trigger_sequence, ack.accepted_at_ns)
+state = robot.head_camera.get_state()
+print(state.sync_mode, state.awaiting_external_trigger)
 ```
 
 ## 订阅图像流

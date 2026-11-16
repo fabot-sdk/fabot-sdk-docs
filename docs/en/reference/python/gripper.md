@@ -2,7 +2,7 @@
 title: Gripper
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Gripper
@@ -77,7 +77,7 @@ get_joint(*, timeout_ms: int = 1000) -> JointState
 
 | Field | Type | Description |
 |------|------|------|
-| `positions` | `list[float]` | Position list; point clouds store X/Y/Z interleaved |
+| `positions` | `list[float]` | Joint positions in radians |
 | `velocities` | `list[float]` | Joint velocity array |
 | `efforts` | `list[float]` | Joint effort array |
 | `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
@@ -266,7 +266,7 @@ Frame payload is `JointState`:
 
 | Field | Type | Description |
 |------|------|------|
-| `positions` | `list[float]` | Position list; point clouds store X/Y/Z interleaved |
+| `positions` | `list[float]` | Joint positions in radians |
 | `velocities` | `list[float]` | Joint velocity array |
 | `efforts` | `list[float]` | Joint effort array |
 | `stamp_ns` | `int` | Timestamp on the robot clock in ns; 0 means latest |
@@ -292,7 +292,7 @@ Query with `robot.<slot>.faults()`, which returns `Faults` (`revision` plus `rec
 | `severity` | `int` | Severity, aligned with `HealthState` |
 | `timestamp_us` | `int` | Latest timestamp in microseconds |
 
-For human-readable fault text use `Catalogs.format_fault(record, capability_id="...")`; see [Catalogs](../../usage/catalogs.md).
+For human-readable fault text use `Catalogs.format_fault(record)`; see [Catalogs](../../usage/catalogs.md).
 
 ## Status
 

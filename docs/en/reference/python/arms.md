@@ -2,7 +2,7 @@
 title: Arms
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Arms
@@ -524,7 +524,7 @@ get_arrival_thresholds(*, timeout_ms: int = 1000) -> ArrivalThresholds
 |------|------|------|
 | `joint_tolerance` | `float` | Joint arrival tolerance in radians; must be finite and positive |
 | `pose_position_tolerance` | `float` | Pose position tolerance in meters; must be finite and positive |
-| `pose_orientation_tolerance` | `float` | Pose orientation error as `1 - |dot(q, q_target)|`, not radians |
+| `pose_orientation_tolerance` | `float` | Pose orientation error as `1 - \|dot(q, q_target)\|`, not radians |
 | `max_timeout_s` | `float` | Extra arrival budget in seconds added to the motion duration |
 
 ### set_arrival_thresholds
@@ -541,7 +541,7 @@ set_arrival_thresholds(*, joint_tolerance: float = 0.02, pose_position_tolerance
 |------|------|------|------|
 | `joint_tolerance` | `float` | `0.02` | Joint arrival tolerance in radians |
 | `pose_position_tolerance` | `float` | `0.02` | Pose position tolerance in meters |
-| `pose_orientation_tolerance` | `float` | `0.05` | Pose orientation error as `1 - |dot(q, q_target)|` |
+| `pose_orientation_tolerance` | `float` | `0.05` | Pose orientation error as `1 - \|dot(q, q_target)\|` |
 | `max_timeout_s` | `float` | `5.0` | Extra arrival budget in seconds |
 | `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
@@ -551,7 +551,7 @@ set_arrival_thresholds(*, joint_tolerance: float = 0.02, pose_position_tolerance
 |------|------|------|
 | `joint_tolerance` | `float` | Joint arrival tolerance in radians; must be finite and positive |
 | `pose_position_tolerance` | `float` | Pose position tolerance in meters; must be finite and positive |
-| `pose_orientation_tolerance` | `float` | Pose orientation error as `1 - |dot(q, q_target)|`, not radians |
+| `pose_orientation_tolerance` | `float` | Pose orientation error as `1 - \|dot(q, q_target)\|`, not radians |
 | `max_timeout_s` | `float` | Extra arrival budget in seconds added to the motion duration |
 
 ### move_joint
@@ -752,7 +752,7 @@ Query with `robot.<slot>.faults()`, which returns `Faults` (`revision` plus `rec
 | `severity` | `int` | Severity, aligned with `HealthState` |
 | `timestamp_us` | `int` | Latest timestamp in microseconds |
 
-For human-readable fault text use `Catalogs.format_fault(record, capability_id="...")`; see [Catalogs](../../usage/catalogs.md).
+For human-readable fault text use `Catalogs.format_fault(record)`; see [Catalogs](../../usage/catalogs.md).
 
 ## Status
 

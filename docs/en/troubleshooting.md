@@ -2,7 +2,7 @@
 title: Troubleshooting
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # Troubleshooting
@@ -130,6 +130,25 @@ When `robot.frames.lookup()` raises a `FrameError` subclass, the type tells you 
 When `capture()` raises `Timeout`, check in order:
 
 1. Is the camera streaming? `robot.head_camera.status().color_active` and `state` (should be `streaming`). Cameras start streaming once active; if the configuration looks off, call `open()` explicitly.
-2. Session state: `get_state().awaiting_external_trigger` being `True` means it is waiting for a trigger — call `trigger()` or supply the external signal.
+2. Session state: `get_state().awaiting_external_trigger` being `True` means it is waiting for a trigger — supply the external trigger signal.
 3. Frame age: with `wait_for_fresh=True` and a small `max_age_ms`, low frame-rate streams time out often; raise `max_age_ms` or relax `timeout_ms`.
 4. Transport: large frames prefer shared memory, which is unavailable across hosts; the SDK then falls back to inline transport, which is noticeably slower for big images.
+
+## The lift will not move
+
+Rejected `robot.lift` motion has three usual causes:
+
+1. **Not enabled**: call `robot.lift.set_enable(True)` before any move;
+2. **Not homed**: when `robot.lift.get_height().homed` is `False`, absolute height targets are refused — run `move_home()` first;
+3. **No slot**: `robot.lift.has_adapter` is `False` when this robot has no lift.
+
+For drive-side faults compare `robot.lift.faults()` with `robot.lift.get_height().fault_code`; with the Leadshine adapter you can also read raw diagnostics via `as_adapter(LiftLeadshine).get_diagnostics()`.
+
+## Where to look up motor / chassis / camera codes
+
+The high byte of a diagnostic code locates the domain and module, see [Diagnostic Codes](reference/python/error-codes.md). Render text with `Catalogs.format_error()` / `format_fault()`; no text means your SDK is older than the platform.
+
+## Threads and disconnects
+
+- Calling a blocking API inside a callback raises `ClientThreadError`; the thread model and the recommended pattern are in [Concurrency, Threading and Safety](usage/concurrency-and-safety.md).
+- After a disconnect, `SubscriptionToken`s and channels are no longer guaranteed valid and must be re-created; `Robot` cannot reconnect — see "Disconnects and reconnects" on the same page.

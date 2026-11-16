@@ -1,11 +1,11 @@
 ---
-title: Configuration Retry
+title: Configuration CAS retry example
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
-# Configuration Retry
+# Configuration CAS retry example
 
 Read and modify robot configuration, retrying on concurrent conflicts. CAS mechanics plus the `RobotConfig` / `SlotBinding` shape are in [Configuration](../../usage/configuration.md); error types in [Error Handling](../../usage/errors.md).
 

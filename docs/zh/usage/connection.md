@@ -2,7 +2,7 @@
 title: 连接与 Robot 入口
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # 连接与 Robot 入口
@@ -48,7 +48,6 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 | `client_id` | `str` | `"fabot_sdk"` | 客户端标识 |
 | `zenoh_config_file` | `str` | `""` | 自定义传输配置文件路径 |
 | `auth_token` | `bytes` | `b""` | 认证令牌 |
-| `max_control_message_bytes` | `int` | `1048576` | 控制消息上限（字节） |
 
 `ClientOptions`（超时与缓存选项，全部字段可省略）：
 
@@ -98,7 +97,7 @@ token.close()    # 退订；robot.close() 会统一关闭全部订阅
 
 ## 能力槽位
 
-能力以**只读属性**按槽位暴露，共 23 个槽位；`robot.slots` 返回槽位 id 到 Proxy 的字典：
+能力以**只读属性**按槽位暴露，共 24 个槽位；`robot.slots` 返回槽位 id 到 Proxy 的字典：
 
 | 槽位属性 | 能力模块 | 槽位属性 | 能力模块 |
 |----------|----------|----------|----------|

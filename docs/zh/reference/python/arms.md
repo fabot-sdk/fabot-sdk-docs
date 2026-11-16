@@ -2,7 +2,7 @@
 title: 双臂 Arms
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-16
 ---
 
 # 双臂 Arms
@@ -524,7 +524,7 @@ get_arrival_thresholds(*, timeout_ms: int = 1000) -> ArrivalThresholds
 |------|------|------|
 | `joint_tolerance` | `float` | 关节到位容差（弧度）；须为有限正数 |
 | `pose_position_tolerance` | `float` | 位姿位置到位容差（米）；须为有限正数 |
-| `pose_orientation_tolerance` | `float` | 位姿姿态容差，取 `1 - |dot(q, q_target)|`，不是弧度 |
+| `pose_orientation_tolerance` | `float` | 位姿姿态容差，取 `1 - \|dot(q, q_target)\|`，不是弧度 |
 | `max_timeout_s` | `float` | 在运动时长之上追加的到位等待上限（秒） |
 
 ### set_arrival_thresholds
@@ -541,7 +541,7 @@ set_arrival_thresholds(*, joint_tolerance: float = 0.02, pose_position_tolerance
 |------|------|------|------|
 | `joint_tolerance` | `float` | `0.02` | 关节到位容差（弧度） |
 | `pose_position_tolerance` | `float` | `0.02` | 位姿位置容差（米） |
-| `pose_orientation_tolerance` | `float` | `0.05` | 位姿姿态容差，取 `1 - |dot(q, q_target)|` |
+| `pose_orientation_tolerance` | `float` | `0.05` | 位姿姿态容差，取 `1 - \|dot(q, q_target)\|` |
 | `max_timeout_s` | `float` | `5.0` | 追加到位等待上限（秒） |
 | `timeout_ms` | `int` | `1000` | 调用超时（毫秒） |
 
@@ -551,7 +551,7 @@ set_arrival_thresholds(*, joint_tolerance: float = 0.02, pose_position_tolerance
 |------|------|------|
 | `joint_tolerance` | `float` | 关节到位容差（弧度）；须为有限正数 |
 | `pose_position_tolerance` | `float` | 位姿位置到位容差（米）；须为有限正数 |
-| `pose_orientation_tolerance` | `float` | 位姿姿态容差，取 `1 - |dot(q, q_target)|`，不是弧度 |
+| `pose_orientation_tolerance` | `float` | 位姿姿态容差，取 `1 - \|dot(q, q_target)\|`，不是弧度 |
 | `max_timeout_s` | `float` | 在运动时长之上追加的到位等待上限（秒） |
 
 ### move_joint
@@ -752,7 +752,7 @@ pose(qos_profile: str = "latest") -> Channel
 | `severity` | `int` | 严重度，与 `HealthState` 对齐 |
 | `timestamp_us` | `int` | 最近一次时间戳（微秒） |
 
-展示给人看的故障文本用 `Catalogs.format_fault(record, capability_id="...")`，见 [文本目录 Catalogs](../../usage/catalogs.md)。
+展示给人看的故障文本用 `Catalogs.format_fault(record)`，见 [文本目录 Catalogs](../../usage/catalogs.md)。
 
 ## 状态
 
