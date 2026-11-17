@@ -52,7 +52,7 @@ SDK 内置 16 个能力模块的类型化 Proxy，经 `Robot` 的 24 个槽位�
 | 底盘 `chassis` | `robot.chassis` | 速度伺服、地图导航、站点导航与驻停 / 锁止 → [chassis](reference/python/chassis.md) |
 | 运动 `motion` | `robot.motion` | 全身运动体制、全身关节 / 位姿目标、回零与预设 → [motion](reference/python/motion.md) |
 | 电源 `power` | `robot.power_1` / `robot.power_2` | 电量、电压、电流、温度与充电状态 → [power](reference/python/power.md) |
-| IO `io` | `robot.io` | 数字引脚占用、释放与电平读写 → [io](reference/python/io.md) |
+| IO `io` | `robot.io` | GPIO 线占用、释放、电平读写与芯片枚举 → [io](reference/python/io.md) |
 | 相机 `camera` | `robot.head_camera` / `robot.chest_camera` / `robot.waist_camera` / `robot.left_wrist_camera` / `robot.right_wrist_camera` | 抓拍、标定、成像控制与 12 路数据流 → [camera](reference/python/camera.md) |
 | 面屏 `screen` | `robot.screen` | 面屏文本 / 图片 / 视频显示 → [screen](reference/python/screen.md) |
 | 灯效 `light` | `robot.light` | 灯带模式、颜色、亮度与动画周期 → [light](reference/python/light.md) |

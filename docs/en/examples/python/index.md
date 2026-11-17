@@ -29,7 +29,7 @@ Browse complete examples by capability. See [Usage](../../usage/index.md) for sh
 | Capture, calibration and image streams | [Camera](camera.md) |
 | Audio capture, playback and wake word | [Voice](voice.md) |
 | Joystick teleop sessions | [Teleop](teleop.md) |
-| IO pin acquire and level I/O | [IO Pins](io.md) |
+| GPIO line acquire and level I/O | [IO Lines](io.md) |
 | Frame lookups, pose transforms and deprojection | [Frames](frames.md) |
 | Offline development | [Mock](mock.md) |
 | Configuration conflict retry | [Configuration Retry](configuration.md) |

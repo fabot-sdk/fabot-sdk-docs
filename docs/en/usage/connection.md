@@ -116,8 +116,10 @@ Capabilities are exposed as **read-only properties**, 24 slots in total; `robot.
   from fabot.capabilities.io import PinDirection
 
   if robot.io.has_adapter:
-      robot.io.acquire(pin=17, direction=PinDirection.OUTPUT)
-      robot.io.set_level(pin=17, value=True)
+      robot.io.acquire(
+          chip="tegra264-gpio", line=17, direction=PinDirection.OUTPUT, value=False
+      )
+      robot.io.set_level(chip="tegra264-gpio", line=17, value=True)
   ```
 
 - To reach adapter-specific typed configuration or extensions use `proxy.as_adapter(Io)` (the typed view under `fabot.adapters`). An unbound slot raises `AdapterUnbound`; a mismatched adapter raises `AdapterMismatch`. See [Error Handling](errors.md).

@@ -21,13 +21,18 @@ A Command is a blocking call: send, wait, decode, and raise on failure.
 ```python
 from fabot.capabilities.io import PinDirection
 
-# Positional and keyword arguments mix; every command has timeout_ms
-robot.io.acquire(17, direction=PinDirection.OUTPUT)
-applied = robot.io.set_level(17, value=True)
-print(robot.io.get_level(17).value)
-robot.io.release(17)
+# IO is all keyword: chip label plus line offset; every command has timeout_ms
+robot.io.acquire(
+    chip="tegra264-gpio",
+    line=17,
+    direction=PinDirection.OUTPUT,
+    value=False,
+)
+applied = robot.io.set_level(chip="tegra264-gpio", line=17, value=True)
+print(robot.io.get_level(chip="tegra264-gpio", line=17).value)
+robot.io.release(chip="tegra264-gpio", line=17)
 
-# Chassis velocity servo
+# Chassis velocity servo: primary argument positional, the rest keyword
 from fabot.capabilities.chassis import ChassisMode
 
 robot.chassis.set_mode(ChassisMode.MANUAL)

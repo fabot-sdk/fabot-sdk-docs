@@ -72,17 +72,23 @@ with Robot.connect("192.168.1.10", 7557) as robot:
         print("面屏结果:", applied.outcome.success, applied.status.overlay_text)
 
     if robot.io.has_adapter:
-        robot.io.acquire(17, direction=PinDirection.INPUT)
+        robot.io.acquire(
+            chip="tegra264-gpio", line=17, direction=PinDirection.INPUT, value=False
+        )
         try:
-            print("pin 17 =", robot.io.get_level(17).value)
+            print("line 17 =", robot.io.get_level(chip="tegra264-gpio", line=17).value)
         finally:
-            robot.io.release(17)
+            robot.io.release(chip="tegra264-gpio", line=17)
 ```
 
 把 IP 换成你的机器人地址，保存为 `hello_fabot.py`，运行 `python3 hello_fabot.py`。
 
 :::note `outcome.success` 可能是 `None`
-`ScreenStatusApplied.outcome` 与 `PinApplied.outcome` 在平台未回填时可能是 `None`。要严格判断成功，写成 `bool(applied.outcome and applied.outcome.success)`；失败细节看 `Outcome.status_message`。
+`ScreenStatusApplied.outcome` 与 `LineApplied.outcome` 在平台未回填时可能是 `None`。要严格判断成功，写成 `bool(applied.outcome and applied.outcome.success)`；失败细节看 `Outcome.status_message`。
+:::
+
+:::note `chip` 因机器而异
+上面写的 `tegra264-gpio` 只是这台机器的内核标签。换成你的机器人前，先用 `robot.io.chips()` 看芯片标签与线号；标签为空的芯片用 `gpiochipN` 这类设备名寻址。
 :::
 
 ## 代码说明
@@ -91,7 +97,7 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 - `wait_ready()`：阻塞等待**已绑定、已启用且标记为必需**的槽位就绪；未绑定或非必需的槽位会被跳过，不会阻塞也不会报错。单槽位等待上限由 `ClientOptions.resolve_timeout_ms` 控制。这也是第二段要自己探测槽位的原因。
 - `version()` 返回平台版本字符串，`sdk_version` 是本机 SDK 版本；`state()` 返回 `RobotState` 快照，`mode` 是运行模式（`RobotMode`）、`health` 是健康度（`HealthState`），见 [状态、故障与生命周期](../usage/status-faults.md)。两者都是 `IntEnum`：直接打印得到数字，取 `.name` 才是 `Idle` / `Normal` 这类名字。
 - `robot.slots` 是槽位 id 到 Proxy 的字典，共 24 项；`has_adapter` 与 `lifecycle()` 是判断「能不能调」的两个最直接入口。完整清单见 [Robot 入口](../reference/python/robot.md#slots)。
-- 读写引脚前须先 `acquire`，用完后 `release`（放在 `finally` 里，异常时也能释放）。字段细节见参考页 [面屏 Screen](../reference/python/screen.md) 与 [IO](../reference/python/io.md)。
+- 读写一条线前须先 `acquire`，用完后 `release`（放在 `finally` 里，异常时也能释放）。线由芯片 + 片内线号定位，字段细节见参考页 [面屏 Screen](../reference/python/screen.md) 与 [IO](../reference/python/io.md)。
 - 槽位未绑定时能力方法仍会下发，由平台返回失败或超时；`get_config()` / `as_adapter()` 则会抛 `AdapterUnbound`。错误类型与处理见 [错误处理](../usage/errors.md)。
 
 ## 下一步

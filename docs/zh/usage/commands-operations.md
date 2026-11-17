@@ -21,13 +21,18 @@ Command 是一次阻塞调用：发请求、等响应、返回解码后的结果
 ```python
 from fabot.capabilities.io import PinDirection
 
-# 位置参数 + 关键字参数混用；每个 command 都有 timeout_ms
-robot.io.acquire(17, direction=PinDirection.OUTPUT)
-applied = robot.io.set_level(17, value=True)
-print(robot.io.get_level(17).value)
-robot.io.release(17)
+# IO 全部按关键字传：芯片标签 + 片内线号；每个 command 都有 timeout_ms
+robot.io.acquire(
+    chip="tegra264-gpio",
+    line=17,
+    direction=PinDirection.OUTPUT,
+    value=False,
+)
+applied = robot.io.set_level(chip="tegra264-gpio", line=17, value=True)
+print(robot.io.get_level(chip="tegra264-gpio", line=17).value)
+robot.io.release(chip="tegra264-gpio", line=17)
 
-# 底盘速度伺服
+# 底盘速度伺服：主参数按位置，其余按关键字
 from fabot.capabilities.chassis import ChassisMode
 
 robot.chassis.set_mode(ChassisMode.MANUAL)

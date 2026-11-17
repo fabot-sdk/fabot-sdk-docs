@@ -29,7 +29,7 @@ robot.connection.is_connected()          # True: connected from the start, no co
 
 Hook names are `on_` plus the method name (`on_get_pose`, `on_show_text`, `on_move_joint`, …) with the same signature as the call. The return value decides the behaviour:
 
-- `None` (or no return): use the default response — a shell object whose fields are all defaults. Note that `Outcome.success` defaults to `False`, and responses that carry an `outcome` (such as `ScreenStatusApplied` / `PinApplied`) may have `outcome=None`; do not assert "default success". Return a response object explicitly when you need one;
+- `None` (or no return): use the default response — a shell object whose fields are all defaults. Note that `Outcome.success` defaults to `False`, and responses that carry an `outcome` (such as `ScreenStatusApplied` / `LineApplied` / `LineLevelApplied`) may have `outcome=None`; do not assert "default success". Return a response object explicitly when you need one;
 - a response object: replace the default;
 - raising: the call fails with a `FabotError` (`Internal`) — perfect for exercising error paths.
 

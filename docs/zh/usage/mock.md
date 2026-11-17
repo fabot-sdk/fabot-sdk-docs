@@ -29,7 +29,7 @@ robot.connection.is_connected()          # True：创建即"已连接"，无需 
 
 钩子名是 `on_` 加方法名（`on_get_pose`、`on_show_text`、`on_move_joint` 等），签名与对应调用一致，返回值决定行为：
 
-- 返回 `None`（或不返回）：使用默认响应——一个字段全为默认值的空壳对象。注意 `Outcome` 的默认 `success` 是 `False`，`ScreenStatusApplied` / `PinApplied` 这类带 `outcome` 的响应里 `outcome` 可能是 `None`，不要断言“默认成功”；需要成功结果时显式返回响应对象；
+- 返回 `None`（或不返回）：使用默认响应——一个字段全为默认值的空壳对象。注意 `Outcome` 的默认 `success` 是 `False`，`ScreenStatusApplied` / `LineApplied` / `LineLevelApplied` 这类带 `outcome` 的响应里 `outcome` 可能是 `None`，不要断言“默认成功”；需要成功结果时显式返回响应对象；
 - 返回响应对象：替换默认响应；
 - 抛出异常：本次调用以 `FabotError`（`Internal`）失败——可用来测试错误处理路径。
 

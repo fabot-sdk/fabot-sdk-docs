@@ -29,7 +29,7 @@ updated: 2026-11-16
 | 抓拍、标定与图像流 | [相机](camera.md) |
 | 音频采集、播放与唤醒 | [语音](voice.md) |
 | 手柄遥操作会话 | [遥操作](teleop.md) |
-| IO 引脚占用与电平读写 | [IO 引脚](io.md) |
+| GPIO 线占用与电平读写 | [IO 线](io.md) |
 | 坐标查询、位姿换算与点云反投影 | [坐标系](frames.md) |
 | 离线开发 | [Mock](mock.md) |
 | 配置冲突重试 | [配置重试](configuration.md) |

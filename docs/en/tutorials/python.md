@@ -72,17 +72,23 @@ with Robot.connect("192.168.1.10", 7557) as robot:
         print("screen:", applied.outcome.success, applied.status.overlay_text)
 
     if robot.io.has_adapter:
-        robot.io.acquire(17, direction=PinDirection.INPUT)
+        robot.io.acquire(
+            chip="tegra264-gpio", line=17, direction=PinDirection.INPUT, value=False
+        )
         try:
-            print("pin 17 =", robot.io.get_level(17).value)
+            print("line 17 =", robot.io.get_level(chip="tegra264-gpio", line=17).value)
         finally:
-            robot.io.release(17)
+            robot.io.release(chip="tegra264-gpio", line=17)
 ```
 
 Swap in your robot's address, save it as `hello_fabot.py`, and run `python3 hello_fabot.py`.
 
 :::note `outcome.success` may be `None`
-`ScreenStatusApplied.outcome` and `PinApplied.outcome` can be `None` when the platform did not fill them in. For a strict check write `bool(applied.outcome and applied.outcome.success)`; failure details live in `Outcome.status_message`.
+`ScreenStatusApplied.outcome` and `LineApplied.outcome` can be `None` when the platform did not fill them in. For a strict check write `bool(applied.outcome and applied.outcome.success)`; failure details live in `Outcome.status_message`.
+:::
+
+:::note `chip` differs per machine
+`tegra264-gpio` above is just this machine's kernel label. Before running it on your robot, list the chips and line offsets with `robot.io.chips()`; a chip without a label is addressed by device name such as `gpiochipN`.
 :::
 
 ## What the code does
@@ -91,7 +97,7 @@ Swap in your robot's address, save it as `hello_fabot.py`, and run `python3 hell
 - `wait_ready()` blocks until slots that are **bound, enabled and marked essential** are ready. Unbound or non-essential slots are skipped silently — neither blocking nor raising. That is exactly why stage 2 probes the slots itself. The per-slot wait bound is `ClientOptions.resolve_timeout_ms`.
 - `version()` returns the platform version string, `sdk_version` the local SDK version; `state()` returns a `RobotState` snapshot where `mode` is `RobotMode` and `health` is `HealthState`, see [Status, Faults & Lifecycle](../usage/status-faults.md). Both are `IntEnum`s: printing them yields numbers, and `.name` gives names like `Idle` / `Normal`.
 - `robot.slots` maps slot ids to proxies (24 entries). `has_adapter` and `lifecycle()` are the two most direct "can I call this" checks. Full list in [Robot Entry](../reference/python/robot.md#slots).
-- Acquire a pin before reading or writing it and `release` it afterwards (inside `finally`, so an exception still releases). Field details are in [Screen](../reference/python/screen.md) and [IO](../reference/python/io.md).
+- Acquire a line before reading or writing it and `release` it afterwards (inside `finally`, so an exception still releases). A line is located by chip plus line offset; field details are in [Screen](../reference/python/screen.md) and [IO](../reference/python/io.md).
 - On an unbound slot capability methods are still dispatched and fail or time out platform-side, while `get_config()` / `as_adapter()` raise `AdapterUnbound`. See [Error Handling](../usage/errors.md).
 
 ## Next steps

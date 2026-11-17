@@ -52,7 +52,7 @@ The SDK ships typed proxies for 16 capability modules, reached through 24 slot p
 | Chassis `chassis` | `robot.chassis` | Velocity servo, map and station navigation, parking / locking → [chassis](reference/python/chassis.md) |
 | Motion `motion` | `robot.motion` | Whole-body regime, joint / pose goals, homing and presets → [motion](reference/python/motion.md) |
 | Power `power` | `robot.power_1` / `robot.power_2` | Energy, voltage, current, temperature, charging → [power](reference/python/power.md) |
-| IO `io` | `robot.io` | Digital pin acquire, release and level I/O → [io](reference/python/io.md) |
+| IO `io` | `robot.io` | GPIO line acquire, release, level I/O and chip inventory → [io](reference/python/io.md) |
 | Camera `camera` | `robot.head_camera` / `robot.chest_camera` / `robot.waist_camera` / `robot.left_wrist_camera` / `robot.right_wrist_camera` | Capture, calibration, imaging control and 12 streams → [camera](reference/python/camera.md) |
 | Screen `screen` | `robot.screen` | Text, image and video display → [screen](reference/python/screen.md) |
 | Light `light` | `robot.light` | Strip mode, color, brightness and period → [light](reference/python/light.md) |

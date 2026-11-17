@@ -116,8 +116,10 @@ token.close()    # 退订；robot.close() 会统一关闭全部订阅
   from fabot.capabilities.io import PinDirection
 
   if robot.io.has_adapter:
-      robot.io.acquire(pin=17, direction=PinDirection.OUTPUT)
-      robot.io.set_level(pin=17, value=True)
+      robot.io.acquire(
+          chip="tegra264-gpio", line=17, direction=PinDirection.OUTPUT, value=False
+      )
+      robot.io.set_level(chip="tegra264-gpio", line=17, value=True)
   ```
 
 - 需要访问具体 adapter 实现的强类型配置 / 扩展时，用 `proxy.as_adapter(Io)`（`fabot.adapters` 下的强类型视图）；槽位未绑定抛 `AdapterUnbound`，绑定的 adapter 类型不符抛 `AdapterMismatch`。两类错误的处理见 [错误处理](errors.md)。
