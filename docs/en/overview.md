@@ -60,7 +60,7 @@ The SDK ships typed proxies for 16 capability modules, reached through 24 slot p
 | Teleop `teleop` | `robot.teleop` | Joystick teleop session start and stop → [teleop](reference/python/teleop.md) |
 | Lift `lift` | `robot.lift` | Height read/write, absolute and relative moves, homing and servo → [lift](reference/python/lift.md) |
 
-Every proxy also has a common surface: `slot_id`, `handle`, `events`, `health()`, `lifecycle()`, `faults()`, `ping()`, `has_adapter`, `as_adapter(...)` and config access, see [Capability Interfaces Overview](reference/python/index.md).
+Every proxy also has a common surface: `slot_id`, `handle`, `events`, `health()`, `lifecycle()`, `faults()`, `ping()`, `has_adapter`, `as_adapter(...)` and config access, see [Reference Overview](reference/python/index.md).
 
 ## Robot-wide entries
 
@@ -125,4 +125,4 @@ Protocol failures raise subclasses of `FabotError` carrying `code` (a diagnostic
 - [Installation & Configuration](install/index.md): requirements, installing the Python SDK, version compatibility
 - [Tutorial](tutorials/python.md): run your first Python program
 - [Usage](usage/index.md): connection, commands and operations, events and channels, status and faults, logs and metrics, frames, configuration, errors, catalogs, mock
-- [Python API Reference](reference/python/index.md): Robot entry, catalogs, shared types and the 16 capability modules
+- [Python API Reference](reference/python/index.md): Robot entry, catalogs, shared types, the 16 capability modules, plus skills and platform services

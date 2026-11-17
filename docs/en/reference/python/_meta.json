@@ -20,5 +20,17 @@
   "teleop",
   "voice",
   "lift",
-  "camera"
+  "camera",
+  {
+    "type": "dir",
+    "name": "skills",
+    "label": "Skills",
+    "collapsed": false
+  },
+  {
+    "type": "dir",
+    "name": "services",
+    "label": "Platform Services",
+    "collapsed": false
+  }
 ]

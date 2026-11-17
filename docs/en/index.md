@@ -61,7 +61,7 @@ No robot at hand? Develop offline first: `Robot.mock()` gives you a hardware-fre
 | [Installation & Configuration](install/index.md) | Requirements, Python install, version compatibility | Everyone — start here |
 | [Usage](usage/index.md) | Connection, conventions, Commands / Operations, concurrency & safety, events & channels, status & faults, logs & metrics, frames, errors & diagnostic codes, configuration, mock, skills, services | Everyone |
 | [Python Examples](examples/python/index.md) | Complete examples per capability | Application developers |
-| [Capability Interfaces Overview](reference/python/index.md) | Python API reference for the robot entry, diagnostic codes and every capability module | Application developers |
+| [Reference Overview](reference/python/index.md) | Python API reference for the robot entry, diagnostic codes, every capability module, plus skills and platform services | Application developers |
 | [Troubleshooting](troubleshooting.md) | Connection failures, `wait_ready`, Operation failures, e-stop recovery, frames, camera capture and lift motion | Everyone |
 | [Changelog](changelog.md) | What changed in each release, with compatibility notes | Read before upgrading |
 

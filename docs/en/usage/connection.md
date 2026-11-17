@@ -128,7 +128,7 @@ Capabilities are exposed as **read-only properties**, 24 slots in total; `robot.
 
 - To reach adapter-specific typed configuration or extensions use `proxy.as_adapter(Io)` (the typed view under `fabot.adapters`). An unbound slot raises `AdapterUnbound`; a mismatched adapter raises `AdapterMismatch`. See [Error Handling](errors.md).
 
-Every slot proxy also exposes `slot_id`, `handle`, `events`, `health()`, `lifecycle()`, `faults()`, `ping()` and config access, see [Capability Interfaces Overview](../reference/python/index.md).
+Every slot proxy also exposes `slot_id`, `handle`, `events`, `health()`, `lifecycle()`, `faults()`, `ping()` and config access, see [Reference Overview](../reference/python/index.md).
 
 ## Robot-wide entries
 

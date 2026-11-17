@@ -22,7 +22,7 @@
 | `docs/*/usage/` | 常规操作（连接、约定、Command/Operation、并发与安全、事件与通道、状态故障、配置、服务、错误、Mock、迁移） |
 | `docs/*/tutorials/` | 入门教程（`python.md`） |
 | `docs/*/examples/python/` | Python 示例（按能力分页） |
-| `docs/*/reference/python/` | Python API 参考（Robot 入口 + 诊断码 + 16 个能力模块，八段式：模块概述 → API 总览 → 方法 → 通道 → 事件 → 异常 → 状态 → 资源） |
+| `docs/*/reference/python/` | Python API 参考（Robot 入口 + 诊断码 + 16 个能力模块 + 技能 `skills.md` + 平台服务 `services.md`，八段式：模块概述 → API 总览 → 方法 → 通道 → 事件 → 异常 → 状态 → 资源） |
 | `docs/*/troubleshooting.md` | 故障排除 |
 | `docs/*/changelog.md` | 更新日志（按版本倒序，随发版追加） |
 | `docs/*/_nav.json`、`_meta.json` | 顶栏与全局侧栏 |

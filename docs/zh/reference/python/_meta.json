@@ -20,5 +20,17 @@
   "teleop",
   "voice",
   "lift",
-  "camera"
+  "camera",
+  {
+    "type": "dir",
+    "name": "skills",
+    "label": "技能",
+    "collapsed": false
+  },
+  {
+    "type": "dir",
+    "name": "services",
+    "label": "平台服务",
+    "collapsed": false
+  }
 ]

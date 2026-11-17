@@ -418,10 +418,10 @@ Remaining robot-wide entries:
 |-------|-------------|
 | `robot.configuration` | Robot config read/write (`get()` / `apply()`), CAS-committed, see [Configuration](../../usage/configuration.md) |
 | `robot.connection` | Connection state query and subscription (`is_connected()` / `connected` / `subscribe()`) |
-| `robot.services` | Platform service handles (`ocs2` / `orbbec_sdk_ros2` / `ros2` / `obs_collector`), see [Platform Services](../../usage/services.md) |
-| `robot.environments` | Runtime environment config (currently `ros2`), config only, see [Platform Services](../../usage/services.md) |
+| `robot.services` | Platform service handles (`ros2` / `obs_collector`), see [Platform Services](../../usage/services.md); API in [Platform Services Overview](services/index.md) |
+| `robot.environments` | Runtime environment config (currently `ros2`), config only, see [Platform Services](../../usage/services.md); API in [Runtime Environment](services/ros2_environment.md) |
 | `robot.obs` | Observability store snapshot (`store()`), see [Logs, Metrics & Observability](../../usage/observability.md) |
-| `robot.skills` | Skill handles (`camera_sync` / `voice_aiui`), see [Skills & Extensions](../../usage/skills.md) |
+| `robot.skills` | Skill handles (`camera_sync` / `voice_aiui`), see [Skills & Extensions](../../usage/skills.md); API in [Skills Overview](skills/index.md) |
 
 ## ping / freeze
 

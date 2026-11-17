@@ -137,6 +137,7 @@ if aiui.is_available:
 
 ## 相关
 
+- 技能接口参考（方法签名、类型与状态字段）：[技能概览](../reference/python/skills/index.md)
 - 能力配置域的读写：[配置管理](configuration.md)
 - 平台服务（进程级）的管理：[平台服务管理](services.md)
 - 相机硬件能力与流：[相机 Camera](../reference/python/camera.md)

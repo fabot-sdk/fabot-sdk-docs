@@ -10,7 +10,7 @@ updated: 2026-11-17
 ## Module overview
 
 - Capability id: `lift`; slot: `robot.lift`
-- Capability domain: `lift`
+- Capability domain: `motion`; capability version: `1.0.0`
 - Height control for the lift column: read height / enable, speed and acceleration limits, absolute and relative height moves, homing, and setting the current position as zero.
 - `status()` reports height, velocity, enable, homing and motion state.
 

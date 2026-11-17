@@ -60,7 +60,7 @@ SDK 内置 16 个能力模块的类型化 Proxy，经 `Robot` 的 24 个槽位�
 | 遥操作 `teleop` | `robot.teleop` | 手柄遥操作会话的建立与停止 → [teleop](reference/python/teleop.md) |
 | 升降柱 `lift` | `robot.lift` | 高度读写、绝对 / 相对运动、回零与伺服 → [lift](reference/python/lift.md) |
 
-每个能力 Proxy 还有一组公共成员：`slot_id`、`handle`、`events`、`health()`、`lifecycle()`、`faults()`、`ping()`、`has_adapter`、`as_adapter(...)` 与配置读写，见 [能力接口概述](reference/python/index.md)。
+每个能力 Proxy 还有一组公共成员：`slot_id`、`handle`、`events`、`health()`、`lifecycle()`、`faults()`、`ping()`、`has_adapter`、`as_adapter(...)` 与配置读写，见 [参考总览](reference/python/index.md)。
 
 ## 整机级入口
 
@@ -127,4 +127,4 @@ SDK 抛出的协议错误统一是 `FabotError` 的子类，携带 `code`（诊�
 - [安装与配置](install/index.md)：环境要求、安装 Python SDK、版本配套
 - [入门教程](tutorials/python.md)：跑通第一个 Python 程序
 - [常规操作](usage/index.md)：连接、命令与长时操作、事件与通道、状态与故障、日志与指标、坐标系、配置、错误、文本目录、Mock
-- [Python API 参考](reference/python/index.md)：Robot 入口、文本目录、通用类型与 16 个能力模块的完整接口
+- [Python API 参考](reference/python/index.md)：Robot 入口、文本目录、通用类型、16 个能力模块，以及技能与平台服务的完整接口

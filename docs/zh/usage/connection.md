@@ -128,7 +128,7 @@ token.close()    # 退订；robot.close() 会统一关闭全部订阅
 
 - 需要访问具体 adapter 实现的强类型配置 / 扩展时，用 `proxy.as_adapter(Io)`（`fabot.adapters` 下的强类型视图）；槽位未绑定抛 `AdapterUnbound`，绑定的 adapter 类型不符抛 `AdapterMismatch`。两类错误的处理见 [错误处理](errors.md)。
 
-每个槽位 Proxy 还有一组公共成员：`slot_id`、`handle`、`events`、`health()`、`lifecycle()`、`faults()`、`ping()` 与配置读写，见 [能力接口概述](../reference/python/index.md)。各槽位的能力 API 见 [Python API 参考](../reference/python/index.md)。
+每个槽位 Proxy 还有一组公共成员：`slot_id`、`handle`、`events`、`health()`、`lifecycle()`、`faults()`、`ping()` 与配置读写，见 [参考总览](../reference/python/index.md)。各槽位的能力 API 见 [Python API 参考](../reference/python/index.md)。
 
 ## 整机级入口
 

@@ -77,8 +77,8 @@ print(snap.state is OperationState.Succeeded, snap.result.status_message)
 Mock 的 `services` 控制操作返回成功，`configuration` 维护内存中的配置与 revision：
 
 ```python
-robot.services.ocs2.start()
-print(robot.services.ocs2.is_running())
+robot.services.ros2.start()
+print(robot.services.ros2.is_running())
 
 cfg = robot.configuration.get()
 print(cfg.revision)

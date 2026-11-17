@@ -65,12 +65,12 @@ for attempt in range(3):
 平台服务的配置用同样的 CAS 模式：
 
 ```python
-from fabot.services import Ocs2Config
+from fabot.services import ObsCollectorConfig
 
-svc = robot.services.ocs2
+svc = robot.services.obs_collector
 for attempt in range(3):
     cfg = svc.get_config()
-    cfg.launch.hardware = "real"
+    cfg.obs.retention_days.log = 14
     try:
         cfg = svc.set_config(cfg)
         break
@@ -78,7 +78,7 @@ for attempt in range(3):
         print("冲突，重试", attempt)
 ```
 
-注意枚举字段可以传字符串（`"real"`），也可以用 `Ocs2Config.field_options()` 拿到合法取值建下拉框。
+枚举字段可以传字符串，也可以用 `ObsCollectorConfig.field_options()` 拿到合法取值建下拉框。`obs_collector` 只在启动时读配置，保存后需 `stop()` / `start()` 才生效。
 
 ## 备份与迁移
 

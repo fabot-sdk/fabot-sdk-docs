@@ -65,10 +65,10 @@ for attempt in range(3):
 Platform service config uses the same CAS pattern:
 
 ```python
-svc = robot.services.ocs2
+svc = robot.services.obs_collector
 for attempt in range(3):
     cfg = svc.get_config()
-    cfg.launch.hardware = "real"
+    cfg.obs.retention_days.log = 14
     try:
         cfg = svc.set_config(cfg)
         break
@@ -76,7 +76,7 @@ for attempt in range(3):
         print("conflict, retrying", attempt)
 ```
 
-Enum fields accept strings (`"real"`), and `Ocs2Config.field_options()` gives the legal values for building a dropdown.
+Enum fields accept strings, and `ObsCollectorConfig.field_options()` gives the legal values for building a dropdown. `obs_collector` reads its config only at start, so call `stop()` / `start()` after saving.
 
 ## Backup and migration
 

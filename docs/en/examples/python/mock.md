@@ -77,8 +77,8 @@ print(snap.state is OperationState.Succeeded, snap.result.status_message)
 The mock's `services` control calls succeed and `configuration` keeps an in-memory config with a revision:
 
 ```python
-robot.services.ocs2.start()
-print(robot.services.ocs2.is_running())
+robot.services.ros2.start()
+print(robot.services.ros2.is_running())
 
 cfg = robot.configuration.get()
 print(cfg.revision)

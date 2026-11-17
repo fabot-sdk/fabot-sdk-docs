@@ -137,6 +137,7 @@ A skill is an independent unit on the robot, configured through config domains e
 
 ## Related
 
+- Skill API reference (signatures, types and status fields): [Skills Overview](../reference/python/skills/index.md)
 - Reading and writing capability config domains: [Configuration](configuration.md)
 - Managing platform services (process level): [Platform Services](services.md)
 - Camera hardware and streams: [Camera](../reference/python/camera.md)

@@ -2,12 +2,12 @@
 title: Platform Services
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Platform Services
 
-Platform services (such as `fabot_ocs2`) expose only a **small set of platform operations** to the SDK: start / stop / restart, state queries and config access. Business APIs are not open to clients. Only services declared client-visible show up in `robot.services`.
+Platform services expose only a **small set of platform operations** to the SDK: start / stop / restart, state queries and config access. Business APIs are not open to clients. Only services declared client-visible show up in `robot.services`.
 
 ## Entries and services
 
@@ -15,15 +15,11 @@ Platform services (such as `fabot_ocs2`) expose only a **small set of platform o
 
 | Property | service id | Handle | Config type |
 |----------|-----------|--------|-------------|
-| `robot.services.ocs2` | `fabot_ocs2` | `Ocs2ServiceHandle` | `Ocs2Config` |
-| `robot.services.orbbec_sdk_ros2` | `fabot_orbbec_sdk_ros2` | `OrbbecSdkRos2ServiceHandle` | `OrbbecSdkRos2Config` |
 | `robot.services.ros2` | `fabot_ros2` | `Ros2ServiceHandle` | `Ros2Config` |
 | `robot.services.obs_collector` | `fabot_obs_collector` | `ObsCollectorServiceHandle` | `ObsCollectorConfig` |
 
 The `SERVICE_ID` / `CONFIG` class attributes on each handle give the service id and config type.
 
-- `ocs2` is the launch entry of the motion-control (whole-body) stack; its `launch` config decides what starts, whether real or simulated hardware is used, and the left/right end-effector models.
-- `orbbec_sdk_ros2` is the Orbbec ROS camera backend, normally not started by default in a product deployment; call `start()` explicitly when you need it.
 - `ros2` is the ROS 2 graph-access service: alongside the usual lifecycle and config operations it exposes node / topic / service / action / parameter queries and calls, see "ROS 2 graph access" below.
 - `obs_collector` is the observability collector that persists logs / metrics / events and owns the flight recorder, see "Observability collector" below.
 
@@ -37,7 +33,7 @@ The `SERVICE_ID` / `CONFIG` class attributes on each handle give the service id 
 | `get_config()` / `set_config(cfg)` | Read / CAS-update the service config (raises `ConfigurationConflict`) |
 
 ```python
-svc = robot.services.ocs2               # Ocs2ServiceHandle
+svc = robot.services.ros2                # Ros2ServiceHandle
 svc.start()
 print(svc.state(), svc.is_running())
 
@@ -50,7 +46,7 @@ svc.set_config(cfg)                     # CAS; raises ConfigurationConflict
 `start()` / `stop()` / `restart()` are synchronous: they submit the desired state and raise `FabotError` when the request fails (see [Error Handling](errors.md)). Process transitions are asynchronous, so confirm with `state()` / `is_running()` after the call, or subscribe to `service_state_changed`.
 
 :::warning
-`stop()` / `restart()` affect everything that depends on the service. While the motion-control stack restarts, arms and chassis are unavailable.
+`stop()` / `restart()` affect everything that depends on the service. While `ros2` restarts, all ROS 2 graph and action access through it is unavailable; while `obs_collector` restarts, observability data stops being persisted.
 :::
 
 ## State query
@@ -59,7 +55,7 @@ svc.set_config(cfg)                     # CAS; raises ConfigurationConflict
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `service_id` | `str` | Service id (such as `fabot_ocs2`) |
+| `service_id` | `str` | Service id (such as `fabot_ros2`) |
 | `desired` | `ServiceDesiredState` | Desired state: `Unknown` / `Running` / `Stopped` |
 | `state` | `ServiceRunState` | Observed state: `Unknown` / `Starting` / `Ready` / `Stopping` / `Stopped` / `Failed` |
 | `pid` | `int` | Process id (`-1` when not running) |
@@ -75,18 +71,20 @@ Two convenience properties: `is_running` (`state` is `Starting` or `Ready`) and 
 ```python
 from fabot.errors import ConfigurationConflict
 
-svc = robot.services.ocs2
+svc = robot.services.obs_collector
 cfg = svc.get_config()
-print(cfg.to_yaml())                    # the effective launch config
+print(cfg.to_yaml())                    # the effective obs config
 
-cfg.launch.hardware = "real"            # fields are StrEnums and accept strings
+cfg.obs.retention_days.log = 14         # strongly typed; enum fields accept strings
 try:
     cfg = svc.set_config(cfg)           # CAS; returns the latest config
 except ConfigurationConflict:
     cfg = svc.get_config()              # re-read, merge, retry
 ```
 
-`Ocs2Config.field_options()` lists the legal values per field (such as `launch.hardware` with `real` / `mock_components` / `isaac`), which is convenient for building dropdowns. Treat the returned tuples as the source of truth — enums are added and removed between releases, so do not hard-code candidate lists. The retry pattern is the same as for robot configuration, see [Configuration](configuration.md).
+`ObsCollectorConfig.field_options()` lists the legal values per field, which is convenient for building dropdowns. Treat the returned tuples as the source of truth — enums are added and removed between releases, so do not hard-code candidate lists. The retry pattern is the same as for robot configuration, see [Configuration](configuration.md).
+
+`obs_collector` reads its config only at start: after saving, call `stop()` then `start()` for it to take effect.
 
 ## ROS 2 graph access
 
@@ -174,3 +172,9 @@ Callbacks run on the SDK I/O thread: keep them short and never call blocking API
 :::note
 `Robot.mock()` provides `robot.services`, but control operations merely succeed and state stays in memory. Tests that need real service behaviour still require a robot or a platform test environment, see [Mock Testing](mock.md).
 :::
+
+## Related
+
+- Service API reference (signatures, `ros2` graph and action APIs, config fields): [Platform Services Overview](../reference/python/services/index.md)
+- Config-domain access and conflict retries: [Configuration](configuration.md)
+- Service state events and subscription conventions: [Events & Data Channels](events-channels.md)

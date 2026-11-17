@@ -61,7 +61,7 @@ Idle Normal
 | [安装与配置](install/index.md) | 环境要求、Python 安装、版本配套 | 所有读者，从这里开始 |
 | [常规操作](usage/index.md) | 连接、约定、Command / Operation、并发与安全、事件与通道、状态与故障、日志与指标、坐标系、错误与诊断码、配置、Mock、技能、服务 | 所有读者 |
 | [Python 示例](examples/python/index.md) | 按能力的完整 Python 示例 | 应用开发 |
-| [能力接口概述](reference/python/index.md) | Robot 入口、诊断码、文本目录、通用类型与各能力模块的接口参考 | 应用开发 |
+| [参考总览](reference/python/index.md) | Robot 入口、诊断码、文本目录、通用类型、各能力模块，以及技能与平台服务的接口参考 | 应用开发 |
 | [故障排除](troubleshooting.md) | 连不上、`wait_ready`、Operation 失败、急停恢复、坐标系、抓帧与升降柱问题 | 所有读者 |
 | [更新日志](changelog.md) | 各版本新增、变更、修复与兼容性说明 | 升级前查阅 |
 

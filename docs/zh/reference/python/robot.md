@@ -418,10 +418,10 @@ print(robot.frames.to_mermaid())
 |------|------|
 | `robot.configuration` | 整机配置读写（`get()` / `apply()`），CAS 提交，见 [配置管理](../../usage/configuration.md) |
 | `robot.connection` | 连接状态查询与订阅（`is_connected()` / `connected` / `subscribe()`） |
-| `robot.services` | 平台服务句柄（`ocs2` / `orbbec_sdk_ros2` / `ros2` / `obs_collector`），见 [平台服务管理](../../usage/services.md) |
-| `robot.environments` | 运行环境配置（目前只有 `ros2`），只读写配置，见 [平台服务管理](../../usage/services.md) |
+| `robot.services` | 平台服务句柄（`ros2` / `obs_collector`），见 [平台服务管理](../../usage/services.md)；接口见 [平台服务概览](services/index.md) |
+| `robot.environments` | 运行环境配置（目前只有 `ros2`），只读写配置，见 [平台服务管理](../../usage/services.md)；接口见 [运行环境配置](services/ros2_environment.md) |
 | `robot.obs` | 观测存储快照（`store()`），见 [日志、指标与可观测性](../../usage/observability.md) |
-| `robot.skills` | 技能句柄（`camera_sync` / `voice_aiui`），见 [技能与扩展](../../usage/skills.md) |
+| `robot.skills` | 技能句柄（`camera_sync` / `voice_aiui`），见 [技能与扩展](../../usage/skills.md)；接口见 [技能概览](skills/index.md) |
 
 ## ping / freeze
 
