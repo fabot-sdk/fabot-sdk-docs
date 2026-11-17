@@ -82,6 +82,7 @@ SDK 内置 16 个能力模块的类型化 Proxy，经 `Robot` 的 24 个槽位�
 | `robot.state()` | 整机状态快照 `RobotState`（`mode` / `health` / `root_causes` / `domains`），见 [状态、故障与生命周期](usage/status-faults.md) |
 | `robot.status()` | 整机聚合状态袋 `RobotStatus`（电源、5 路相机、面屏、语音） |
 | `robot.faults()` | 按槽位聚合的故障快照 `RobotFaults` |
+| `robot.self_check()` | 按需触发整机自检，汇总为 `RobotSelfCheck`；槽位级也有同名方法，见 [自检](usage/self-check.md) |
 | `robot.ping()` / `robot.freeze()` | 运行库往返时延探测；冻结观测侧的飞行记录器 |
 | `robot.wait_ready()` | 等待已绑定且启用为必需的槽位就绪；`close()` / `with` 释放连接 |
 

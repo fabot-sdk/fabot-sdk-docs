@@ -6,6 +6,7 @@
   "concurrency-and-safety",
   "events-channels",
   "status-faults",
+  "self-check",
   "observability",
   "frames",
   "errors",

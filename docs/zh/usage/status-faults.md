@@ -159,8 +159,20 @@ token = robot.left_arm.events.lifecycle_changed.subscribe(on_lifecycle)
 
 槽位未绑定 adapter 时，`health()` / `lifecycle()` / `faults()` 仍可调用（返回未配置的快照，`health` 为 `Unknown`、`lifecycle` 为 `Unconfigured`），而 `get_config()` 与 `as_adapter()` 会抛 `AdapterUnbound`，能力方法则会下发到平台后失败或超时。先用 `has_adapter` 判断（见 [Robot 入口](../reference/python/robot.md)）。
 
+## 自检
+
+上面的 `health()` / `lifecycle()` / `faults()` 都是**只读查询**，读的是平台已经算好的结果，不会驱动任何检查。要主动验一遍当前状态，用 `self_check()`：
+
+```python
+report = robot.io.self_check()          # 单槽位，返回 SelfCheckReport
+summary = robot.self_check()            # 整机，返回 RobotSelfCheck
+```
+
+`self_check()` 会真的执行能力侧的检查钩子，并把结果写进故障锁存——所以它不只是观测，还会影响后续 `health()` / `faults()` 的结果。`health` 里的 `pbit_completed` 反映的是上电自检的完成情况，与主动触发的 IBIT 是两件不同的事。详见 [自检](self-check.md)。
+
 ## 与其他页面的关系
 
+- 按需触发的槽位与整机自检：[自检](self-check.md)
 - 整机事件与日志的订阅方式：[事件与数据通道](events-channels.md)
 - 日志、指标与冻结快照：[日志、指标与可观测性](observability.md)
 - 故障码的本地化文本：[文本目录 Catalogs](catalogs.md)

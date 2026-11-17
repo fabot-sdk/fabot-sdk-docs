@@ -119,6 +119,7 @@ robot.wait_ready(["left_arm", "io"])     # 只等指定槽位
 | `health()` | 当前健康度 `SlotHealth` |
 | `lifecycle()` | `CapabilityLifecycleSnapshot`（`lifecycle` / `health` / `pbit_completed` / `source_instance_id`） |
 | `faults()` | 该槽位当前故障袋 `Faults` |
+| `self_check(...)` | 主动执行该槽位自检，返回 `SelfCheckReport`；会写入故障锁存，见 [自检](../../usage/self-check.md) |
 | `ping(...)` | 运行库往返时延探测，返回 `PingReport` |
 | `has_adapter` | 槽位是否已绑定 adapter（只读属性） |
 | `as_adapter(adapter_type)` | 转为 `fabot.adapters` 下的强类型 adapter 视图 |
@@ -214,6 +215,45 @@ print(agg.generation, agg.power_1.energy, agg.screen.activity)
 
 faults = robot.faults()
 print(faults.revision, faults.chassis.records)
+```
+
+## self_check
+
+整机自检：按机器人规格顺序，对当前**已启用且已绑定 adapter** 的槽位各跑一次槽位自检，汇总为 `RobotSelfCheck`。与只读的 `state()` / `status()` / `faults()` 不同，它会真的执行检查钩子并写入故障锁存。完整说明见 [自检](../../usage/self-check.md)。
+
+```python
+self_check(timeout_ms: int = 0, *, timeout: float | None = None) -> RobotSelfCheck
+```
+
+| 参数 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `timeout_ms` | `int` | `0` | 检查钩子预算（毫秒）；`0` 用平台默认。负数或超过 `25000` 抛 `ValueError` |
+| `timeout` | `float \| None` | `None` | 同上，单位秒；非 `None` 时覆盖 `timeout_ms` |
+
+`timeout_ms` 是**钩子预算**而非整条 RPC 的总时长：`0` 时 RPC 等 10 秒，正值 `n` 时 RPC 等 `n + 5000` 毫秒。
+
+`RobotSelfCheck`：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `overall` | `SelfCheckVerdict` | 汇总判定 |
+| `slots` | `list[SlotSelfCheck]` | 每个参与槽位一条，按规格顺序 |
+| `duration_ms` | `int` | 整轮耗时（毫秒） |
+
+`SlotSelfCheck`：`slot_id` / `report`（`SelfCheckReport \| None`，RPC 失败时为 `None`）/ `error`（RPC 失败原因）。
+
+汇总规则：一个槽都没跑为 `Skip`；任一槽位 RPC 报错或其 `report.overall` 既非 `Pass` 也非 `Skip` 为 `Fail`；其余为 `Pass`。单个槽位失败不打断后面的槽位。技能与服务不参与。
+
+参与范围与 `wait_ready()` 不同：这里不要求槽位是 `essential`，只看是否已启用且已绑定 adapter。
+
+```python
+summary = robot.self_check()
+print(summary.overall.name, summary.duration_ms)
+for slot in summary.slots:
+    if slot.error:
+        print(slot.slot_id, "失败:", slot.error)
+    else:
+        print(slot.slot_id, slot.report.overall.name)
 ```
 
 ## events

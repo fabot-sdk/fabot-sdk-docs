@@ -119,6 +119,7 @@ Shared members of every slot proxy:
 | `health()` | Current health as `SlotHealth` |
 | `lifecycle()` | `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `pbit_completed` / `source_instance_id`) |
 | `faults()` | Current fault bag `Faults` |
+| `self_check(...)` | Run this slot's self-check on demand, returns `SelfCheckReport`; writes the fault latch, see [Self-check](../../usage/self-check.md) |
 | `ping(...)` | Runtime round-trip probe returning `PingReport` |
 | `has_adapter` | Whether an adapter is bound (read-only property) |
 | `as_adapter(adapter_type)` | Typed adapter view under `fabot.adapters` |
@@ -214,6 +215,45 @@ print(agg.generation, agg.power_1.energy, agg.screen.activity)
 
 faults = robot.faults()
 print(faults.revision, faults.chassis.records)
+```
+
+## self_check
+
+Whole-robot self-check: runs one slot self-check on every slot that is currently **enabled and has an adapter bound**, in robot-spec order, and summarises the result as `RobotSelfCheck`. Unlike the read-only `state()` / `status()` / `faults()`, it really executes the check hooks and writes the fault latch. Full explanation in [Self-check](../../usage/self-check.md).
+
+```python
+self_check(timeout_ms: int = 0, *, timeout: float | None = None) -> RobotSelfCheck
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `timeout_ms` | `int` | `0` | Hook budget in milliseconds; `0` uses the platform default. Negative values and values above `25000` raise `ValueError` |
+| `timeout` | `float \| None` | `None` | Same budget in seconds; overrides `timeout_ms` when not `None` |
+
+`timeout_ms` is the **hook budget**, not the total RPC time: with `0` the RPC waits 10 seconds, and with a positive `n` it waits `n + 5000` milliseconds.
+
+`RobotSelfCheck`:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `overall` | `SelfCheckVerdict` | Overall verdict |
+| `slots` | `list[SlotSelfCheck]` | One entry per participating slot, in spec order |
+| `duration_ms` | `int` | Elapsed time for the round in milliseconds |
+
+`SlotSelfCheck`: `slot_id` / `report` (`SelfCheckReport | None`, `None` when the RPC failed) / `error` (RPC failure reason).
+
+Overall rules: `Skip` when nothing ran; `Fail` when any slot RPC errored or its `report.overall` is neither `Pass` nor `Skip`; otherwise `Pass`. One failing slot does not stop the rest. Skills and services never participate.
+
+The participating set differs from `wait_ready()`: a slot here need not be `essential`, only enabled and adapter-bound.
+
+```python
+summary = robot.self_check()
+print(summary.overall.name, summary.duration_ms)
+for slot in summary.slots:
+    if slot.error:
+        print(slot.slot_id, "failed:", slot.error)
+    else:
+        print(slot.slot_id, slot.report.overall.name)
 ```
 
 ## events

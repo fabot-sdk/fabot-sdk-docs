@@ -50,6 +50,7 @@ Every capability proxy has the following members, so module pages only document 
 | `health()` | Health snapshot `SlotHealth` |
 | `lifecycle()` | Lifecycle snapshot `CapabilityLifecycleSnapshot` |
 | `faults()` | Current fault bag `Faults` |
+| `self_check(...)` | Run this slot's self-check on demand, returns `SelfCheckReport`; writes the fault latch, see [Self-check](../../usage/self-check.md) |
 | `ping(...)` | Runtime round-trip probe, returns `PingReport` |
 | `get_config()` / `set_config(cfg)` / `edit_config()` | Config-domain access for that slot, see [Configuration](../../usage/configuration.md) |
 

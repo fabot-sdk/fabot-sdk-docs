@@ -21,15 +21,16 @@ Read in this order: get connected and the conventions straight first, then move 
 4. [Concurrency, Threading and Safety](concurrency-and-safety.md) — thread model, I/O-thread rules, servo safety, idempotency and reconnects.
 5. [Events & Data Channels](events-channels.md) — events (`EventHeader`, `SubscriptionToken`) and channels (frame iteration, QoS, renewal, closing).
 6. [Status, Faults & Lifecycle](status-faults.md) — `robot.state()` run mode and health, status bags, lifecycle and health, fault bags.
-7. [Logs, Metrics & Observability](observability.md) — log subscription and history, custom log / metric emission, freezing the flight recorder and the observability store.
-8. [Frames & Transforms](frames.md) — `robot.frames` queries, pose and point-cloud transforms, pixel deprojection.
-9. [Error Handling](errors.md) — the `FabotError` hierarchy, diagnostic codes and retryability, trace ids.
-10. [Catalogs](catalogs.md) — turning diagnostic codes, log keys and metric names into display text.
-11. [Mock Testing](mock.md) — offline development and its limits.
-12. [Skills & Extensions](skills.md) — multi-camera sync and voice semantics through `robot.skills`.
-13. [Configuration](configuration.md) — robot bindings and capability / skill config domains, CAS conflicts.
-14. [Platform Services](services.md) — lifecycle, config and state for `robot.services` / `robot.environments`.
-15. [Migrating from 1.0.x to 1.1.0](migration-1.0-to-1.1.md) — symbol mapping and a checklist for upgrades.
+7. [Self-check](self-check.md) — on-demand slot and robot self-checks, report structure, timeout budgets and overall verdict rules.
+8. [Logs, Metrics & Observability](observability.md) — log subscription and history, custom log / metric emission, freezing the flight recorder and the observability store.
+9. [Frames & Transforms](frames.md) — `robot.frames` queries, pose and point-cloud transforms, pixel deprojection.
+10. [Error Handling](errors.md) — the `FabotError` hierarchy, diagnostic codes and retryability, trace ids.
+11. [Catalogs](catalogs.md) — turning diagnostic codes, log keys and metric names into display text.
+12. [Mock Testing](mock.md) — offline development and its limits.
+13. [Skills & Extensions](skills.md) — multi-camera sync and voice semantics through `robot.skills`.
+14. [Configuration](configuration.md) — robot bindings and capability / skill config domains, CAS conflicts.
+15. [Platform Services](services.md) — lifecycle, config and state for `robot.services` / `robot.environments`.
+16. [Migrating from 1.0.x to 1.1.0](migration-1.0-to-1.1.md) — symbol mapping and a checklist for upgrades.
 
 ## Cheat sheet
 

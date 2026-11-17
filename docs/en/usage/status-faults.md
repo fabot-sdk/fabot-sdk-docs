@@ -159,8 +159,20 @@ token = robot.left_arm.events.lifecycle_changed.subscribe(on_lifecycle)
 
 On a slot without an adapter, `health()` / `lifecycle()` / `faults()` still work (they return an unconfigured snapshot: `health` is `Unknown`, `lifecycle` is `Unconfigured`), while `get_config()` and `as_adapter()` raise `AdapterUnbound`, and capability methods are dispatched and then fail or time out on the platform. Check `has_adapter` first.
 
+## Self-check
+
+The `health()` / `lifecycle()` / `faults()` calls above are all **read-only queries** over results the platform already computed; they drive no check. To actively verify the current state, use `self_check()`:
+
+```python
+report = robot.io.self_check()          # one slot, returns SelfCheckReport
+summary = robot.self_check()            # whole robot, returns RobotSelfCheck
+```
+
+`self_check()` really executes the capability's check hooks and writes the result into the fault latch — it is more than observation, and it can change what later `health()` / `faults()` calls report. The `pbit_completed` flag in `health` reflects power-on self-test completion, which is a different thing from an IBIT you trigger. See [Self-check](self-check.md).
+
 ## Related pages
 
+- On-demand slot and robot self-checks: [Self-check](self-check.md)
 - Event and log subscription mechanics: [Events & Data Channels](events-channels.md)
 - Logs, metrics and flight-recorder freezing: [Logs, Metrics & Observability](observability.md)
 - Localized fault text: [Catalogs](catalogs.md)

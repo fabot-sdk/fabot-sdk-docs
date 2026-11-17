@@ -82,6 +82,7 @@ For custom terminal states or intermediate snapshots use `MockBackend.set_operat
 | Channel | Opening a channel fails with `NotFound` ("not stubbed"): the mock registers no default channel handler |
 | Events | Nothing is emitted |
 | Robot state | `state()` / `status()` / `faults()` return empty snapshots |
+| Self-check | A slot `self_check()` returns an empty report with `overall=Pass`, `type=Ibit`, `items=[]`; slots have no adapter bound by default, so the robot-level `self_check()` runs nothing and returns `overall=Skip`, `slots=[]` |
 | E-stop / config / services | `engage` / `release` update an in-memory `EstopState`; `configuration` `get` / `apply` maintain an in-memory config and revision; service control succeeds while state stays `Unknown` |
 | Skills | Skill proxies are available and `is_available` is `True` |
 
@@ -113,7 +114,8 @@ backend.set_manager_connected(False)
 
 Injection points:
 
-- `set_command_handler(slot_or_cap, method, handler)` / `set_operation_handler(...)` / `set_subscribe_handler(...)`: register low-level handlers per (slot or capability, method); payloads are `BytesPayload`, paired with `encode_flatbuffer` / `decode_flatbuffer`;
+- `set_resolved(slot_id, ResolvedSlot(...))`: register the resolution result for a slot first; without it, `robot.<slot>.handle` fails with `NotFound` ("not stubbed");
+- `set_command_handler(slot_or_cap, method, handler)` / `set_operation_handler(...)` / `set_subscribe_handler(...)`: register low-level handlers per (slot or capability, method); payloads are `BytesPayload`, paired with `encode_flatbuffer` / `decode_flatbuffer`. Self-check goes through `set_command_handler(..., "fabot.runtime.self_check", ...)`, with an example in [Self-check](self-check.md);
 - `push_event(event)`: deliver an `Event` to matching event subscriptions (see [Events & Data Channels](events-channels.md));
 - `push_frame(channel_id, frame)`: deliver a `ChannelFrame` to channel watchers;
 - `set_manager_connected(bool)`: simulate connection changes.

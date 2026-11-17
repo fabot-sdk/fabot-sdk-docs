@@ -82,6 +82,7 @@ assert snap.state == OperationState.Succeeded and snap.terminal
 | Channel | 打开通道会以 `NotFound`（"not stubbed"）失败：Mock 没有为任何通道注册默认处理器 |
 | 事件 | 不自发产生 |
 | 整机状态 | `state()` / `status()` / `faults()` 返回空快照 |
+| 自检 | 槽位 `self_check()` 返回 `overall=Pass`、`type=Ibit`、`items=[]` 的空报告；槽位默认未绑定 adapter，所以整机 `self_check()` 不跑任何槽位，返回 `overall=Skip`、`slots=[]` |
 | 急停 / 配置 / 服务 | 急停 `engage` / `release` 更新内存中的 `EstopState`；`configuration` 的 `get` / `apply` 维护内存配置与 revision；`services` 控制操作返回成功、运行状态保持 `Unknown` |
 | 技能 | `skills.camera_sync` 等 Proxy 可用，`is_available` 为 `True` |
 
@@ -113,7 +114,8 @@ backend.set_manager_connected(False)
 
 主要注入点：
 
-- `set_command_handler(slot_or_cap, method, handler)` / `set_operation_handler(...)` / `set_subscribe_handler(...)`：按（槽位或能力，方法名）注册底层处理器；payload 为 `BytesPayload`，配合 `encode_flatbuffer` / `decode_flatbuffer` 编解码；
+- `set_resolved(slot_id, ResolvedSlot(...))`：先登记槽位解析结果；没有它，`robot.<slot>.handle` 会以 `NotFound`（"not stubbed"）失败；
+- `set_command_handler(slot_or_cap, method, handler)` / `set_operation_handler(...)` / `set_subscribe_handler(...)`：按（槽位或能力，方法名）注册底层处理器；payload 为 `BytesPayload`，配合 `encode_flatbuffer` / `decode_flatbuffer` 编解码。自检走的就是 `set_command_handler(..., "fabot.runtime.self_check", ...)`，示例见 [自检](self-check.md)；
 - `push_event(event)`：向 selector 匹配的事件订阅投递一个 `Event`（订阅模型见 [事件与数据通道](events-channels.md)）；
 - `push_frame(channel_id, frame)`：向通道观察者投递一帧 `ChannelFrame`；
 - `set_manager_connected(bool)`：模拟连接状态变化。

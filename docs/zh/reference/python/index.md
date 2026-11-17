@@ -50,6 +50,7 @@ SDK 内置 16 个能力模块的类型化 Proxy。能力经 `Robot` 的槽位属
 | `health()` | 健康状态 `SlotHealth` |
 | `lifecycle()` | 生命周期快照 `CapabilityLifecycleSnapshot` |
 | `faults()` | 当前故障袋 `Faults` |
+| `self_check(...)` | 主动执行该槽位自检，返回 `SelfCheckReport`；会写入故障锁存，见 [自检](../../usage/self-check.md) |
 | `ping(...)` | 运行库往返时延探测 `PingReport` |
 | `get_config()` / `set_config(cfg)` / `edit_config()` | 该槽位配置域读写，见 [配置管理](../../usage/configuration.md) |
 

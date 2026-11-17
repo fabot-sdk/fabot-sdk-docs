@@ -80,6 +80,7 @@ Every proxy also has a common surface: `slot_id`, `handle`, `events`, `health()`
 | `robot.state()` | Robot state snapshot `RobotState` (`mode` / `health` / `root_causes` / `domains`), see [Status, Faults & Lifecycle](usage/status-faults.md) |
 | `robot.status()` | Aggregated status bags `RobotStatus` (power, five cameras, screen, voice, lift) |
 | `robot.faults()` | Fault snapshot aggregated per slot `RobotFaults` |
+| `robot.self_check()` | Trigger a whole-robot self-check on demand, summarised as `RobotSelfCheck`; slots expose the same method, see [Self-check](usage/self-check.md) |
 | `robot.ping()` / `robot.freeze()` | Runtime round-trip probe; freeze the observability flight recorder |
 | `robot.wait_ready()` | Wait for bound, essential slots; `close()` / `with` releases the connection |
 
