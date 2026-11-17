@@ -26,22 +26,27 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 
 When the slot is unbound, `get_height()` is still dispatched and fails or times out; `has_adapter` is the only reliable precondition.
 
-## Enable → home → position
+## Home → position
 
-After a cold start the axis normally needs homing before it accepts absolute targets:
+With `require_homed: true` (the template default) absolute height commands require `get_height().homed`. `homed` is a software flag that a successful `move_home` or `set_height_zero` writes to `home.yaml`, so it survives a power cycle; an absolute encoder reports the true position at power-on, so with the flag present, send height commands directly. The flag only disappears after an encoder fault `0x7321`–`0x7328`: rebuild it with `move_home` against the origin switch, or call `set_height_zero` at a known mechanical position. With `require_homed: false`, height commands work unhomed.
+
+Dispatching a command lets the lower layer perform fault recovery and reach Operation Enabled, so `set_enable(True)` is not a prerequisite (it only enables, it does not move); `set_enable(False)` drops torque.
+
+Omitting `duration` and `wait_timeout` gives a server-side budget of `default_wait_timeout_s` (15 s in the template). `wait(timeout=...)` / `get(timeout=...)` only bound that one client-side wait and do not extend the motion; pass seconds to the command's own `wait_timeout` instead. The template stroke is `0`–`0.30` m (`min_height_m` / `max_height_m`), and the target must fall inside it.
 
 ```python
 if robot.lift.has_adapter:
-    robot.lift.set_enable(True)
     if not robot.lift.get_height().homed:
-        robot.lift.move_home().wait(timeout=30.0)
+        robot.lift.move_home(wait_timeout=30).wait(timeout=35)
 
-    op = robot.lift.move_height(0.45, tolerance=0.005)
-    snap = op.get(timeout=20.0)
+    op = robot.lift.move_height(0.20, tolerance=0.005, wait_timeout=20)
+    snap = op.get(timeout=1.0)
     print(snap.state, snap.feedback.progress if snap.feedback else None)
+    outcome = op.wait(timeout=25)
+    print(outcome.success, outcome.status_message)
 ```
 
-`move_height` returns an Operation: `get()` pulls a snapshot, `wait()` blocks for the terminal state, `cancel()` makes a best-effort cancel. See [Commands and long-running operations](../../usage/commands-operations.md).
+`move_height` returns an Operation: `get()` pulls one snapshot, `wait()` blocks for the terminal state, `cancel()` makes a best-effort cancel. See [Commands and long-running operations](../../usage/commands-operations.md). `has_adapter` only says the slot has an adapter bound.
 
 ## Relative moves and speed limits
 
@@ -80,7 +85,8 @@ finally:
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| Move command rejected | Axis not enabled | Call `set_enable(True)` first |
-| Absolute target rejected | Not homed (`homed` is `False`) | Run `move_home()` first |
+| Move command rejected | CAN link down, e-stop asserted, or target outside the stroke | Check `status()` and `fault_code`; position commands enable the drive themselves, so no prior `set_enable` is needed |
+| Absolute target rejected | `require_homed` is on and `homed` is `False` | Run `move_home()`, or `set_height_zero()` at a known mechanical position |
+| Homing or arrival times out | The server-side budget is still `default_wait_timeout_s` | Pass seconds to the command's own `wait_timeout`; the client `wait(timeout=...)` does not extend the motion |
 | `move_height` stays `Queued` | Another Operation owns the resource | Wait for it, or `cancel()` it |
 | Every height reading shifted | Someone called `set_height_zero()` | Re-home and confirm the zero definition |

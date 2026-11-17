@@ -2,7 +2,7 @@
 title: Lift
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Lift
@@ -69,7 +69,13 @@ get_height(*, timeout_ms: int = 1000) -> LiftState
 
 ### get_enable / set_enable
 
-Read or set the enable flag. Move commands are rejected while the axis is disabled.
+Read or set the enable flag. Routine use does not need either call: position commands and `move_home` let the lower layer perform fault recovery and enable the drive, so reach for these methods only to drop torque deliberately or to check the enable state.
+
+Setting the flag never moves the axis. `set_enable(True)` applies one manual enable; `set_enable(False)` drops torque.
+
+:::note You normally do not enable by hand
+Examples and application code rarely show `set_enable(True)` / `get_enable()`: dispatching a position command or `move_home` makes the lower layer perform fault recovery and reach Operation Enabled on its own. When a `not_enabled` diagnostic appears, check the link and the e-stop before adding an enable call.
+:::
 
 ```python
 get_enable(*, timeout_ms: int = 1000) -> bool
@@ -140,7 +146,7 @@ move_height(target: float, *, tolerance: float = 0.0, duration: float = 0.0, wai
 | `target` | `float` | (required) | Target height, metres |
 | `tolerance` | `float` | `0.0` | Arrival tolerance (m); `0` keeps the controller default |
 | `duration` | `float` | `0.0` | Desired motion duration (s); `0` keeps the controller default |
-| `wait_timeout` | `float` | `0.0` | Extra arrival-wait budget on top of `duration`; `0` keeps the default policy |
+| `wait_timeout` | `float` | `0.0` | Extra arrival-wait budget on top of `duration`; `0` uses `default_wait_timeout_s` (15 s in the template) |
 
 ### move_height_relative
 
@@ -161,16 +167,15 @@ move_home(*, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float 
 ```
 
 ```python
-from fabot.core import OperationState
-
 if robot.lift.has_adapter:
-    robot.lift.set_enable(True)
     if not robot.lift.get_height().homed:
-        robot.lift.move_home().wait(timeout=30.0)
-    op = robot.lift.move_height(0.35, tolerance=0.005)
-    snap = op.get(timeout=15.0)
+        robot.lift.move_home(wait_timeout=30).wait(timeout=35)
+    op = robot.lift.move_height(0.20, tolerance=0.005, wait_timeout=20)
+    snap = op.get(timeout=1.0)
     print(snap.state, snap.result)
 ```
+
+Absolute targets need the `homed` flag when `require_homed` is on. The flag lives in `home.yaml`, survives a power cycle, and only disappears after an encoder fault `0x7321`–`0x7328`. `wait(timeout=...)` only bounds the client-side wait; to extend the motion, use the command's own `wait_timeout`. The template stroke is `0`–`0.30` m. See the [lift example](../../examples/python/lift.md).
 
 ## Channels
 

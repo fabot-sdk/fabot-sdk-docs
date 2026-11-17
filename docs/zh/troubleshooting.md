@@ -141,9 +141,11 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 
 `robot.lift` 的运动被拒通常只有三类原因：
 
-1. **未使能**：先 `robot.lift.set_enable(True)`，再下发运动；
-2. **未回零**：`robot.lift.get_height().homed` 为 `False` 时绝对高度目标会被拒，先 `move_home()`；
+1. **未回零**：`require_homed` 为真且 `robot.lift.get_height().homed` 为 `False` 时绝对高度目标会被拒，先 `move_home()`，或在已知机械位置调用 `set_height_zero()`；
+2. **未使能不是原因**：位置命令与 `move_home` 自己完成故障恢复并进入 Operation Enabled，不必先 `set_enable(True)`；`set_enable(False)` 只用于主动卸力矩；
 3. **槽位没装**：`robot.lift.has_adapter` 为 `False` 说明这台机器人没有升降柱。
+
+`homed` 是 `home.yaml` 里的软件标志，断电后仍在；只在编码器故障 `0x7321`–`0x7328` 后消失。另外，客户端 `wait(timeout=...)` 不会加长运动，服务端预算取命令的 `wait_timeout`，省略时为 `default_wait_timeout_s`（模板 15 秒）。
 
 驱动器侧故障用 `robot.lift.faults()` 与 `robot.lift.get_height().fault_code` 对照，雷赛适配器还可用 `as_adapter(LiftLeadshine).get_diagnostics()` 读原始诊断。
 

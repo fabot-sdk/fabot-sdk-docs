@@ -26,22 +26,27 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 
 未绑定时 `get_height()` 仍会下发并失败或超时；`has_adapter` 是唯一可靠的前置判断。
 
-## 使能 → 回零 → 定位
+## 回零 → 定位
 
-首次上电通常需要先回零，之后才能接受绝对高度目标：
+绝对高度命令在 `require_homed: true`（模板缺省）时要求 `get_height().homed` 为真。`homed` 是软件标志，`move_home` 或 `set_height_zero` 成功后写入 `home.yaml`，断电后仍在；绝对值编码器上电即真实位置，标志在时直接发高度命令。标志只在编码器故障 `0x7321`–`0x7328` 后消失，此时用 `move_home` 按原点开关重建，或在已知机械位置调用 `set_height_zero`。`require_homed: false` 时未回零也可发高度命令。
+
+命令下发时底层自行完成故障恢复并进入 Operation Enabled，无需先调 `set_enable(True)`（它只使能、不运动）；`set_enable(False)` 用于卸力矩。
+
+省略 `duration` 和 `wait_timeout` 时，服务端按 `default_wait_timeout_s`（模板 15 秒）计算预算。`wait(timeout=...)` / `get(timeout=...)` 只限客户端这次等待，不加长运动；要加时就把秒数传给命令自己的 `wait_timeout`。模板行程 `0`–`0.30` m（`min_height_m` / `max_height_m`），目标必须落在其中。
 
 ```python
 if robot.lift.has_adapter:
-    robot.lift.set_enable(True)
     if not robot.lift.get_height().homed:
-        robot.lift.move_home().wait(timeout=30.0)
+        robot.lift.move_home(wait_timeout=30).wait(timeout=35)
 
-    op = robot.lift.move_height(0.45, tolerance=0.005)
-    snap = op.get(timeout=20.0)
+    op = robot.lift.move_height(0.20, tolerance=0.005, wait_timeout=20)
+    snap = op.get(timeout=1.0)
     print(snap.state, snap.feedback.progress if snap.feedback else None)
+    outcome = op.wait(timeout=25)
+    print(outcome.success, outcome.status_message)
 ```
 
-`move_height` 返回 Operation：`get()` 拉快照、`wait()` 等终态、`cancel()` 尽力取消。模型见 [命令与长时操作](../../usage/commands-operations.md)。
+`move_height` 返回 Operation：`get()` 拉一次快照，`wait()` 等到终态，`cancel()` 尽力取消。模型见 [命令与长时操作](../../usage/commands-operations.md)。`has_adapter` 只表示这个槽绑了适配器。
 
 ## 相对升降与限速
 
@@ -80,7 +85,8 @@ finally:
 
 | 现象 | 原因 | 处理 |
 |------|------|------|
-| 运动命令被拒绝 | 未 `set_enable(True)` | 先使能，再下发运动 |
-| 绝对高度目标被拒绝 | 未回零（`homed` 为 `False`） | 先 `move_home()` |
+| 运动命令被拒绝 | 通信断开、急停按下或目标超出行程 | 读 `status()` 与 `fault_code`；位置命令会自行使能，不必先 `set_enable` |
+| 绝对高度目标被拒绝 | `require_homed` 为真且 `homed` 为 `False` | 先 `move_home()`，或在已知机械位置 `set_height_zero()` |
+| 回零或到位超时 | 服务端预算仍是 `default_wait_timeout_s` | 把秒数传给命令自己的 `wait_timeout`，客户端 `wait(timeout=...)` 不加长运动 |
 | `move_height` 长时间 `Queued` | 同资源上有前序 Operation | 等前序结束，或 `cancel()` 它 |
 | 高度读数整体偏移 | 有人调用了 `set_height_zero()` | 重新回零并核对零点定义 |

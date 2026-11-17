@@ -2,7 +2,7 @@
 title: 升降柱 Lift
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # 升降柱 Lift
@@ -69,7 +69,13 @@ get_height(*, timeout_ms: int = 1000) -> LiftState
 
 ### get_enable / set_enable
 
-读取或设置使能。未使能时运动命令会被拒绝。
+读取或设置使能。常规使用不需要主动调用：位置命令与 `move_home` 会让底层自动完成故障恢复并使能，只有要主动卸力矩或核对使能状态时才用到这两个方法。
+
+设置使能本身不产生运动。`set_enable(True)` 用于手动补一次使能，`set_enable(False)` 用于卸力矩。
+
+:::note 一般不用手动使能
+运行示例与业务代码里通常看不到 `set_enable(True)` / `get_enable()`：下发位置命令或 `move_home` 时，底层会自行完成故障恢复并进入 Operation Enabled。读到 `not_enabled` 相关诊断时先查通信与急停，而不是先补使能。
+:::
 
 ```python
 get_enable(*, timeout_ms: int = 1000) -> bool
@@ -140,7 +146,7 @@ move_height(target: float, *, tolerance: float = 0.0, duration: float = 0.0, wai
 | `target` | `float` | （必填） | 目标高度，米 |
 | `tolerance` | `float` | `0.0` | 到位容差（米）；`0` 表示沿用控制器缺省 |
 | `duration` | `float` | `0.0` | 期望运动时长（秒）；`0` 表示沿用控制器缺省 |
-| `wait_timeout` | `float` | `0.0` | 在运动时长之外额外等待到位的上限；`0` 表示沿用缺省策略 |
+| `wait_timeout` | `float` | `0.0` | 在运动时长之外额外等待到位的上限；`0` 表示沿用 `default_wait_timeout_s`（模板 15 秒） |
 
 ### move_height_relative
 
@@ -161,16 +167,15 @@ move_home(*, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float 
 ```
 
 ```python
-from fabot.core import OperationState
-
 if robot.lift.has_adapter:
-    robot.lift.set_enable(True)
     if not robot.lift.get_height().homed:
-        robot.lift.move_home().wait(timeout=30.0)
-    op = robot.lift.move_height(0.35, tolerance=0.005)
-    snap = op.get(timeout=15.0)
+        robot.lift.move_home(wait_timeout=30).wait(timeout=35)
+    op = robot.lift.move_height(0.20, tolerance=0.005, wait_timeout=20)
+    snap = op.get(timeout=1.0)
     print(snap.state, snap.result)
 ```
+
+绝对高度目标在 `require_homed` 为真时需要 `homed` 标志；标志写入 `home.yaml`，整机断电后仍在，只在编码器故障 `0x7321`–`0x7328` 后消失。`wait(timeout=...)` 只限制客户端等待，加长运动要用命令的 `wait_timeout`。模板行程 `0`–`0.30` m。见 [升降柱示例](../../examples/python/lift.md)。
 
 ## 通道
 

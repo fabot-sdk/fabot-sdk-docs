@@ -139,9 +139,11 @@ When `capture()` raises `Timeout`, check in order:
 
 Rejected `robot.lift` motion has three usual causes:
 
-1. **Not enabled**: call `robot.lift.set_enable(True)` before any move;
-2. **Not homed**: when `robot.lift.get_height().homed` is `False`, absolute height targets are refused — run `move_home()` first;
+1. **Not homed**: with `require_homed` on and `robot.lift.get_height().homed` `False`, absolute height targets are refused — run `move_home()`, or `set_height_zero()` at a known mechanical position;
+2. **Enable is not a cause**: position commands and `move_home` do their own fault recovery and reach Operation Enabled, so no `set_enable(True)` is needed first; `set_enable(False)` only drops torque deliberately;
 3. **No slot**: `robot.lift.has_adapter` is `False` when this robot has no lift.
+
+`homed` is a software flag in `home.yaml` that survives a power cycle and disappears only after an encoder fault `0x7321`–`0x7328`. Separately, the client `wait(timeout=...)` does not extend the motion: the server-side budget is the command's `wait_timeout`, defaulting to `default_wait_timeout_s` (15 s in the template).
 
 For drive-side faults compare `robot.lift.faults()` with `robot.lift.get_height().fault_code`; with the Leadshine adapter you can also read raw diagnostics via `as_adapter(LiftLeadshine).get_diagnostics()`.
 
