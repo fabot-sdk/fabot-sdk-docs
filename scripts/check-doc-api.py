@@ -9,8 +9,9 @@ With no --sdk the newest of these paths that exists is used:
   2. ../fabot_system/build/amd64/prefix/fabot_sdk_py/lib/python3.12/site-packages
   3. an already importable `fabot` package
 
-It extracts `robot.<name>(`, `robot.<slot>.<method>(` and `robot.<slot>.<method>()`
-from fenced code blocks and headings, then checks them against a `Robot.mock()`.
+It extracts `robot.<name>(`, `robot.<slot>.<method>(`, `robot.<ns>.<name>.<method>(`
+(e.g. `robot.skills.camera_sync.get_sync_groups(`) and headings, then checks them
+against a `Robot.mock()`.
 Exit code 1 when something is missing. Intentionally permissive: it only proves a
 name exists, not that the arguments are right.
 """
@@ -35,6 +36,11 @@ CANDIDATE_SDKS = [
 CALL_PATTERNS = [
     re.compile(r"robot\.([a-z_][a-z0-9_]*)\s*\("),
     re.compile(r"robot\.([a-z_][a-z0-9_]*)\.([a-z_][a-z0-9_]*)\s*\("),
+    # Namespaced entries outside the slot system: robot.skills.<name>.<method>(
+    re.compile(
+        r"robot\.(skills|services|environments)\.([a-z_][a-z0-9_]*)\."
+        r"([A-Za-z_][A-Za-z0-9_]*)\s*\("
+    ),
 ]
 HEADING = re.compile(r"^### ([a-z_][a-z0-9_]*)$", re.M)
 
@@ -52,22 +58,27 @@ def resolve_sdk(explicit: str | None) -> str | None:
     return None
 
 
-def collect(lang: str) -> set[tuple[str, str]]:
+def collect(lang: str) -> set[tuple[str, str, str]]:
     pages = glob.glob(str(REPO / "docs" / lang / "**/*.md"), recursive=True)
-    found: set[tuple[str, str]] = set()
+    found: set[tuple[str, str, str]] = set()
     for page in pages:
         # Migration pages deliberately contain 1.0.x snippets.
         if "migration-1.0-to-1.1" in page:
             continue
         text = Path(page).read_text(encoding="utf-8")
+        rel = Path(page).relative_to(REPO / "docs" / lang).as_posix()
         for pattern in CALL_PATTERNS:
             for match in pattern.finditer(text):
-                if len(match.groups()) == 1:
-                    found.add(("Robot", match.group(1)))
+                groups = match.groups()
+                if len(groups) == 1:
+                    found.add(("Robot", match.group(1), rel))
+                elif len(groups) == 2:
+                    found.add((match.group(1), match.group(2), rel))
                 else:
-                    found.add((match.group(1), match.group(2)))
+                    ns, entity, name = groups
+                    found.add((f"{ns}.{entity}", name, rel))
         for heading in HEADING.findall(text):
-            found.add(("<heading>", heading))
+            found.add(("<heading>", heading, rel))
     return found
 
 
@@ -99,10 +110,31 @@ def main() -> int:
     for attrs in extra_attrs.values():
         proxy_attrs["<extra>"] = proxy_attrs.get("<extra>", set()) | attrs
 
+    # Namespaced entries outside the slot system.
+    ns_attrs = {
+        f"skills.{name}": set(dir(proxy))
+        for name, proxy in vars(robot.skills).items()
+        if not name.startswith("_")
+    }
+    ns_attrs.update(
+        {
+            f"services.{name}": set(dir(handle))
+            for name, handle in vars(robot.services).items()
+            if not name.startswith("_")
+        }
+    )
+    ns_attrs.update(
+        {
+            f"environments.{name}": set(dir(handle))
+            for name, handle in vars(robot.environments).items()
+            if not name.startswith("_")
+        }
+    )
+
     langs = ("zh", "en") if args.lang == "all" else (args.lang,)
     problems: list[str] = []
     for lang in langs:
-        for slot, name in sorted(collect(lang)):
+        for slot, name, rel in sorted(collect(lang)):
             if slot == "Robot":
                 if name not in robot_attrs:
                     problems.append(f"[{lang}] robot.{name}")
@@ -114,11 +146,15 @@ def main() -> int:
                     and name not in {"obs", "environments"}
                     and not name.endswith(EVENT_SUFFIXES)
                     and not any(name in attrs for attrs in proxy_attrs.values())
+                    and not any(name in attrs for attrs in ns_attrs.values())
                     and name not in {"lookup", "lookup_full", "can_transform", "wait_for_transform"}
                 ):
                     problems.append(f"[{lang}] heading '{name}' matches no proxy member")
             elif slot in proxy_attrs:
                 if name not in proxy_attrs[slot] and not name.endswith(EVENT_SUFFIXES):
+                    problems.append(f"[{lang}] robot.{slot}.{name}")
+            elif slot in ns_attrs:
+                if name not in ns_attrs[slot] and not name.endswith(EVENT_SUFFIXES):
                     problems.append(f"[{lang}] robot.{slot}.{name}")
 
     if problems:
