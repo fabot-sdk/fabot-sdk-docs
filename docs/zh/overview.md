@@ -2,7 +2,7 @@
 title: 概述与架构
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # 概述与架构
@@ -29,13 +29,13 @@ flowchart LR
 ```python
 from fabot import Robot
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready()                                        # 等待已绑定且必需的槽位就绪
     print(robot.state().mode.name, robot.state().health.name)  # 运行模式与健康度
     robot.chassis.servo_twist(vx=0.2, vy=0.0, vtheta=0.0)     # 底盘速度指令
 ```
 
-`Robot.connect(host, port, options=None)` 建立连接并返回 `Robot`；也支持 `from_config` / `from_endpoint` / `from_backend` 与离线调试用的 `Robot.mock()`，详见 [连接与生命周期](usage/connection.md)。
+`Robot.connect(host, port, options=None)` 建立连接并返回 `Robot`；本机使用（SDK 与机器人控制面在同一台主机）时写成 `Robot.connect()`，省略地址由默认配置自动发现端点。也支持 `from_config` / `from_endpoint` / `from_backend` 与离线调试用的 `Robot.mock()`，详见 [连接与生命周期](usage/connection.md)。
 
 ## 能力、槽位与 Proxy
 

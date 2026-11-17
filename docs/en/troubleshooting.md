@@ -2,7 +2,7 @@
 title: Troubleshooting
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Troubleshooting
@@ -22,13 +22,14 @@ Symptom-oriented checklist. General tools: every failed call raises a `FabotErro
 Other checks:
 
 - Verify the installation: `import fabot` should work, see [Installing the Python SDK](install/python.md).
+- When the SDK and the control plane share a host, first try `Robot.connect()` without an address (discovered from the default configuration) to rule out a wrong address.
 - To rule out the robot side, run the flow offline with `Robot.mock()`, see [Mock Testing](usage/mock.md).
 
 ```python
 from fabot import Robot, FabotError
 
 try:
-    robot = Robot.connect("192.168.1.10", 7557)
+    robot = Robot.connect("127.0.0.1", 7557)
 except FabotError as e:
     print(hex(e.code), e.retryable, e.message, e.trace_id)
 ```
@@ -51,7 +52,7 @@ from fabot import Robot, FabotError
 from fabot.core import ClientOptions
 
 options = ClientOptions(resolve_timeout_ms=5000)
-with Robot.connect("192.168.1.10", 7557, options) as robot:
+with Robot.connect("127.0.0.1", 7557, options) as robot:
     if robot.left_arm.has_adapter:
         try:
             robot.wait_ready(["left_arm"])
@@ -99,7 +100,7 @@ The e-stop is a robot-wide latch: after engaging, `robot.state().mode` becomes `
 ```python
 from fabot import Robot
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     estop = robot.estop.state()
     if estop.asserted:
         print(estop.reason, estop.source_id)

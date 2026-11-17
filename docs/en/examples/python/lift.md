@@ -2,7 +2,7 @@
 title: Lift example
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Lift example
@@ -16,7 +16,7 @@ Not every robot carries a lift. Gate on `has_adapter` before reading state:
 ```python
 from fabot import Robot
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready()
     if not robot.lift.has_adapter:
         raise SystemExit("this robot has no lift")

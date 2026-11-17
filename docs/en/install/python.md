@@ -2,7 +2,7 @@
 title: Installing the Python SDK
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Installing the Python SDK
@@ -49,16 +49,23 @@ import fabot
 print(fabot.__version__)   # installed SDK version
 ```
 
-Then verify against a real robot (address and port per your deployment):
+Then verify against a real robot (the example uses the loopback address `127.0.0.1`; swap in the actual address when the robot is on another host):
 
 ```python
 from fabot import Robot
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready()
     print("SDK version:", robot.sdk_version)
     print("Platform version:", robot.version())
     print("Run mode:", robot.state().mode.name, "health:", robot.state().health.name)
+```
+
+When the control plane runs on this same host, you can also connect without an address:
+
+```python
+with Robot.connect() as robot:      # local use, no IP needed
+    print(robot.version())
 ```
 
 Without a robot, verify the installation and your code offline with `Robot.mock()` from [Mock Testing](../usage/mock.md):

@@ -15,7 +15,7 @@ A line is identified by a chip plus a line offset, so first look at what the mac
 from fabot import Robot
 from fabot.capabilities.io import PinDirection
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["io"])
 
     for chip in robot.io.chips().chips:
@@ -25,7 +25,7 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 With the chip label and line offset in hand, run the acquire → read/write → release cycle:
 
 ```python
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["io"])
 
     robot.io.acquire(

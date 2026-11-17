@@ -2,7 +2,7 @@
 title: 夹爪示例
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # 夹爪示例
@@ -17,7 +17,7 @@ updated: 2026-11-16
 from fabot import Robot
 from fabot.core import OperationState
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["left_gripper"])
 
     robot.left_gripper.set_velocity_limit(0.5)

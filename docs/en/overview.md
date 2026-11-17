@@ -2,7 +2,7 @@
 title: Overview & Architecture
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Overview & Architecture
@@ -29,13 +29,13 @@ A capability is a domain feature unit on the robot (chassis, arm, camera, …) i
 ```python
 from fabot import Robot
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready()                                        # wait for bound, essential slots
     print(robot.state().mode.name, robot.state().health.name)  # run mode and health
     robot.chassis.servo_twist(vx=0.2, vy=0.0, vtheta=0.0)    # chassis velocity command
 ```
 
-`Robot.connect(host, port, options=None)` connects and returns a `Robot`; `from_config` / `from_endpoint` / `from_backend` and the offline `Robot.mock()` are also available, see [Connection & Lifecycle](usage/connection.md).
+`Robot.connect(host, port, options=None)` connects and returns a `Robot`; for local use (SDK and the robot control plane on the same host) write `Robot.connect()` and the default configuration discovers the endpoint. `from_config` / `from_endpoint` / `from_backend` and the offline `Robot.mock()` are also available, see [Connection & Lifecycle](usage/connection.md).
 
 ## Capabilities, slots and proxies
 

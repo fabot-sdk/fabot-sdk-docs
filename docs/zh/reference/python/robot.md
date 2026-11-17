@@ -2,7 +2,7 @@
 title: Robot 入口
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Robot 入口
@@ -26,13 +26,13 @@ robot.close() -> None
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
-| `host` | `str \| None` | `None` | 控制面地址；`None` 表示按配置缺省发现端点 |
+| `host` | `str \| None` | `None` | 控制面地址；`None` 表示按配置缺省发现端点（本机使用时直接省略） |
 | `port` | `int` | `7557` | 控制面端口 |
 | `options` | `ClientOptions` | `None` | 超时与缓存选项，见下表 |
 | `config` | `ClientConfig` | `None` | 客户端标识与传输选项，见下表；与 `host` 互斥 |
 | `wait_ready` | `bool` | `False` | 为 `True` 时在返回前顺带调用 `wait_ready()` |
 
-`connect` 同时传 `host` 与 `config` 会抛 `TypeError`。`from_endpoint` 是显式端点写法；`from_backend` 接入自定义传输后端（高级用法）；`mock()` 返回无需真实机器人的 `MockRobot`，见 [Mock 测试](../../usage/mock.md)。
+`connect` 同时传 `host` 与 `config` 会抛 `TypeError`。`from_endpoint` 是显式端点写法；`from_backend` 接入自定义传输后端（高级用法）；`mock()` 返回无需真实机器人的 `MockRobot`，见 [Mock 测试](../../usage/mock.md)。SDK 与机器人控制面在同一台主机上时，`Robot.connect()` 不传地址即可，按默认配置自动发现端点。
 
 `ClientConfig`（客户端标识与传输）：
 
@@ -59,9 +59,13 @@ robot.close() -> None
 ```python
 from fabot import Robot
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+# 本机使用：不传地址，按默认配置自动发现
+with Robot.connect() as robot:
     robot.wait_ready()
     print(robot.sdk_version, robot.version())
+
+# 显式端点：本机回环地址 + 控制面端口
+robot = Robot.connect("127.0.0.1", 7557)
 ```
 
 ## wait_ready

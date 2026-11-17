@@ -2,12 +2,14 @@
 title: 示例索引
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # 示例索引
 
 按能力查阅完整示例。通用机制见 [常规操作](../../usage/index.md)，接口签名见 [Python API](../../reference/python/index.md)。
+
+示例统一用本机回环地址 `Robot.connect("127.0.0.1", 7557)` 连接；机器人控制面不在本机时换成它的实际地址。SDK 与机器人控制面跑在同一台主机上时，也可以省略地址，写成 `Robot.connect()`，由默认配置自动发现端点，见 [连接与 Robot 入口](../../usage/connection.md)。
 
 ## 已有示例
 

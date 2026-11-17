@@ -2,7 +2,7 @@
 title: 底盘示例
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # 底盘示例
@@ -18,7 +18,7 @@ from fabot import Robot
 from fabot.capabilities.chassis import NavigationMode
 from fabot.core import OperationState
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["chassis"])
 
     stations = robot.chassis.get_station()

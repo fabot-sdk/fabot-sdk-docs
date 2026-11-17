@@ -2,7 +2,7 @@
 title: Frames example
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Frames example
@@ -17,7 +17,7 @@ Query the coordinate tree in-process, transform poses and point clouds between f
 from fabot import Robot
 from fabot.frames import Frame
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     tf = robot.frames.wait_for_transform(Frame.BASE_LINK, Frame.HEAD_EEF)
     print(tf.target_frame, "->", tf.source_frame)
     print("translation:", tf.position)     # (tx, ty, tz) in meters

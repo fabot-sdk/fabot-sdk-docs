@@ -2,7 +2,7 @@
 title: Power example
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Power example
@@ -16,7 +16,7 @@ Read energy and charging state from both power rails, and subscribe to fault and
 ```python
 from fabot import Robot
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["power_1", "power_2"])
 
     for rail in (robot.power_1, robot.power_2):

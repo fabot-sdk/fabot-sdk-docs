@@ -2,7 +2,7 @@
 title: Arm example
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Arm example
@@ -18,7 +18,7 @@ from fabot import Robot
 from fabot.core import OperationState
 from fabot.types import JointPositions
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["left_arm"])
 
     print("enable:", robot.left_arm.set_enable(True))

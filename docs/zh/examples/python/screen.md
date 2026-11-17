@@ -2,7 +2,7 @@
 title: 面屏示例
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # 面屏示例
@@ -16,7 +16,7 @@ updated: 2026-11-16
 ```python
 from fabot import Robot
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["screen"])
 
     robot.screen.show_image("https://example.com/idle.png")

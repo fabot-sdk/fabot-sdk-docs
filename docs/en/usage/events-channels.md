@@ -2,7 +2,7 @@
 title: Events & Data Channels
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Events & Data Channels
@@ -27,7 +27,7 @@ from fabot import Robot
 def on_estop(event):  # event: EstopChangedEvent
     print(event.header.timestamp_us, event.estop.asserted, event.estop.reason)
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     token = robot.events.estop_changed.subscribe(on_estop)
     # ...
     token.close()  # unsubscribe; robot.close() closes every subscription

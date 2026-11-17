@@ -2,7 +2,7 @@
 title: 版本配套
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-17
 ---
 
 # 版本配套
@@ -44,7 +44,7 @@ from fabot import Robot
 
 print(fabot.__version__)      # 本地 SDK 版本
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     print(robot.sdk_version)  # 同上：本地 SDK 版本
     print(robot.version())    # 远端机器人平台版本
 ```

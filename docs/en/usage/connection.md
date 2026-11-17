@@ -2,7 +2,7 @@
 title: Connection & Robot Entry
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Connection & Robot Entry
@@ -14,11 +14,14 @@ updated: 2026-11-16
 ```python
 from fabot import Robot
 
-# Connect by control-plane endpoint (default port 7557)
-robot = Robot.connect("192.168.1.10", 7557)
+# Local use: SDK and the robot control plane on the same host — no address needed, discovered by default
+robot = Robot.connect()
+
+# Explicit endpoint: loopback address plus the control-plane port (7557 by default)
+robot = Robot.connect("127.0.0.1", 7557)
 
 # Equivalent: from_endpoint only accepts an explicit endpoint
-robot = Robot.from_endpoint("192.168.1.10", 7557)
+robot = Robot.from_endpoint("127.0.0.1", 7557)
 
 # Connect from a config object
 from fabot.core import ClientConfig, ClientOptions
@@ -28,13 +31,14 @@ options = ClientOptions(resolve_timeout_ms=1000, command_timeout_ms=3000)
 robot = Robot.from_config(config, options)
 
 # Connect and wait for slots in one call
-robot = Robot.connect("192.168.1.10", 7557, wait_ready=True)
+robot = Robot.connect("127.0.0.1", 7557, wait_ready=True)
 
 # Prefer `with` so the connection is closed on exit
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready()
 ```
 
+- **Local shortcut**: `Robot.connect()` with no `host` discovers the control plane from the default transport configuration — no address or port to remember. Use it when the SDK and the robot control plane run on the same host (for example, developing on the robot itself); pass the address to `connect` when the robot is on another host.
 - With an empty `host`, `connect` uses the endpoint from `config`; passing both raises `TypeError`.
 - Factory methods block until the connection is established and raise `FabotError` on failure (see [Troubleshooting](../troubleshooting.md) for connection issues).
 - Factory methods and `close()` must not be called from an event callback (the SDK I/O thread), or `ClientThreadError` is raised.

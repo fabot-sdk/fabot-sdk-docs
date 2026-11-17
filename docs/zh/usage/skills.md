@@ -2,7 +2,7 @@
 title: 技能与扩展
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # 技能与扩展
@@ -21,7 +21,7 @@ updated: 2026-11-16
 ```python
 from fabot import Robot
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     if robot.skills.camera_sync.is_available:
         groups = robot.skills.camera_sync.get_sync_groups()
         print([group.id for group in groups.groups])

@@ -2,7 +2,7 @@
 title: 机械臂示例
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # 机械臂示例
@@ -18,7 +18,7 @@ from fabot import Robot
 from fabot.core import OperationState
 from fabot.types import JointPositions
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["left_arm"])
 
     print("使能:", robot.left_arm.set_enable(True))

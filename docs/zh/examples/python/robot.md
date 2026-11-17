@@ -2,7 +2,7 @@
 title: 急停与故障事件示例
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # 急停与故障事件示例
@@ -17,7 +17,7 @@ updated: 2026-11-16
 from fabot import Robot
 from fabot.core import EstopChangedEvent, FaultsChangedEvent
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     def on_estop(event):          # event: EstopChangedEvent
         state = event.estop
         print("急停:", state.asserted, state.reason, state.source_id)

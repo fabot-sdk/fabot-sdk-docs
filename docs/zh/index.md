@@ -2,7 +2,7 @@
 title: fabot SDK 文档
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # fabot SDK 文档
@@ -19,13 +19,24 @@ fabot SDK 是面向集成开发者的客户端开发包，用于在应用侧连�
 ```python
 from fabot import Robot
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+# 显式端点：本机回环地址 + 控制面端口（默认 7557）
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready()
     print(robot.version(), robot.sdk_version)
     state = robot.state()
     print(state.mode.name, state.health.name)
     if robot.screen.has_adapter:
         robot.screen.show_text("Hello, fabot!")
+```
+
+SDK 与机器人控制面在同一台主机上时（例如在机器人本体上开发），不用记地址：`Robot.connect()` 按默认配置自动发现端点。
+
+```python
+from fabot import Robot
+
+with Robot.connect() as robot:      # 本机使用，不传 IP
+    robot.wait_ready()
+    print(robot.version())
 ```
 
 预期输出（值随现场变化，能打印即说明连通；`RobotMode` / `HealthState` 是 `IntEnum`，直接打印是数字，所以用 `.name` 取名称）：

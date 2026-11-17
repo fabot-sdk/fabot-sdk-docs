@@ -15,7 +15,7 @@ updated: 2026-11-17
 from fabot import Robot
 from fabot.capabilities.io import PinDirection
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["io"])
 
     for chip in robot.io.chips().chips:
@@ -25,7 +25,7 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 拿到芯片标签与线号后，按「占用 → 读写 → 释放」走一遍：
 
 ```python
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["io"])
 
     robot.io.acquire(

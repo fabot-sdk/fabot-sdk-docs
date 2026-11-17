@@ -2,7 +2,7 @@
 title: Version Compatibility
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-17
 ---
 
 # Version Compatibility
@@ -44,7 +44,7 @@ from fabot import Robot
 
 print(fabot.__version__)      # Local SDK version
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     print(robot.sdk_version)  # Same as above: local SDK version
     print(robot.version())    # Remote robot platform version
 ```

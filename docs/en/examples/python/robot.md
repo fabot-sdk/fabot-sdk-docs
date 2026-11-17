@@ -2,7 +2,7 @@
 title: E-stop and fault events example
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # E-stop and fault events example
@@ -17,7 +17,7 @@ Subscribe to robot-wide e-stop and fault events, and walk through engaging and r
 from fabot import Robot
 from fabot.core import EstopChangedEvent, FaultsChangedEvent
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     def on_estop(event):          # event: EstopChangedEvent
         state = event.estop
         print("estop:", state.asserted, state.reason, state.source_id)

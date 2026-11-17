@@ -2,7 +2,7 @@
 title: 安装 Python SDK
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # 安装 Python SDK
@@ -49,16 +49,23 @@ import fabot
 print(fabot.__version__)   # 已安装的 SDK 版本
 ```
 
-连接真实机器人进一步验证（地址与端口以实际部署为准）：
+连接真实机器人进一步验证（示例用本机回环地址 `127.0.0.1`；机器人不在本机时换成实际地址）：
 
 ```python
 from fabot import Robot
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready()
     print("SDK 版本:", robot.sdk_version)
     print("平台版本:", robot.version())
     print("运行模式:", robot.state().mode.name, "健康度:", robot.state().health.name)
+```
+
+机器人控制面就在本机时，也可以省略地址直接连接：
+
+```python
+with Robot.connect() as robot:      # 本机使用，不传 IP
+    print(robot.version())
 ```
 
 没有机器人时，可用 [Mock 测试](../usage/mock.md) 中的 `Robot.mock()` 离线验证安装与开发代码：

@@ -2,7 +2,7 @@
 title: 运动示例
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # 运动示例
@@ -17,7 +17,7 @@ updated: 2026-11-16
 from fabot import Robot
 from fabot.capabilities.motion import MotionMode
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["motion"])
 
     print("当前体制:", robot.motion.get_mode())

@@ -2,7 +2,7 @@
 title: 连接与 Robot 入口
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # 连接与 Robot 入口
@@ -14,11 +14,14 @@ updated: 2026-11-16
 ```python
 from fabot import Robot
 
-# 按控制面端点连接（默认端口 7557）
-robot = Robot.connect("192.168.1.10", 7557)
+# 本机使用：SDK 与机器人控制面在同一台主机上，不必传地址，按默认配置自动发现
+robot = Robot.connect()
+
+# 显式端点：本机回环地址 + 控制面端口（默认 7557）
+robot = Robot.connect("127.0.0.1", 7557)
 
 # 等价写法：from_endpoint 只接受显式端点
-robot = Robot.from_endpoint("192.168.1.10", 7557)
+robot = Robot.from_endpoint("127.0.0.1", 7557)
 
 # 从配置对象连接
 from fabot.core import ClientConfig, ClientOptions
@@ -28,13 +31,14 @@ options = ClientOptions(resolve_timeout_ms=1000, command_timeout_ms=3000)
 robot = Robot.from_config(config, options)
 
 # 连接后顺带等待槽位就绪
-robot = Robot.connect("192.168.1.10", 7557, wait_ready=True)
+robot = Robot.connect("127.0.0.1", 7557, wait_ready=True)
 
 # 推荐用 with 管理生命周期，退出时自动 close()
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready()
 ```
 
+- **本机快捷方式**：`Robot.connect()` 不传 `host`，SDK 按默认传输配置自动发现控制面，不需要指定地址与端口。适用于 SDK 与机器人控制面在同一台主机上的情况（例如在机器人本体上开发调试）；连接另一台主机上的机器人时，把地址传给 `connect` 即可。
 - `connect` 的 `host` 为空时按 `config` 的缺省端点连接；同时传 `host` 与 `config` 会抛 `TypeError`。
 - 工厂方法阻塞至连接建立，失败抛 `FabotError`（连接类问题的排查见 [故障排除](../troubleshooting.md)）。
 - 工厂方法与 `close()` 不得在事件回调（SDK I/O 线程）中调用，否则抛 `ClientThreadError`。

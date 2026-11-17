@@ -2,12 +2,14 @@
 title: Example Index
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Example Index
 
 Browse complete examples by capability. See [Usage](../../usage/index.md) for shared mechanisms and the [Python API](../../reference/python/index.md) for signatures.
+
+Every example connects through the loopback address, `Robot.connect("127.0.0.1", 7557)`; swap in the robot's actual address when the control plane is on another host. When the SDK and the control plane run on the same host, you can also omit the address and write `Robot.connect()`, which discovers the endpoint from the default configuration — see [Connection & Robot Entry](../../usage/connection.md).
 
 ## Available examples
 

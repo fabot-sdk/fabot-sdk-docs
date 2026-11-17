@@ -2,7 +2,7 @@
 title: 安装总览
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # 安装总览
@@ -22,15 +22,17 @@ import fabot
 print(fabot.__version__)       # 校验安装成功，输出已安装的 SDK 版本
 ```
 
-连接真实机器人（地址与端口以实际部署为准，控制面默认端口 7557）：
+连接真实机器人（示例为本机回环地址与默认端口 7557；机器人不在本机时换成实际地址）：
 
 ```python
 from fabot import Robot
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready()
     print(robot.version())
 ```
+
+控制面就在本机时，也可以省略地址：`Robot.connect()` 按默认配置自动发现端点。
 
 没有机器人时可以用 `Robot.mock()` 离线开发与验证，见 [Mock 测试](../usage/mock.md)。
 

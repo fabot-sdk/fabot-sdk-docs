@@ -2,7 +2,7 @@
 title: Motion example
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Motion example
@@ -17,7 +17,7 @@ Query and switch the whole-body motion regime, read whole-body control state and
 from fabot import Robot
 from fabot.capabilities.motion import MotionMode
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["motion"])
 
     print("current regime:", robot.motion.get_mode())

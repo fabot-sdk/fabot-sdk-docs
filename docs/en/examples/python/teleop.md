@@ -2,7 +2,7 @@
 title: Teleop example
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Teleop example
@@ -17,7 +17,7 @@ Start and stop joystick teleop sessions. The long-running task model is in [Comm
 from fabot import Robot
 from fabot.core import OperationState
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["teleop"])
 
     op = robot.teleop.start_joystick_control()

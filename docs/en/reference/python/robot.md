@@ -2,7 +2,7 @@
 title: Robot Entry
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Robot Entry
@@ -26,13 +26,13 @@ robot.close() -> None
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
-| `host` | `str \| None` | `None` | Control-plane host; `None` uses the configured default discovery |
+| `host` | `str \| None` | `None` | Control-plane host; `None` uses the configured default discovery (omit it for local use) |
 | `port` | `int` | `7557` | Control-plane port |
 | `options` | `ClientOptions` | `None` | Timeouts and caches, see below |
 | `config` | `ClientConfig` | `None` | Client identity and transport, see below; mutually exclusive with `host` |
 | `wait_ready` | `bool` | `False` | When `True`, calls `wait_ready()` before returning |
 
-Passing both `host` and `config` raises `TypeError`. `from_endpoint` is the explicit-endpoint spelling; `from_backend` plugs in a custom transport backend (advanced); `mock()` returns a `MockRobot` needing no robot, see [Mock Testing](../../usage/mock.md).
+Passing both `host` and `config` raises `TypeError`. `from_endpoint` is the explicit-endpoint spelling; `from_backend` plugs in a custom transport backend (advanced); `mock()` returns a `MockRobot` needing no robot, see [Mock Testing](../../usage/mock.md). When the SDK and the robot control plane run on the same host, call `Robot.connect()` with no address and the default configuration discovers the endpoint.
 
 `ClientConfig` (identity and transport):
 
@@ -59,9 +59,13 @@ Factories block until the connection is up and raise `FabotError` on failure; ca
 ```python
 from fabot import Robot
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+# Local use: no address, discovered from the default configuration
+with Robot.connect() as robot:
     robot.wait_ready()
     print(robot.sdk_version, robot.version())
+
+# Explicit endpoint: loopback address plus the control-plane port
+robot = Robot.connect("127.0.0.1", 7557)
 ```
 
 ## wait_ready

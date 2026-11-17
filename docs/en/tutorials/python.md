@@ -2,7 +2,7 @@
 title: Your First Program (Python)
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Your First Program (Python)
@@ -12,7 +12,7 @@ This tutorial has three stages: verify the connection only (no capability involv
 ## Prerequisites
 
 - The SDK is installed and `import fabot` works, see [Install the Python SDK](../install/python.md); environment requirements are in [Requirements](../install/requirements.md).
-- The robot control-plane endpoint is reachable (IP + port, default 7557).
+- The robot control-plane endpoint is reachable (IP + port, default 7557). When the SDK and the robot control plane run on the same host (for example, developing on the robot itself), skip the address and call `Robot.connect()`.
 - No robot at hand? `Robot.mock()` works for local development, but it returns shell responses by default. Stage 1 runs as-is; stages 2 and 3 need hooks first, see [Mock Testing](../usage/mock.md).
 
 ## Stage 1: connection only
@@ -22,7 +22,9 @@ This stage touches the connection and robot-wide queries only, so it works even 
 ```python
 from fabot import Robot
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+# Swap 127.0.0.1 for the robot's address when the control plane is on another host;
+# for local use the address can be omitted entirely: Robot.connect()
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready()
     print("platform:", robot.version())
     print("sdk:", robot.sdk_version)
@@ -48,7 +50,7 @@ Under `Robot.mock()`, `version()` returns the `0.0.0` sentinel and `mode` / `hea
 Whether a capability slot is usable depends on the robot configuration. List them before deciding what to call:
 
 ```python
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready()
     for slot_id, proxy in sorted(robot.slots.items()):
         lc = proxy.lifecycle()
@@ -64,7 +66,7 @@ Call only what you discovered. The code below checks first:
 ```python
 from fabot.capabilities.io import PinDirection
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready()
 
     if robot.screen.has_adapter:
@@ -81,7 +83,7 @@ with Robot.connect("192.168.1.10", 7557) as robot:
             robot.io.release(chip="tegra264-gpio", line=17)
 ```
 
-Swap in your robot's address, save it as `hello_fabot.py`, and run `python3 hello_fabot.py`.
+Swap in your robot's address (the examples use the loopback address `127.0.0.1`; use the robot's own address when it is on another host), save it as `hello_fabot.py`, and run `python3 hello_fabot.py`.
 
 :::note `outcome.success` may be `None`
 `ScreenStatusApplied.outcome` and `LineApplied.outcome` can be `None` when the platform did not fill them in. For a strict check write `bool(applied.outcome and applied.outcome.success)`; failure details live in `Outcome.status_message`.
@@ -93,7 +95,7 @@ Swap in your robot's address, save it as `hello_fabot.py`, and run `python3 hell
 
 ## What the code does
 
-- `Robot.connect(host, port)` opens the connection; `with` guarantees `close()` on exit. Other entry points (`from_endpoint` / `from_config` / `mock`) and `ClientOptions` are in [Connection & Robot Entry](../usage/connection.md).
+- `Robot.connect(host, port)` opens the connection; for local use (SDK and control plane on the same host) omit the arguments as `Robot.connect()` and the default configuration discovers the endpoint. `with` guarantees `close()` on exit. Other entry points (`from_endpoint` / `from_config` / `mock`) and `ClientOptions` are in [Connection & Robot Entry](../usage/connection.md).
 - `wait_ready()` blocks until slots that are **bound, enabled and marked essential** are ready. Unbound or non-essential slots are skipped silently — neither blocking nor raising. That is exactly why stage 2 probes the slots itself. The per-slot wait bound is `ClientOptions.resolve_timeout_ms`.
 - `version()` returns the platform version string, `sdk_version` the local SDK version; `state()` returns a `RobotState` snapshot where `mode` is `RobotMode` and `health` is `HealthState`, see [Status, Faults & Lifecycle](../usage/status-faults.md). Both are `IntEnum`s: printing them yields numbers, and `.name` gives names like `Idle` / `Normal`.
 - `robot.slots` maps slot ids to proxies (24 entries). `has_adapter` and `lifecycle()` are the two most direct "can I call this" checks. Full list in [Robot Entry](../reference/python/robot.md#slots).

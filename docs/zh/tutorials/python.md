@@ -2,7 +2,7 @@
 title: 第一个程序（Python）
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # 第一个程序（Python）
@@ -12,7 +12,7 @@ updated: 2026-11-16
 ## 前置条件
 
 - 已安装 SDK 并能 `import fabot`，见 [安装 Python SDK](../install/python.md)；环境要求见 [环境要求](../install/requirements.md)。
-- 网络可达机器人控制面端点（IP + 端口，默认 7557）。
+- 网络可达机器人控制面端点（IP + 端口，默认 7557）。SDK 与机器人控制面在同一台主机上时（例如在机器人本体上开发），可以不传地址，直接 `Robot.connect()`。
 - 没有真实机器人？`Robot.mock()` 可以做本地联调，但它默认返回空壳响应，本教程第一段可以跑通，第二、三段需要先注入钩子，见 [Mock 测试](../usage/mock.md)。
 
 ## 第一段：只验证连接
@@ -22,7 +22,9 @@ updated: 2026-11-16
 ```python
 from fabot import Robot
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+# 控制面在另一台主机时，把 127.0.0.1 换成它的地址；
+# 本机使用也可以省略地址：Robot.connect()
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready()
     print("平台版本:", robot.version())
     print("SDK 版本:", robot.sdk_version)
@@ -48,7 +50,7 @@ SDK 版本: 1.1.0-alpha.1
 能力槽位是否可用取决于机器人配置。先列出来，再决定调用什么：
 
 ```python
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready()
     for slot_id, proxy in sorted(robot.slots.items()):
         lc = proxy.lifecycle()
@@ -64,7 +66,7 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 ```python
 from fabot.capabilities.io import PinDirection
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready()
 
     if robot.screen.has_adapter:
@@ -81,7 +83,7 @@ with Robot.connect("192.168.1.10", 7557) as robot:
             robot.io.release(chip="tegra264-gpio", line=17)
 ```
 
-把 IP 换成你的机器人地址，保存为 `hello_fabot.py`，运行 `python3 hello_fabot.py`。
+把 IP 换成你的机器人地址（示例用本机回环地址 `127.0.0.1`；机器人不在本机时换成它的地址），保存为 `hello_fabot.py`，运行 `python3 hello_fabot.py`。
 
 :::note `outcome.success` 可能是 `None`
 `ScreenStatusApplied.outcome` 与 `LineApplied.outcome` 在平台未回填时可能是 `None`。要严格判断成功，写成 `bool(applied.outcome and applied.outcome.success)`；失败细节看 `Outcome.status_message`。
@@ -93,7 +95,7 @@ with Robot.connect("192.168.1.10", 7557) as robot:
 
 ## 代码说明
 
-- `Robot.connect(host, port)`：按控制面端点建立连接；`with` 确保退出时自动 `close()`。其他连接方式（`from_endpoint` / `from_config` / `mock`）与 `ClientOptions` 见 [连接与 Robot 入口](../usage/connection.md)。
+- `Robot.connect(host, port)`：按控制面端点建立连接；本机使用（SDK 与控制面同主机）时省略参数写成 `Robot.connect()`，由默认配置自动发现端点。`with` 确保退出时自动 `close()`。其他连接方式（`from_endpoint` / `from_config` / `mock`）与 `ClientOptions` 见 [连接与 Robot 入口](../usage/connection.md)。
 - `wait_ready()`：阻塞等待**已绑定、已启用且标记为必需**的槽位就绪；未绑定或非必需的槽位会被跳过，不会阻塞也不会报错。单槽位等待上限由 `ClientOptions.resolve_timeout_ms` 控制。这也是第二段要自己探测槽位的原因。
 - `version()` 返回平台版本字符串，`sdk_version` 是本机 SDK 版本；`state()` 返回 `RobotState` 快照，`mode` 是运行模式（`RobotMode`）、`health` 是健康度（`HealthState`），见 [状态、故障与生命周期](../usage/status-faults.md)。两者都是 `IntEnum`：直接打印得到数字，取 `.name` 才是 `Idle` / `Normal` 这类名字。
 - `robot.slots` 是槽位 id 到 Proxy 的字典，共 24 项；`has_adapter` 与 `lifecycle()` 是判断「能不能调」的两个最直接入口。完整清单见 [Robot 入口](../reference/python/robot.md#slots)。

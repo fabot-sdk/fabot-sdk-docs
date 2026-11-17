@@ -2,7 +2,7 @@
 title: 故障排除
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # 故障排除
@@ -22,13 +22,14 @@ updated: 2026-11-16
 其他检查项：
 
 - 确认 SDK 安装无误：`import fabot` 应正常导入，见 [安装 Python SDK](install/python.md)。
+- SDK 与控制面在同一台主机时，可先试不带地址的 `Robot.connect()`（按默认配置自动发现），排除地址填错的因素。
 - 想先排除机器人侧因素，可用 `Robot.mock()` 离线跑通流程，见 [Mock 测试](usage/mock.md)。
 
 ```python
 from fabot import Robot, FabotError
 
 try:
-    robot = Robot.connect("192.168.1.10", 7557)
+    robot = Robot.connect("127.0.0.1", 7557)
 except FabotError as e:
     print(hex(e.code), e.retryable, e.message, e.trace_id)
 ```
@@ -51,7 +52,7 @@ from fabot import Robot, FabotError
 from fabot.core import ClientOptions
 
 options = ClientOptions(resolve_timeout_ms=5000)
-with Robot.connect("192.168.1.10", 7557, options) as robot:
+with Robot.connect("127.0.0.1", 7557, options) as robot:
     if robot.left_arm.has_adapter:
         try:
             robot.wait_ready(["left_arm"])
@@ -101,7 +102,7 @@ for snap in op.events(poll_timeout_ms=200, timeout_ms=30000):
 ```python
 from fabot import Robot
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     estop = robot.estop.state()
     if estop.asserted:
         print(estop.reason, estop.source_id)

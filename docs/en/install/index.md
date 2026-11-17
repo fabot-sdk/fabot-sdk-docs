@@ -2,7 +2,7 @@
 title: Installation Overview
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Installation Overview
@@ -22,15 +22,17 @@ import fabot
 print(fabot.__version__)       # verify the installation; prints the installed SDK version
 ```
 
-Connect to a real robot (use the address and port of your actual deployment; the control-plane port defaults to 7557):
+Connect to a real robot (the example uses the loopback address and the default port 7557; swap in the actual address when the robot is on another host):
 
 ```python
 from fabot import Robot
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready()
     print(robot.version())
 ```
+
+When the control plane runs on this same host, omit the address: `Robot.connect()` discovers the endpoint from the default configuration.
 
 Without a robot, use `Robot.mock()` to verify the installation and develop offline — see [Mock testing](../usage/mock.md).
 

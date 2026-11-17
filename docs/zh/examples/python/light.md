@@ -2,7 +2,7 @@
 title: 灯效示例
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # 灯效示例
@@ -18,7 +18,7 @@ from fabot import Robot
 from fabot.capabilities.light import LightMode
 from fabot.types import Rgb8
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["light"])
 
     applied = robot.light.set_mode(

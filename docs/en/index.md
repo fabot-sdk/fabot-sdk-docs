@@ -2,7 +2,7 @@
 title: fabot SDK Documentation
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # fabot SDK Documentation
@@ -19,13 +19,24 @@ After installing the SDK (see [Installation & Configuration](install/index.md)),
 ```python
 from fabot import Robot
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+# Explicit endpoint: loopback address plus the control-plane port (7557 by default)
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready()
     print(robot.version(), robot.sdk_version)
     state = robot.state()
     print(state.mode.name, state.health.name)
     if robot.screen.has_adapter:
         robot.screen.show_text("Hello, fabot!")
+```
+
+When the SDK and the robot control plane run on the same host (for example, developing on the robot itself), skip the address — `Robot.connect()` discovers the endpoint from the default configuration:
+
+```python
+from fabot import Robot
+
+with Robot.connect() as robot:      # local use, no IP needed
+    robot.wait_ready()
+    print(robot.version())
 ```
 
 Expected output (values follow the live state; anything that prints proves connectivity — `RobotMode` / `HealthState` are `IntEnum`s, so print `.name` to get names instead of numbers):

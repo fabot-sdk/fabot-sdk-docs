@@ -2,7 +2,7 @@
 title: Configuration CAS retry example
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # Configuration CAS retry example
@@ -19,7 +19,7 @@ from fabot.adapters import IoConfig
 from fabot.errors import ConfigurationConflict
 from fabot.robot import RobotConfig
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     patch = RobotConfig()
     patch.io.bind(IoConfig())
 

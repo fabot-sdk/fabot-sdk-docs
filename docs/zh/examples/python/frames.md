@@ -2,7 +2,7 @@
 title: 坐标系示例
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # 坐标系示例
@@ -17,7 +17,7 @@ updated: 2026-11-16
 from fabot import Robot
 from fabot.frames import Frame
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     tf = robot.frames.wait_for_transform(Frame.BASE_LINK, Frame.HEAD_EEF)
     print(tf.target_frame, "->", tf.source_frame)
     print("平移:", tf.position)          # (tx, ty, tz)，米

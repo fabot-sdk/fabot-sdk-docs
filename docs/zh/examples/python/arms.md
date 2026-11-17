@@ -2,7 +2,7 @@
 title: 双臂示例
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-17
 ---
 
 # 双臂示例
@@ -19,7 +19,7 @@ from fabot.capabilities.arms import DualJoints
 from fabot.core import OperationState
 from fabot.types import JointPositions
 
-with Robot.connect("192.168.1.10", 7557) as robot:
+with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["arms"])
 
     state = robot.arms.get_joint()

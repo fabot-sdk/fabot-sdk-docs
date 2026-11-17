@@ -2,7 +2,7 @@
 title: 环境要求
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-17
 ---
 
 # 环境要求
@@ -31,12 +31,19 @@ SDK 通过 Zenoh 与机器人端的控制面通信，运行主机需要满足：
 - 网络可达机器人控制面端口（zenohd，**默认 TCP 7557**），防火墙需放行该端口；
 - 主机与机器人之间的时延与丢包在可接受范围内——控制类调用（Command/Operation）对时延不敏感，但相机、关节位置等高频[数据通道](../usage/events-channels.md)建议走有线或稳定的局域网。
 
-连接时用 IP 与端口指定端点：
+用 IP 与端口指定端点：
 
 ```python
 from fabot import Robot
 
-robot = Robot.connect("192.168.1.10", 7557)
+# 显式端点：本机回环地址 + 控制面端口（默认 7557）
+robot = Robot.connect("127.0.0.1", 7557)
+```
+
+SDK 与机器人控制面在**同一台主机**上时（例如在机器人本体上开发调试），不需要传地址，`Robot.connect()` 按默认传输配置发现控制面：
+
+```python
+robot = Robot.connect()      # 本机使用，不传地址
 ```
 
 连接方式、`ClientConfig` / `ClientOptions` 参数见 [连接与 Robot 入口](../usage/connection.md)；连不上时的排查步骤见 [故障排除](../troubleshooting.md)。

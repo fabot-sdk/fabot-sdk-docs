@@ -2,7 +2,7 @@
 title: Requirements
 status: draft
 owner: fabot-core
-updated: 2026-11-02
+updated: 2026-11-17
 ---
 
 # Requirements
@@ -31,12 +31,19 @@ The SDK talks to the robot-side control plane over Zenoh. The host running your 
 - Network reachability to the robot control-plane port (zenohd, **TCP 7557 by default**); firewalls must allow this port;
 - Acceptable latency and packet loss between host and robot — control calls (Commands/Operations) are latency-tolerant, but high-frequency [data channels](../usage/events-channels.md) such as camera frames or joint positions benefit from wired or stable LAN connectivity.
 
-Specify the endpoint by IP and port when connecting:
+Specify the endpoint by IP and port:
 
 ```python
 from fabot import Robot
 
-robot = Robot.connect("192.168.1.10", 7557)
+# Explicit endpoint: loopback address plus the control-plane port (7557 by default)
+robot = Robot.connect("127.0.0.1", 7557)
+```
+
+When the SDK and the robot control plane run on the **same host** (for example, developing on the robot itself), you do not need an address — `Robot.connect()` discovers the control plane from the default transport configuration:
+
+```python
+robot = Robot.connect()      # local use, no address
 ```
 
 For connection methods and the `ClientConfig` / `ClientOptions` parameters, see [Connection and the Robot entry point](../usage/connection.md); for connectivity troubleshooting, see [Troubleshooting](../troubleshooting.md).
