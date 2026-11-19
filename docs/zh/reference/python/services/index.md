@@ -15,13 +15,13 @@ updated: 2026-11-17
 
 | 属性 | service id | 句柄类型 | 配置类型 | 配置域 | 章节 |
 |------|-----------|----------|----------|--------|------|
-| `robot.services.ros2` | `fabot_ros2` | `Ros2ServiceHandle` | `Ros2Config` | `node` | [ros2.md](ros2.md) |
-| `robot.services.obs_collector` | `fabot_obs_collector` | `ObsCollectorServiceHandle` | `ObsCollectorConfig` | `obs` | [obs_collector.md](obs_collector.md) |
-| `robot.environments.ros2` | `fabot_env_ros2` | `Ros2EnvironmentHandle` | `Ros2EnvironmentConfig` | `communication` | [ros2_environment.md](ros2_environment.md) |
+| `robot.services.ros2` | `fabot_ros2` | `Ros2ServiceHandle` | `Ros2Config` | `node` | [ros2.md](./ros2.md) |
+| `robot.services.obs_collector` | `fabot_obs_collector` | `ObsCollectorServiceHandle` | `ObsCollectorConfig` | `obs` | [obs_collector.md](./obs_collector.md) |
+| `robot.environments.ros2` | `fabot_env_ros2` | `Ros2EnvironmentHandle` | `Ros2EnvironmentConfig` | `communication` | [ros2_environment.md](./ros2_environment.md) |
 
 句柄上的 `SERVICE_ID` / `CONFIG` 分别给出服务 id 与配置类型。`ros2` 额外具有能力 Proxy 式的槽位表面（`handle` / `events` / `health()` / `faults()` / `ping()` 等），`obs_collector` 只有平台操作。
 
-服务语义与操作注意事项见 [平台服务管理](../../../usage/services.md)。
+服务语义与操作注意事项见 [平台服务管理](../../../usage/configuration/services.md)。
 
 ## API 总览
 
@@ -122,7 +122,7 @@ except ConfigurationConflict:
 
 ## 通道
 
-两个服务中只有 `ros2` 有数据通道（`messages()`），见 [ros2.md](ros2.md) 的「通道」一节。
+两个服务中只有 `ros2` 有数据通道（`messages()`），见 [ros2.md](./ros2.md) 的「通道」一节。
 
 ## 事件
 
@@ -142,7 +142,7 @@ token = robot.events.service_state_changed.subscribe(on_service_state)
 
 ## 异常
 
-服务控制与查询失败抛 `FabotError` 子类：超时 `Timeout`、服务不存在 `NotFound`、参数非法 `InvalidArgument`、并发冲突 `ResourceConflict`；配置提交冲突抛 `ConfigurationConflict`。完整层次见 [错误处理](../../../usage/errors.md)。
+服务控制与查询失败抛 `FabotError` 子类：超时 `Timeout`、服务不存在 `NotFound`、参数非法 `InvalidArgument`、并发冲突 `ResourceConflict`；配置提交冲突抛 `ConfigurationConflict`。完整层次见 [错误处理](../../../usage/diagnostics/errors.md)。
 
 ## 状态
 
@@ -161,8 +161,8 @@ token = robot.events.service_state_changed.subscribe(on_service_state)
 
 ## 相关
 
-- 服务概念、启停与配置注意事项：[平台服务管理](../../../usage/services.md)
-- 配置域读写与冲突重试：[配置管理](../../../usage/configuration.md)
-- 运行环境配置：[ros2_environment.md](ros2_environment.md)
+- 服务概念、启停与配置注意事项：[平台服务管理](../../../usage/configuration/services.md)
+- 配置域读写与冲突重试：[配置管理](../../../usage/configuration/configuration.md)
+- 运行环境配置：[ros2_environment.md](./ros2_environment.md)
 - 诊断码：[诊断码参考](../error-codes.md)
-- Mock 下的服务行为：[Mock 测试](../../../usage/mock.md)
+- Mock 下的服务行为：[Mock 测试](../../../usage/testing/mock.md)

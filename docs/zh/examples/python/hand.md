@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # 灵巧手示例
 
-控制灵巧手关节开合，读取五指触觉阵列，并订阅开合度与触觉流。左右手是同一套 API、各自独立的槽位（`robot.left_hand` / `robot.right_hand`）。长时任务模型见 [命令与长时操作](../../usage/commands-operations.md)，接口见 [灵巧手](../../reference/python/hand.md)。
+控制灵巧手关节开合，读取五指触觉阵列，并订阅开合度与触觉流。左右手是同一套 API、各自独立的槽位（`robot.left_hand` / `robot.right_hand`）。长时任务模型见 [命令与长时操作](../../usage/basics/commands-operations.md)，接口见 [灵巧手](../../reference/python/hand.md)。
 
 ## 控制手指开合
 

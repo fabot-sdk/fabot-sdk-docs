@@ -51,7 +51,7 @@ updated: 2026-11-16
 | `fault_changed` | Event | 故障集合变化，payload 为 `Faults`。 |
 | `lifecycle_changed` | Event | 生命周期变化，payload 为 `CapabilityLifecycleSnapshot`。 |
 
-Command 同步返回响应，`timeout_ms` 可逐次覆盖；Operation 立即返回句柄，进度与结果通过快照获取，见 [命令与长时操作](../../usage/commands-operations.md)。
+Command 同步返回响应，`timeout_ms` 可逐次覆盖；Operation 立即返回句柄，进度与结果通过快照获取，见 [命令与长时操作](../../usage/basics/commands-operations.md)。
 
 本页方法用到的枚举：
 
@@ -630,7 +630,7 @@ move_pose_relative(target: Pose3d, *, end_frame: str = "", position_tolerance: f
 
 ## 通道
 
-打开即建立租约并返回 Channel 句柄；用 `frames()` 迭代，`next()` 取一帧，`renew()` 续租，`close()` 释放。通用用法见 [事件与数据通道](../../usage/events-channels.md)。
+打开即建立租约并返回 Channel 句柄；用 `frames()` 迭代，`next()` 取一帧，`renew()` 续租，`close()` 释放。通用用法见 [事件与数据通道](../../usage/data/events-channels.md)。
 
 ### joint()
 
@@ -692,7 +692,7 @@ pose(qos_profile: str = "latest") -> Channel
 | `severity` | `int` | 严重度，与 `HealthState` 对齐 |
 | `timestamp_us` | `int` | 最近一次时间戳（微秒） |
 
-展示给人看的故障文本用 `Catalogs.format_fault(record)`，见 [文本目录 Catalogs](../../usage/catalogs.md)。
+展示给人看的故障文本用 `Catalogs.format_fault(record)`，见 [文本目录 Catalogs](../../usage/diagnostics/catalogs.md)。
 
 ## 状态
 
@@ -703,7 +703,7 @@ pose(qos_profile: str = "latest") -> Channel
 - `health()`：`SlotHealth`（`is_usable` / `lifecycle` / `health` / `standing_faults` / `pbit_completed` / `source_instance_id`）
 - `lifecycle()`：`CapabilityLifecycleSnapshot`（`lifecycle` / `health` / `pbit_completed` / `source_instance_id`）
 
-变化走 `lifecycle_changed` 事件，见 [状态、故障与生命周期](../../usage/status-faults.md)。
+变化走 `lifecycle_changed` 事件，见 [状态、故障与生命周期](../../usage/data/status-faults.md)。
 
 ## 资源
 

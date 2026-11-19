@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # Robot Entry
 
-`Robot` is the single Python SDK entry point: it connects, exposes capability proxies per slot, aggregates the robot-wide e-stop / state / faults, and provides entries for logs, metrics, events, coordinate frames, configuration, services and skills. Connection lifecycle and options are covered in [Connection & Robot Entry](../../usage/connection.md).
+`Robot` is the single Python SDK entry point: it connects, exposes capability proxies per slot, aggregates the robot-wide e-stop / state / faults, and provides entries for logs, metrics, events, coordinate frames, configuration, services and skills. Connection lifecycle and options are covered in [Connection & Robot Entry](../../usage/basics/connection.md).
 
 ## connect
 
@@ -32,7 +32,7 @@ robot.close() -> None
 | `config` | `ClientConfig` | `None` | Client identity and transport, see below; mutually exclusive with `host` |
 | `wait_ready` | `bool` | `False` | When `True`, calls `wait_ready()` before returning |
 
-Passing both `host` and `config` raises `TypeError`. `from_endpoint` is the explicit-endpoint spelling; `from_backend` plugs in a custom transport backend (advanced); `mock()` returns a `MockRobot` needing no robot, see [Mock Testing](../../usage/mock.md). When the SDK and the robot control plane run on the same host, call `Robot.connect()` with no address and the default configuration discovers the endpoint.
+Passing both `host` and `config` raises `TypeError`. `from_endpoint` is the explicit-endpoint spelling; `from_backend` plugs in a custom transport backend (advanced); `mock()` returns a `MockRobot` needing no robot, see [Mock Testing](../../usage/testing/mock.md). When the SDK and the robot control plane run on the same host, call `Robot.connect()` with no address and the default configuration discovers the endpoint.
 
 `ClientConfig` (identity and transport):
 
@@ -95,23 +95,23 @@ Capabilities are exposed as read-only properties, 24 in total; `robot.slots` ret
 
 | Slot property | Capability | Page |
 |---------------|------------|------|
-| `body` | `body` | [Body](body.md) |
-| `left_arm` / `right_arm` | `arm` | [Arm](arm.md) |
-| `left_hand` / `right_hand` | `hand` | [Hand](hand.md) |
-| `left_gripper` / `right_gripper` | `gripper` | [Gripper](gripper.md) |
-| `head` | `head` | [Head](head.md) |
-| `chassis` | `chassis` | [Chassis](chassis.md) |
-| `power_1` / `power_2` | `power` | [Power](power.md) |
-| `io` | `io` | [IO](io.md) |
-| `motion` | `motion` | [Motion](motion.md) |
-| `teleop` | `teleop` | [Teleop](teleop.md) |
-| `arms` | `arms` | [Arms](arms.md) |
-| `head_camera` / `chest_camera` / `waist_camera` | `camera` | [Camera](camera.md) |
-| `left_wrist_camera` / `right_wrist_camera` | `camera` | [Camera](camera.md) |
-| `screen` | `screen` | [Screen](screen.md) |
-| `light` | `light` | [Light](light.md) |
-| `voice` | `voice` | [Voice](voice.md) |
-| `lift` | `lift` | [Lift](lift.md) |
+| `body` | `body` | [Body](./body.md) |
+| `left_arm` / `right_arm` | `arm` | [Arm](./arm.md) |
+| `left_hand` / `right_hand` | `hand` | [Hand](./hand.md) |
+| `left_gripper` / `right_gripper` | `gripper` | [Gripper](./gripper.md) |
+| `head` | `head` | [Head](./head.md) |
+| `chassis` | `chassis` | [Chassis](./chassis.md) |
+| `power_1` / `power_2` | `power` | [Power](./power.md) |
+| `io` | `io` | [IO](./io.md) |
+| `motion` | `motion` | [Motion](./motion.md) |
+| `teleop` | `teleop` | [Teleop](./teleop.md) |
+| `arms` | `arms` | [Arms](./arms.md) |
+| `head_camera` / `chest_camera` / `waist_camera` | `camera` | [Camera](./camera.md) |
+| `left_wrist_camera` / `right_wrist_camera` | `camera` | [Camera](./camera.md) |
+| `screen` | `screen` | [Screen](./screen.md) |
+| `light` | `light` | [Light](./light.md) |
+| `voice` | `voice` | [Voice](./voice.md) |
+| `lift` | `lift` | [Lift](./lift.md) |
 
 Shared members of every slot proxy:
 
@@ -123,11 +123,11 @@ Shared members of every slot proxy:
 | `health()` | Current health as `SlotHealth` |
 | `lifecycle()` | `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `pbit_completed` / `source_instance_id`) |
 | `faults()` | Current fault bag `Faults` |
-| `self_check(...)` | Run this slot's self-check on demand, returns `SelfCheckReport`; writes the fault latch, see [Self-check](../../usage/self-check.md) |
+| `self_check(...)` | Run this slot's self-check on demand, returns `SelfCheckReport`; writes the fault latch, see [Self-check](../../usage/diagnostics/self-check.md) |
 | `ping(...)` | Runtime round-trip probe returning `PingReport` |
 | `has_adapter` | Whether an adapter is bound (read-only property) |
 | `as_adapter(adapter_type)` | Typed adapter view under `fabot.adapters` |
-| `get_config()` / `set_config()` / `edit_config()` | Adapter config-domain access, see [Configuration](../../usage/configuration.md) |
+| `get_config()` / `set_config()` / `edit_config()` | Adapter config-domain access, see [Configuration](../../usage/configuration/configuration.md) |
 
 Capability methods still get dispatched on a slot without an adapter (the platform then fails or times out), while `as_adapter()` and `get_config()` raise `AdapterUnbound` (a `NotFound`); check `has_adapter` first. `as_adapter` requires `adapter_type` to expose `ADAPTER_ID` (otherwise `TypeError`); an unbound slot raises `AdapterUnbound`, and a mismatched adapter raises `AdapterMismatch`.
 
@@ -180,7 +180,7 @@ print(robot.estop.state().asserted)
 
 ## state / status / faults
 
-Robot state comes in three layers: run state (`state()`), aggregated status bags (`status()`) and aggregated faults (`faults()`). All are active queries with no subscription interface; changes are events. See [Status, Faults & Lifecycle](../../usage/status-faults.md).
+Robot state comes in three layers: run state (`state()`), aggregated status bags (`status()`) and aggregated faults (`faults()`). All are active queries with no subscription interface; changes are events. See [Status, Faults & Lifecycle](../../usage/data/status-faults.md).
 
 | Method | Returns | Description |
 |--------|---------|-------------|
@@ -223,7 +223,7 @@ print(faults.revision, faults.chassis.records)
 
 ## self_check
 
-Whole-robot self-check: runs one slot self-check on every slot that is currently **enabled and has an adapter bound**, in robot-spec order, and summarises the result as `RobotSelfCheck`. Unlike the read-only `state()` / `status()` / `faults()`, it really executes the check hooks and writes the fault latch. Full explanation in [Self-check](../../usage/self-check.md).
+Whole-robot self-check: runs one slot self-check on every slot that is currently **enabled and has an adapter bound**, in robot-spec order, and summarises the result as `RobotSelfCheck`. Unlike the read-only `state()` / `status()` / `faults()`, it really executes the check hooks and writes the fault latch. Full explanation in [Self-check](../../usage/diagnostics/self-check.md).
 
 ```python
 self_check(timeout_ms: int = 0, *, timeout: float | None = None) -> RobotSelfCheck
@@ -300,7 +300,7 @@ token = robot.events.estop_changed.subscribe(on_estop)
 token.close()
 ```
 
-Note that the `faults_changed` payload differs from `faults()`: the event carries typed `RobotFaults` bags per slot while the raw bus payload is a flat `RobotFaultSnapshot`. See [Events & Data Channels](../../usage/events-channels.md).
+Note that the `faults_changed` payload differs from `faults()`: the event carries typed `RobotFaults` bags per slot while the raw bus payload is a flat `RobotFaultSnapshot`. See [Events & Data Channels](../../usage/data/events-channels.md).
 
 ## logs
 
@@ -408,7 +408,7 @@ points = robot.frames.transform_points([[0.0, 0.0, 1.0]], "base_link", "map")
 print(robot.frames.to_mermaid())
 ```
 
-Full algebra (`Transform3d` composition, inverse, interpolation, applying to points / vectors / twists / wrenches), `TransformBuffer` and caching semantics are in [Frames & Transforms](../../usage/frames.md); matrix and deprojection helpers are in [Frames API](../python/frames.md).
+Full algebra (`Transform3d` composition, inverse, interpolation, applying to points / vectors / twists / wrenches), `TransformBuffer` and caching semantics are in [Frames & Transforms](../../usage/data/frames.md); matrix and deprojection helpers are in [Frames API](./frames.md).
 
 ## configuration / connection / services / skills
 
@@ -416,12 +416,12 @@ Remaining robot-wide entries:
 
 | Entry | Description |
 |-------|-------------|
-| `robot.configuration` | Robot config read/write (`get()` / `apply()`), CAS-committed, see [Configuration](../../usage/configuration.md) |
+| `robot.configuration` | Robot config read/write (`get()` / `apply()`), CAS-committed, see [Configuration](../../usage/configuration/configuration.md) |
 | `robot.connection` | Connection state query and subscription (`is_connected()` / `connected` / `subscribe()`) |
-| `robot.services` | Platform service handles (`ros2` / `obs_collector`), see [Platform Services](../../usage/services.md); API in [Platform Services Overview](services/index.md) |
-| `robot.environments` | Runtime environment config (currently `ros2`), config only, see [Platform Services](../../usage/services.md); API in [Runtime Environment](services/ros2_environment.md) |
-| `robot.obs` | Observability store snapshot (`store()`), see [Logs, Metrics & Observability](../../usage/observability.md) |
-| `robot.skills` | Skill handles (`camera_sync` / `voice_aiui`), see [Skills & Extensions](../../usage/skills.md); API in [Skills Overview](skills/index.md) |
+| `robot.services` | Platform service handles (`ros2` / `obs_collector`), see [Platform Services](../../usage/configuration/services.md); API in [Platform Services Overview](./services/index.md) |
+| `robot.environments` | Runtime environment config (currently `ros2`), config only, see [Platform Services](../../usage/configuration/services.md); API in [Runtime Environment](./services/ros2_environment.md) |
+| `robot.obs` | Observability store snapshot (`store()`), see [Logs, Metrics & Observability](../../usage/diagnostics/observability.md) |
+| `robot.skills` | Skill handles (`camera_sync` / `voice_aiui`), see [Skills & Extensions](../../usage/configuration/skills.md); API in [Skills Overview](./skills/index.md) |
 
 ## ping / freeze
 
@@ -456,8 +456,8 @@ from fabot.core.types import PingReport
 robot.obs.store(*, timeout_ms: int = 0) -> ObsStore
 ```
 
-`timeout_ms` of `0` keeps the client default. Fields and usage are in the "Observability store" section of [Logs, Metrics & Observability](../../usage/observability.md).
+`timeout_ms` of `0` keeps the client default. Fields and usage are in the "Observability store" section of [Logs, Metrics & Observability](../../usage/diagnostics/observability.md).
 
 ## environments
 
-`robot.environments` reads and writes runtime environment config; currently only `ros2` (`Ros2EnvironmentHandle`: `get_config()` / `set_config()` / `edit_config()`). The difference from `robot.services.ros2` is explained in [Platform Services](../../usage/services.md).
+`robot.environments` reads and writes runtime environment config; currently only `ros2` (`Ros2EnvironmentHandle`: `get_config()` / `set_config()` / `edit_config()`). The difference from `robot.services.ros2` is explained in [Platform Services](../../usage/configuration/services.md).

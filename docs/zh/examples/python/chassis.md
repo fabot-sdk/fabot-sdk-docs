@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # 底盘示例
 
-执行底盘导航任务并跟踪进度。长时任务模型见 [命令与长时操作](../../usage/commands-operations.md)，接口见 [底盘](../../reference/python/chassis.md)。
+执行底盘导航任务并跟踪进度。长时任务模型见 [命令与长时操作](../../usage/basics/commands-operations.md)，接口见 [底盘](../../reference/python/chassis.md)。
 
 ## 导航到站点
 
@@ -43,7 +43,7 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 注意：
 
 - 进度反馈的 `feedback` 为 `Progress`（`progress` / `status_message`），任务刚启动时可能为 `None`。
-- 终态 `result` 为 `Outcome`；失败原因读 `error`，错误处理见 [错误处理](../../usage/errors.md)。
+- 终态 `result` 为 `Outcome`；失败原因读 `error`，错误处理见 [错误处理](../../usage/diagnostics/errors.md)。
 - 导航 Operation 共享资源 `chassis`，策略 `queue`，默认时限 180 秒，见 [底盘](../../reference/python/chassis.md)。
 
 ## 按位姿导航

@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # 夹爪示例
 
-控制左 / 右夹爪的开合运动、速度与力上限，并订阅开合度流。左右夹爪是同一套 API、各自独立的槽位（`robot.left_gripper` / `robot.right_gripper`）。长时任务模型见 [命令与长时操作](../../usage/commands-operations.md)，通道用法见 [事件与数据通道](../../usage/events-channels.md)，接口全表见 [夹爪 Gripper](../../reference/python/gripper.md)。
+控制左 / 右夹爪的开合运动、速度与力上限，并订阅开合度流。左右夹爪是同一套 API、各自独立的槽位（`robot.left_gripper` / `robot.right_gripper`）。长时任务模型见 [命令与长时操作](../../usage/basics/commands-operations.md)，通道用法见 [事件与数据通道](../../usage/data/events-channels.md)，接口全表见 [夹爪 Gripper](../../reference/python/gripper.md)。
 
 ## 设置上限并执行开合
 

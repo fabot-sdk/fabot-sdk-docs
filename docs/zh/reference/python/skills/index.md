@@ -15,8 +15,8 @@ updated: 2026-11-17
 
 | 技能 | 入口 | `SKILL_ID` | 配置类型 | 配置域 | 章节 |
 |------|------|-----------|----------|--------|------|
-| 多相机同步 | `robot.skills.camera_sync` | `fabot_camera_sync` | `CameraSyncConfig` | `alignment` / `frame_region` | [camera_sync.md](camera_sync.md) |
-| 语音语义 | `robot.skills.voice_aiui` | `fabot_voice_aiui` | `VoiceAiuiConfig` | `aiui` | [voice_aiui.md](voice_aiui.md) |
+| 多相机同步 | `robot.skills.camera_sync` | `fabot_camera_sync` | `CameraSyncConfig` | `alignment` / `frame_region` | [camera_sync.md](./camera_sync.md) |
+| 语音语义 | `robot.skills.voice_aiui` | `fabot_voice_aiui` | `VoiceAiuiConfig` | `aiui` | [voice_aiui.md](./voice_aiui.md) |
 
 技能是否部署、是否启用由机器人配置决定：先读 `is_available` 再调用其余成员。判定依据是配置里该技能槽位已启用且绑定了 adapter；查不到配置时退回检查句柄是否有效。未部署时访问句柄或命令会失败。
 
@@ -68,7 +68,7 @@ robot.skills.<name>.self_check(timeout_ms: int = 0, *, timeout: float | None = N
 | `timeout_ms` | `int` | `0` | 调用超时（毫秒）；`0` 用客户端缺省超时 |
 | `timeout` | `float \| None` | `None` | 同义的秒制写法 |
 
-会写入故障锁存，见 [自检](../../../usage/self-check.md)。
+会写入故障锁存，见 [自检](../../../usage/diagnostics/self-check.md)。
 
 ### ping
 
@@ -95,11 +95,11 @@ robot.skills.<name>.edit_config()  # 上下文管理器
 | `config` | 配置 dataclass | （必填） | 目标配置 |
 | `only_domains` | `set[str] \| None` | `None` | 只提交这些配置域；`None` 表示全部 |
 
-`set_config()` 以 CAS 提交，冲突抛 `ConfigurationConflict`，成功后返回重新读取的配置；`edit_config()` 在退出时只提交变化的域。规则与能力配置一致，见 [配置管理](../../../usage/configuration.md)。
+`set_config()` 以 CAS 提交，冲突抛 `ConfigurationConflict`，成功后返回重新读取的配置；`edit_config()` 在退出时只提交变化的域。规则与能力配置一致，见 [配置管理](../../../usage/configuration/configuration.md)。
 
 ## 通道
 
-`robot.skills` 本身没有通道。各技能的通道见 [camera_sync.md](camera_sync.md) 与 [voice_aiui.md](voice_aiui.md) 的「通道」一节。
+`robot.skills` 本身没有通道。各技能的通道见 [camera_sync.md](./camera_sync.md) 与 [voice_aiui.md](./voice_aiui.md) 的「通道」一节。
 
 ## 事件
 
@@ -136,7 +136,7 @@ token.close()
 
 展示给人看的文本用 `Catalogs.format_fault(record)`，见 [文本目录 Catalogs](../catalogs.md)。诊断码按 domain / module 编码，见 [诊断码参考](../error-codes.md)。
 
-失败形态与能力一致：`is_available` 为假时解析句柄或下发命令会失败；命令超时抛 `Timeout`，资源冲突抛 `ResourceConflict`，配置冲突抛 `ConfigurationConflict`，见 [错误处理](../../../usage/errors.md)。
+失败形态与能力一致：`is_available` 为假时解析句柄或下发命令会失败；命令超时抛 `Timeout`，资源冲突抛 `ResourceConflict`，配置冲突抛 `ConfigurationConflict`，见 [错误处理](../../../usage/diagnostics/errors.md)。
 
 ## 状态
 
@@ -145,7 +145,7 @@ token.close()
 - `health()`：`SlotHealth`（`is_usable` / `lifecycle` / `health` / `standing_faults` / `pbit_completed` / `source_instance_id`）
 - `lifecycle()`：`CapabilityLifecycleSnapshot`（`lifecycle` / `health` / `pbit_completed` / `source_instance_id`）
 
-变化走 `lifecycle_changed`，见 [状态、故障与生命周期](../../../usage/status-faults.md)。
+变化走 `lifecycle_changed`，见 [状态、故障与生命周期](../../../usage/data/status-faults.md)。
 
 ## 资源
 
@@ -158,7 +158,7 @@ token.close()
 
 ## 相关
 
-- 技能概念与可用性判断：[技能与扩展](../../../usage/skills.md)
-- 配置域读写与冲突重试：[配置管理](../../../usage/configuration.md)
+- 技能概念与可用性判断：[技能与扩展](../../../usage/configuration/skills.md)
+- 配置域读写与冲突重试：[配置管理](../../../usage/configuration/configuration.md)
 - 相机硬件与流：[相机 Camera](../camera.md)
 - 语音硬件与流：[语音 Voice](../voice.md)

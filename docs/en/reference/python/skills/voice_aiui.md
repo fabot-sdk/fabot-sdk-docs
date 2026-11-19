@@ -14,7 +14,7 @@ updated: 2026-11-17
 - Adds transcripts, intent recognition and synthesized speech on top of the `voice` hardware capability. Microphone capture and speaker playback stay in [Voice](../voice.md); this skill handles the semantics.
 - `speak` is an Operation occupying the `speaker` resource with policy `reject`, default budget 30 seconds, cancelable.
 
-Common members (`is_available` / `handle` / `events` / `health()` / `faults()` / `ping()` / `self_check()` and config access) are in the [Skills Overview](index.md).
+Common members (`is_available` / `handle` / `events` / `health()` / `faults()` / `ping()` / `self_check()` and config access) are in the [Skills Overview](./index.md).
 
 ## API Overview
 
@@ -34,7 +34,7 @@ Common members (`is_available` / `handle` / `events` / `health()` / `faults()` /
 | `fault_changed` | Event | Fault set changed; payload is `Faults`. |
 | `lifecycle_changed` | Event | Lifecycle changed; payload is `CapabilityLifecycleSnapshot`. |
 
-Commands return synchronously and `timeout_ms` can be overridden per call; Operations return a handle immediately and expose progress through snapshots, see [Commands & Operations](../../../usage/commands-operations.md).
+Commands return synchronously and `timeout_ms` can be overridden per call; Operations return a handle immediately and expose progress through snapshots, see [Commands & Operations](../../../usage/basics/commands-operations.md).
 
 ## Methods
 
@@ -143,7 +143,7 @@ get_status(*, timeout_ms: int = 1000) -> StatusApplied
 
 ## Channels
 
-Opening a channel establishes a lease and returns a handle; iterate with `frames()`, take one frame with `next()`, extend with `renew()`, release with `close()`. General usage is in [Events & Data Channels](../../../usage/events-channels.md).
+Opening a channel establishes a lease and returns a handle; iterate with `frames()`, take one frame with `next()`, extend with `renew()`, release with `close()`. General usage is in [Events & Data Channels](../../../usage/data/events-channels.md).
 
 ### transcript
 
@@ -217,7 +217,7 @@ Transcripts and intents do not use events; they arrive on the `transcript()` / `
 
 For human-readable text use `Catalogs.format_fault(record)`, see [Catalogs](../catalogs.md).
 
-Call failures: when `speak` is busy it raises `ResourceConflict`; when the terminal state is failed / canceled / timed out, `wait()` raises `FabotError` / `Canceled` / `Timeout`. With cloud credentials missing the skill stays running but speech and recognition are unavailable — check `cloud_connected` and `activity` on the status. See [Error Handling](../../../usage/errors.md).
+Call failures: when `speak` is busy it raises `ResourceConflict`; when the terminal state is failed / canceled / timed out, `wait()` raises `FabotError` / `Canceled` / `Timeout`. With cloud credentials missing the skill stays running but speech and recognition are unavailable — check `cloud_connected` and `activity` on the status. See [Error Handling](../../../usage/diagnostics/errors.md).
 
 ## Status
 
@@ -277,7 +277,7 @@ Credentials belong in the user runtime config only, never in the packaged templa
 
 ## Related
 
-- Skill concepts and availability checks: [Skills & Extensions](../../../usage/skills.md)
+- Skill concepts and availability checks: [Skills & Extensions](../../../usage/configuration/skills.md)
 - Voice hardware and streams: [Voice](../voice.md)
-- Config-domain access: [Configuration](../../../usage/configuration.md)
-- Commands and Operations: [Commands & Operations](../../../usage/commands-operations.md)
+- Config-domain access: [Configuration](../../../usage/configuration/configuration.md)
+- Commands and Operations: [Commands & Operations](../../../usage/basics/commands-operations.md)

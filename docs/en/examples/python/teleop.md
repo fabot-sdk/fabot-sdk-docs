@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # Teleop example
 
-Start and stop joystick teleop sessions. The long-running task model is in [Commands & Operations](../../usage/commands-operations.md), the API in [Teleop](../../reference/python/teleop.md).
+Start and stop joystick teleop sessions. The long-running task model is in [Commands & Operations](../../usage/basics/commands-operations.md), the API in [Teleop](../../reference/python/teleop.md).
 
 ## Start a joystick session
 

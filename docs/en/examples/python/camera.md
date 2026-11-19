@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # Camera example
 
-Capture multi-stream frames, read calibration and intrinsics, control imaging parameters, and subscribe to image streams and preview endpoints. There are five camera slots (`head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera`) sharing one API on independent slots. The channel model is in [Events & Data Channels](../../usage/events-channels.md), and fields are in [Camera](../../reference/python/camera.md).
+Capture multi-stream frames, read calibration and intrinsics, control imaging parameters, and subscribe to image streams and preview endpoints. There are five camera slots (`head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera`) sharing one API on independent slots. The channel model is in [Events & Data Channels](../../usage/data/events-channels.md), and fields are in [Camera](../../reference/python/camera.md).
 
 ## Capture a frame set
 

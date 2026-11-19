@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # 头部示例
 
-控制头部俯仰 / 偏航关节，并跟踪运动进度。长时任务模型见 [命令与长时操作](../../usage/commands-operations.md)，接口见 [头部](../../reference/python/head.md)。
+控制头部俯仰 / 偏航关节，并跟踪运动进度。长时任务模型见 [命令与长时操作](../../usage/basics/commands-operations.md)，接口见 [头部](../../reference/python/head.md)。
 
 ## 转动头部到目标关节角
 

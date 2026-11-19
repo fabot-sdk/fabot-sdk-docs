@@ -7,7 +7,7 @@ updated: 2026-11-16
 
 # 更新日志
 
-按 SDK 版本倒序列出对外可见的变更。每个版本与同版本号的机器人平台配套；当前最新为预发布版 `1.1.0-alpha.1`。版本号语义与升级步骤见 [版本配套](install/compatibility.md)。
+按 SDK 版本倒序列出对外可见的变更。每个版本与同版本号的机器人平台配套；当前最新为预发布版 `1.1.0-alpha.1`。版本号语义与升级步骤见 [版本配套](./getting-started/install/compatibility.md)。
 
 顶栏版本下拉可切换各版本对应的文档；某个历史版本的更新日志只包含到该版本为止的条目。
 
@@ -17,20 +17,20 @@ updated: 2026-11-16
 
 ### 新增
 
-- 日志：`robot.logs.history()` 查询历史日志（`limit` / `slot` / `unit` 过滤），`robot.logs.emit()` / `debug` / `info` / `warn` / `error` 上报自定义日志，`robot.logs.freeze()` 冻结飞行记录器，见 [日志、指标与可观测性](usage/observability.md)。
+- 日志：`robot.logs.history()` 查询历史日志（`limit` / `slot` / `unit` 过滤），`robot.logs.emit()` / `debug` / `info` / `warn` / `error` 上报自定义日志，`robot.logs.freeze()` 冻结飞行记录器，见 [日志、指标与可观测性](./usage/diagnostics/observability.md)。
 - 指标：`robot.metrics` 全新入口——`subscribe()` 订阅、`snapshot()` 读 SDK 自身计数、`records()` 导出为 `MetricRecord`，`gauge` / `counter` / `histogram` 上报自定义指标。
-- 坐标系：`robot.frames`（`FrameSystem`）提供 `lookup` / `transform` / `transform_points` / `lookup_full` / `scoped_frame`，配套 `Transform3d` 代数与像素几何函数，不依赖 ROS，见 [坐标系与变换](usage/frames.md)。
+- 坐标系：`robot.frames`（`FrameSystem`）提供 `lookup` / `transform` / `transform_points` / `lookup_full` / `scoped_frame`，配套 `Transform3d` 代数与像素几何函数，不依赖 ROS，见 [坐标系与变换](./usage/data/frames.md)。
 - 事件：`robot.events.emit()` 向事件总线上报自定义事件；`robot.events.subscribe()` 支持 `name` / `slot` 过滤。
-- 技能：新增 `robot.skills.camera_sync`（多相机时间配对）与 `robot.skills.voice_aiui`（转写、意图与语义播报），见 [技能与扩展](usage/skills.md)。
+- 技能：新增 `robot.skills.camera_sync`（多相机时间配对）与 `robot.skills.voice_aiui`（转写、意图与语义播报），见 [技能与扩展](./usage/configuration/skills.md)。
 - 遥测：`robot.ping()` 探测运行库往返时延，槽位 Proxy 上也有同名方法。
-- 升降柱：新增 `lift` 能力（`robot.lift`）——高度读写、绝对 / 相对运动、回零、伺服与高度状态流，见 [升降柱 Lift](reference/python/lift.md)。
-- 观测存储：新增 `robot.obs.store()`，查询观测采集器的配额、目录占用与冻结文件清单，见 [日志、指标与可观测性](usage/observability.md)。
-- 运行环境：新增 `robot.environments.ros2`（domain id / 通信设置，只读写配置），见 [平台服务管理](usage/services.md)。
-- 平台服务：新增 `robot.services.ros2`（ROS 2 图访问）与 `robot.services.obs_collector`（观测采集）句柄，见 [平台服务管理](usage/services.md)。
+- 升降柱：新增 `lift` 能力（`robot.lift`）——高度读写、绝对 / 相对运动、回零、伺服与高度状态流，见 [升降柱 Lift](./reference/python/lift.md)。
+- 观测存储：新增 `robot.obs.store()`，查询观测采集器的配额、目录占用与冻结文件清单，见 [日志、指标与可观测性](./usage/diagnostics/observability.md)。
+- 运行环境：新增 `robot.environments.ros2`（domain id / 通信设置，只读写配置），见 [平台服务管理](./usage/configuration/services.md)。
+- 平台服务：新增 `robot.services.ros2`（ROS 2 图访问）与 `robot.services.obs_collector`（观测采集）句柄，见 [平台服务管理](./usage/configuration/services.md)。
 - 底盘：新增 `stop()`（平台侧刹停）与 `get_odometer()`（累计里程）。
 - 语音：新增 `configure_wakeword()` 设置唤醒词短语与阈值。
 - 相机：新增 `perf_frame_shm()`，用合成帧测共享内存分帧时延。
-- 文档：新增 [诊断码参考](reference/python/error-codes.md)、[并发、线程与安全](usage/concurrency-and-safety.md)、[时间基准与坐标系约定](usage/conventions.md) 与 [从 1.0.x 迁移到 1.1.0](usage/migration-1.0-to-1.1.md)。
+- 文档：新增 [诊断码参考](./reference/python/error-codes.md)、[并发、线程与安全](./usage/basics/concurrency-and-safety.md)、[时间基准与坐标系约定](./usage/basics/conventions.md) 与 [从 1.0.x 迁移到 1.1.0](./usage/testing/migration-1.0-to-1.1.md)。
 
 ### 变更
 
@@ -58,9 +58,9 @@ updated: 2026-11-16
 
 ### 新增
 
-- 相机：新增 `get_intrinsics()`，读取彩色 / 深度两路内参（K 与畸变，不含外参），见 [相机 Camera](reference/python/camera.md)。
-- 槽位：新增 `robot.waist_camera`；相机槽位由 4 个增至 5 个，整机槽位由 22 个增至 23 个，见 [Robot 入口](reference/python/robot.md#slots)。
-- 服务：新增 `robot.services.orbbec_sdk_ros2`（Orbbec ROS 相机后端，默认不启动），见 [平台服务管理](usage/services.md)。
+- 相机：新增 `get_intrinsics()`，读取彩色 / 深度两路内参（K 与畸变，不含外参），见 [相机 Camera](./reference/python/camera.md)。
+- 槽位：新增 `robot.waist_camera`；相机槽位由 4 个增至 5 个，整机槽位由 22 个增至 23 个，见 [Robot 入口](./reference/python/robot.md#slots)。
+- 服务：新增 `robot.services.orbbec_sdk_ros2`（Orbbec ROS 相机后端，默认不启动），见 [平台服务管理](./usage/configuration/services.md)。
 
 ### 兼容性
 
@@ -71,12 +71,12 @@ updated: 2026-11-16
 2026-09-21 · 仅运行时修复
 
 - SDK 公开接口无变化；机器人端修复了运行库隔离问题，避免与系统中其它版本的通信库冲突。
-- 仍建议把 SDK 升到 1.0.1，保持两端版本一致，见 [版本配套](install/compatibility.md)。
+- 仍建议把 SDK 升到 1.0.1，保持两端版本一致，见 [版本配套](./getting-started/install/compatibility.md)。
 
 ## 1.0.0
 
 2026-09-17 · 首个正式版
 
 - 首次对外发布的 `fabot-sdk`（import 名 `fabot`）：16 个能力模块、22 个槽位、`fabot/v1` 接口，要求 Python ≥ 3.12。
-- 运行时依赖按精确版本锁定，见 [安装 Python SDK](install/python.md) 的依赖表。
-- 从零开始建议先看 [第一个程序（Python）](tutorials/python.md)。
+- 运行时依赖按精确版本锁定，见 [安装 Python SDK](./getting-started/install/python.md) 的依赖表。
+- 从零开始建议先看 [第一个程序（Python）](./getting-started/quickstart.md)。

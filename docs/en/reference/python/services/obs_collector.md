@@ -13,9 +13,9 @@ updated: 2026-11-17
 - service id: `fabot_obs_collector`; handle `ObsCollectorServiceHandle`; config type `ObsCollectorConfig`
 - Observability collector: persists logs / metrics / events and owns the flight recorder. Its config covers quota, per-category size and retention, and the freeze window.
 - **The process reads this config only at start**: after `set_config()`, call `stop()` then `start()` for it to take effect.
-- For current disk usage and the freeze file list use `robot.obs.store()`, see [Logs, Metrics & Observability](../../../usage/observability.md).
+- For current disk usage and the freeze file list use `robot.obs.store()`, see [Logs, Metrics & Observability](../../../usage/diagnostics/observability.md).
 
-Shared platform operations (`start` / `state` / `get_config`, CAS conflicts and so on) are in the [Platform Services Overview](index.md).
+Shared platform operations (`start` / `state` / `get_config`, CAS conflicts and so on) are in the [Platform Services Overview](./index.md).
 
 ## API Overview
 
@@ -49,19 +49,19 @@ Config takes effect only after a restart; under `Robot.mock()` control operation
 
 ## Channels
 
-The service has no data channels. Read logs and metrics through `robot.logs` / `robot.metrics`, see [Logs, Metrics & Observability](../../../usage/observability.md).
+The service has no data channels. Read logs and metrics through `robot.logs` / `robot.metrics`, see [Logs, Metrics & Observability](../../../usage/diagnostics/observability.md).
 
 ## Events
 
-No service-private events; state transitions arrive on the robot-wide `robot.events.service_state_changed`, see the [Platform Services Overview](index.md). Freezing observability is triggered by `robot.freeze()` or `robot.logs.freeze()`.
+No service-private events; state transitions arrive on the robot-wide `robot.events.service_state_changed`, see the [Platform Services Overview](./index.md). Freezing observability is triggered by `robot.freeze()` or `robot.logs.freeze()`.
 
 ## Exceptions
 
-Same as the other services: control failures raise `FabotError` and config clashes raise `ConfigurationConflict`. Out-of-range values (such as a `quota_percent` of zero or less) are rejected or fall back to defaults when applied; see the per-field notes. See [Error Handling](../../../usage/errors.md).
+Same as the other services: control failures raise `FabotError` and config clashes raise `ConfigurationConflict`. Out-of-range values (such as a `quota_percent` of zero or less) are rejected or fall back to defaults when applied; see the per-field notes. See [Error Handling](../../../usage/diagnostics/errors.md).
 
 ## Status
 
-`state()` returns `ServiceState` (fields in the [Platform Services Overview](index.md)).
+`state()` returns `ServiceState` (fields in the [Platform Services Overview](./index.md)).
 
 `ObsCollectorConfig` has a single `obs` domain:
 
@@ -90,6 +90,6 @@ The domain is `obs`; `edit_config()` commits only the domains that actually chan
 
 ## Related
 
-- Logs, metrics and the observability store: [Logs, Metrics & Observability](../../../usage/observability.md)
-- Service concepts and lifecycle caveats: [Platform Services](../../../usage/services.md)
-- Config-domain access: [Configuration](../../../usage/configuration.md)
+- Logs, metrics and the observability store: [Logs, Metrics & Observability](../../../usage/diagnostics/observability.md)
+- Service concepts and lifecycle caveats: [Platform Services](../../../usage/configuration/services.md)
+- Config-domain access: [Configuration](../../../usage/configuration/configuration.md)

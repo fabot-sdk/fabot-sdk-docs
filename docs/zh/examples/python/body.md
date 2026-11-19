@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # 躯干示例
 
-控制躯干关节与腰部升降 / 前探 / 俯仰。长时任务模型见 [命令与长时操作](../../usage/commands-operations.md)，通道用法见 [事件与数据通道](../../usage/events-channels.md)，接口见 [躯干 Body](../../reference/python/body.md)。
+控制躯干关节与腰部升降 / 前探 / 俯仰。长时任务模型见 [命令与长时操作](../../usage/basics/commands-operations.md)，通道用法见 [事件与数据通道](../../usage/data/events-channels.md)，接口见 [躯干 Body](../../reference/python/body.md)。
 
 ## 腰部位姿运动
 

@@ -7,7 +7,7 @@ updated: 2026-11-02
 
 # 文本目录 Catalogs
 
-`Catalogs`（文本目录）是独立的展示层工具类（`fabot.catalogs`，可从 `fabot` 顶层导入），不是能力模块，没有槽位。它把**诊断码**、**日志键**与**指标名**映射成本地化文本；`Catalogs.load()` 绑定随 SDK 嵌入的文本表，运行时纯查表，不访问机器人。使用场景见 [文本目录 Catalogs](../../usage/catalogs.md)。
+`Catalogs`（文本目录）是独立的展示层工具类（`fabot.catalogs`，可从 `fabot` 顶层导入），不是能力模块，没有槽位。它把**诊断码**、**日志键**与**指标名**映射成本地化文本；`Catalogs.load()` 绑定随 SDK 嵌入的文本表，运行时纯查表，不访问机器人。使用场景见 [文本目录 Catalogs](../../usage/diagnostics/catalogs.md)。
 
 ## 模块概述
 
@@ -188,20 +188,20 @@ print(catalogs.format_metric(metric_record))
 
 ## 通道
 
-无数据通道。通用通道机制见 [事件与数据通道](../../usage/events-channels.md)。
+无数据通道。通用通道机制见 [事件与数据通道](../../usage/data/events-channels.md)。
 
 ## 事件
 
-无事件。结构化日志来自 `robot.logs.subscribe`，见 [日志、指标与可观测性](../../usage/observability.md)。
+无事件。结构化日志来自 `robot.logs.subscribe`，见 [日志、指标与可观测性](../../usage/diagnostics/observability.md)。
 
 ## 异常
 
-`format_log` / `format_error` / `format_fault` / `format_metric` 在未命中时不抛错，按上文回退。协议错误的层次与处理见 [错误处理](../../usage/errors.md)。
+`format_log` / `format_error` / `format_fault` / `format_metric` 在未命中时不抛错，按上文回退。协议错误的层次与处理见 [错误处理](../../usage/diagnostics/errors.md)。
 
 ## 状态
 
-无状态袋。故障展示的输入来自 `robot.faults()` / 各槽位 `faults()` / `FaultState`，见 [状态、故障与生命周期](../../usage/status-faults.md)。
+无状态袋。故障展示的输入来自 `robot.faults()` / 各槽位 `faults()` / `FaultState`，见 [状态、故障与生命周期](../../usage/data/status-faults.md)。
 
 ## 资源
 
-无独立资源句柄。文本是随 SDK 版本嵌入的快照；平台新增诊断码在未升级 SDK 时按原始码回退显示，见 [版本配套](../../install/compatibility.md)。
+无独立资源句柄。文本是随 SDK 版本嵌入的快照；平台新增诊断码在未升级 SDK 时按原始码回退显示，见 [版本配套](../../getting-started/install/compatibility.md)。

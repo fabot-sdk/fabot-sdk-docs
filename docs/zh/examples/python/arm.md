@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # 机械臂示例
 
-控制左臂（`robot.left_arm`）或右臂（`robot.right_arm`）做关节运动与末端位姿运动，并订阅实时状态流。长时任务模型见 [命令与长时操作](../../usage/commands-operations.md)，通道用法见 [事件与数据通道](../../usage/events-channels.md)，接口全表见 [机械臂 Arm](../../reference/python/arm.md)。
+控制左臂（`robot.left_arm`）或右臂（`robot.right_arm`）做关节运动与末端位姿运动，并订阅实时状态流。长时任务模型见 [命令与长时操作](../../usage/basics/commands-operations.md)，通道用法见 [事件与数据通道](../../usage/data/events-channels.md)，接口全表见 [机械臂 Arm](../../reference/python/arm.md)。
 
 ## 使能并执行关节运动
 
@@ -41,7 +41,7 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 
 注意：
 
-- 快照的 `feedback` 为 `Progress`（`progress` / `status_message`），任务刚启动时可能为 `None`；终态 `result` 为 `Outcome`（`success` / `status_message`），失败原因读 `error`，错误处理见 [错误处理](../../usage/errors.md)。
+- 快照的 `feedback` 为 `Progress`（`progress` / `status_message`），任务刚启动时可能为 `None`；终态 `result` 为 `Outcome`（`success` / `status_message`），失败原因读 `error`，错误处理见 [错误处理](../../usage/diagnostics/errors.md)。
 - 同一只手臂的所有运动 Operation 共享资源 `arm`，策略 `queue`：新任务排队执行；进行中可 `op.cancel()` 取消。
 - `op.wait(timeout=30.0)` 是等终态的简写：成功返回 `result`，失败时直接抛错。
 
@@ -108,6 +108,6 @@ finally:
 ## 相关链接
 
 - [机械臂 Arm](../../reference/python/arm.md)
-- [命令与长时操作](../../usage/commands-operations.md)
-- [事件与数据通道](../../usage/events-channels.md)
-- [坐标系与变换](../../usage/frames.md)
+- [命令与长时操作](../../usage/basics/commands-operations.md)
+- [事件与数据通道](../../usage/data/events-channels.md)
+- [坐标系与变换](../../usage/data/frames.md)

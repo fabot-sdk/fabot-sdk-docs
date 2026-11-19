@@ -7,7 +7,7 @@ updated: 2026-11-02
 
 # Catalogs
 
-`Catalogs` (localized text) is a standalone presentation helper (`fabot.catalogs`, importable from `fabot`), not a capability module, and has no slot. It maps **diagnostic codes**, **log keys** and **metric names** to localized text; `Catalogs.load()` binds the tables embedded in the SDK build and lookups are pure dictionary reads with no robot access. Use cases are in [Catalogs](../../usage/catalogs.md).
+`Catalogs` (localized text) is a standalone presentation helper (`fabot.catalogs`, importable from `fabot`), not a capability module, and has no slot. It maps **diagnostic codes**, **log keys** and **metric names** to localized text; `Catalogs.load()` binds the tables embedded in the SDK build and lookups are pure dictionary reads with no robot access. Use cases are in [Catalogs](../../usage/diagnostics/catalogs.md).
 
 ## Module overview
 
@@ -188,20 +188,20 @@ print(catalogs.format_metric(metric_record))
 
 ## Channels
 
-No data channels. See [Events & Data Channels](../../usage/events-channels.md).
+No data channels. See [Events & Data Channels](../../usage/data/events-channels.md).
 
 ## Events
 
-No events. Structured logs come from `robot.logs.subscribe`, see [Logs, Metrics & Observability](../../usage/observability.md).
+No events. Structured logs come from `robot.logs.subscribe`, see [Logs, Metrics & Observability](../../usage/diagnostics/observability.md).
 
 ## Exceptions
 
-`format_log` / `format_error` / `format_fault` / `format_metric` never raise on a miss; they fall back as described. Protocol error handling is in [Error Handling](../../usage/errors.md).
+`format_log` / `format_error` / `format_fault` / `format_metric` never raise on a miss; they fall back as described. Protocol error handling is in [Error Handling](../../usage/diagnostics/errors.md).
 
 ## Status
 
-No status bag. Fault text comes from `robot.faults()` / per-slot `faults()` / `FaultState`, see [Status, Faults & Lifecycle](../../usage/status-faults.md).
+No status bag. Fault text comes from `robot.faults()` / per-slot `faults()` / `FaultState`, see [Status, Faults & Lifecycle](../../usage/data/status-faults.md).
 
 ## Resources
 
-No resource handles. The text tables are a snapshot embedded in the SDK build; diagnostic codes the SDK does not know fall back to the raw code, see [Version Compatibility](../../install/compatibility.md).
+No resource handles. The text tables are a snapshot embedded in the SDK build; diagnostic codes the SDK does not know fall back to the raw code, see [Version Compatibility](../../getting-started/install/compatibility.md).

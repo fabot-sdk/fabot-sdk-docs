@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # Voice example
 
-Audio capture, playback and hardware control. Semantic features (transcripts, intents, synthesized speech) live in the `robot.skills.voice_aiui` skill, see [Skills & Extensions](../../usage/skills.md). The long-running task model is in [Commands & Operations](../../usage/commands-operations.md), channels in [Events & Data Channels](../../usage/events-channels.md), and the API in [Voice](../../reference/python/voice.md).
+Audio capture, playback and hardware control. Semantic features (transcripts, intents, synthesized speech) live in the `robot.skills.voice_aiui` skill, see [Skills & Extensions](../../usage/configuration/skills.md). The long-running task model is in [Commands & Operations](../../usage/basics/commands-operations.md), channels in [Events & Data Channels](../../usage/data/events-channels.md), and the API in [Voice](../../reference/python/voice.md).
 
 ## Play an audio file
 

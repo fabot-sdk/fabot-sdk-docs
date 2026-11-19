@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # Light example
 
-Control the light strip: mode, color, brightness and animation period. All five methods are short commands; the command model is in [Commands & Operations](../../usage/commands-operations.md) and the API in [Light](../../reference/python/light.md).
+Control the light strip: mode, color, brightness and animation period. All five methods are short commands; the command model is in [Commands & Operations](../../usage/basics/commands-operations.md) and the API in [Light](../../reference/python/light.md).
 
 ## Set mode and color
 

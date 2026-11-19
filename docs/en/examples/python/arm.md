@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # Arm example
 
-Drive the left (`robot.left_arm`) or right (`robot.right_arm`) arm with joint motion and end-effector pose motion, and subscribe to live state streams. The long-running task model is in [Commands & Operations](../../usage/commands-operations.md), channels in [Events & Data Channels](../../usage/events-channels.md), and the full API in [Arm](../../reference/python/arm.md).
+Drive the left (`robot.left_arm`) or right (`robot.right_arm`) arm with joint motion and end-effector pose motion, and subscribe to live state streams. The long-running task model is in [Commands & Operations](../../usage/basics/commands-operations.md), channels in [Events & Data Channels](../../usage/data/events-channels.md), and the full API in [Arm](../../reference/python/arm.md).
 
 ## Enable and move the joints
 
@@ -41,7 +41,7 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 
 Notes:
 
-- `feedback` is a `Progress` (`progress` / `status_message`) and may be `None` right after submission; the terminal `result` is an `Outcome` (`success` / `status_message`) and failures are read from `error`, see [Error Handling](../../usage/errors.md).
+- `feedback` is a `Progress` (`progress` / `status_message`) and may be `None` right after submission; the terminal `result` is an `Outcome` (`success` / `status_message`) and failures are read from `error`, see [Error Handling](../../usage/diagnostics/errors.md).
 - Every motion Operation on one arm shares the `arm` resource with policy `queue`, so new tasks line up. `op.cancel()` stops the current one.
 - `op.wait(timeout=30.0)` is the shortcut for waiting: it returns `result` on success and raises on failure.
 
@@ -108,6 +108,6 @@ finally:
 ## Related links
 
 - [Arm](../../reference/python/arm.md)
-- [Commands & Operations](../../usage/commands-operations.md)
-- [Events & Data Channels](../../usage/events-channels.md)
-- [Frames & Transforms](../../usage/frames.md)
+- [Commands & Operations](../../usage/basics/commands-operations.md)
+- [Events & Data Channels](../../usage/data/events-channels.md)
+- [Frames & Transforms](../../usage/data/frames.md)

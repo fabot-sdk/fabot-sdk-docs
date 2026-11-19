@@ -15,7 +15,7 @@ updated: 2026-11-17
 - 先用 `get_sync_groups()` 确认分组，再用 `capture_synced()` 单次抓取，或订阅 `synced_frames()` 持续取帧集。
 - 本技能没有 Operation，`capture_synced` 是短 Command，不占用资源。
 
-公共成员（`is_available` / `handle` / `events` / `health()` / `faults()` / `ping()` / `self_check()` / 配置读写）见 [技能概览](index.md)。
+公共成员（`is_available` / `handle` / `events` / `health()` / `faults()` / `ping()` / `self_check()` / 配置读写）见 [技能概览](./index.md)。
 
 ## API 总览
 
@@ -161,7 +161,7 @@ for member in frame_set.members:
 
 ## 通道
 
-打开即建立租约并返回 Channel 句柄；用 `frames()` 迭代，`next()` 取一帧，`renew()` 续租，`close()` 释放。通用用法见 [事件与数据通道](../../../usage/events-channels.md)。
+打开即建立租约并返回 Channel 句柄；用 `frames()` 迭代，`next()` 取一帧，`renew()` 续租，`close()` 释放。通用用法见 [事件与数据通道](../../../usage/data/events-channels.md)。
 
 ### synced_frames
 
@@ -227,7 +227,7 @@ token.close()
 
 展示给人看的文本用 `Catalogs.format_fault(record)`，见 [文本目录 Catalogs](../catalogs.md)。
 
-抓帧失败的两类典型错误：`capture_synced` 超时抛 `Timeout`；帧经共享内存传出错且内联重试仍失败时抛帧传输错误（`FrameError` 系），此时把 `transport_hint` 显式设为 `INLINE_REQUIRED` 可绕过共享内存。见 [错误处理](../../../usage/errors.md)。
+抓帧失败的两类典型错误：`capture_synced` 超时抛 `Timeout`；帧经共享内存传出错且内联重试仍失败时抛帧传输错误（`FrameError` 系），此时把 `transport_hint` 显式设为 `INLINE_REQUIRED` 可绕过共享内存。见 [错误处理](../../../usage/diagnostics/errors.md)。
 
 ## 状态
 
@@ -297,7 +297,7 @@ with robot.skills.camera_sync.edit_config() as conf:
 
 ## 相关
 
-- 技能概念与可用性判断：[技能与扩展](../../../usage/skills.md)
+- 技能概念与可用性判断：[技能与扩展](../../../usage/configuration/skills.md)
 - 相机硬件与流：[相机 Camera](../camera.md)
-- 配置域读写：[配置管理](../../../usage/configuration.md)
-- 命令与超时：[命令与长时操作](../../../usage/commands-operations.md)
+- 配置域读写：[配置管理](../../../usage/configuration/configuration.md)
+- 命令与超时：[命令与长时操作](../../../usage/basics/commands-operations.md)

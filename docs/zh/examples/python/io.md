@@ -77,6 +77,6 @@ for chip in robot.io.chips().chips:
 注意：
 
 - `acquire` 同一条线、同一方向重复调用是幂等的，且不会改写已输出的电平；要改方向必须先 `release`。
-- 未占用的线上调用 `set_level` / `get_level` 会抛 `FabotError`（`NotSupported`），不是返回 `outcome.success` 为 `False` 的响应。要区分「命令被拒绝」与「命令执行失败」，用 `try/except` 捕获，见 [错误处理](../../usage/errors.md)。
+- 未占用的线上调用 `set_level` / `get_level` 会抛 `FabotError`（`NotSupported`），不是返回 `outcome.success` 为 `False` 的响应。要区分「命令被拒绝」与「命令执行失败」，用 `try/except` 捕获，见 [错误处理](../../usage/diagnostics/errors.md)。
 - `PinDirection.UNKNOWN` 不是合法命令值，传入会被拒绝。
 - `chip` 优先按标签匹配；标签为空的芯片直接用 `gpiochipN` 这类设备名。线号是**片内偏移**，不是整机全局脚号，`17` / `18` 只是示例。

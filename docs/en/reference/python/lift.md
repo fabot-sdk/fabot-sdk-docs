@@ -35,7 +35,7 @@ Heights are metres, velocity metres per second, acceleration metres per second s
 | `fault_changed` | Event | Fault set changed; payload is `Faults`. |
 | `lifecycle_changed` | Event | Lifecycle changed; payload is `CapabilityLifecycleSnapshot`. |
 
-Commands return synchronously and `timeout_ms` can be overridden per call; Operations return a handle immediately and report progress through snapshots, see [Commands and long-running operations](../../usage/commands-operations.md).
+Commands return synchronously and `timeout_ms` can be overridden per call; Operations return a handle immediately and report progress through snapshots, see [Commands and long-running operations](../../usage/basics/commands-operations.md).
 
 ## Methods
 
@@ -114,7 +114,7 @@ servo_height(value: float, *, timeout_ms: int = 1000) -> float
 | `timeout_ms` | `int` | `1000` | Call timeout (ms) |
 
 :::warning Servo targets do not expire on their own
-`servo_height()` sends one target and does not open a session. You must call `stop()` explicitly to end tracking; do not rely on disconnecting to stop the lift. See [Servo and safety](../../usage/concurrency-and-safety.md).
+`servo_height()` sends one target and does not open a session. You must call `stop()` explicitly to end tracking; do not rely on disconnecting to stop the lift. See [Servo and safety](../../usage/basics/concurrency-and-safety.md).
 :::
 
 ### stop
@@ -192,7 +192,7 @@ finally:
     ch.close()
 ```
 
-For frame fields, `qos_profile`, leases and `next()`, see [Events and data channels](../../usage/events-channels.md).
+For frame fields, `qos_profile`, leases and `next()`, see [Events and data channels](../../usage/data/events-channels.md).
 
 ## Events
 
@@ -219,7 +219,7 @@ Query via `robot.lift.faults()`, which returns `Faults` (`revision` plus `record
 
 `LiftState.fault_code` and the fault bag are complementary: the first is the raw drive code, the second the platform-normalised fault set. When they disagree, trust the fault bag.
 
-For human-readable text use `Catalogs.format_fault(record)`, see [Catalogs](../../usage/catalogs.md).
+For human-readable text use `Catalogs.format_fault(record)`, see [Catalogs](../../usage/diagnostics/catalogs.md).
 
 ### Common fault codes
 

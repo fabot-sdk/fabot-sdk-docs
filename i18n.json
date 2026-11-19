@@ -7,6 +7,50 @@
     "zh": "概览",
     "en": "Overview"
   },
+  "gettingStarted": {
+    "zh": "入门",
+    "en": "Getting Started"
+  },
+  "gettingStartedEntries": {
+    "zh": "入门",
+    "en": "Getting Started"
+  },
+  "basics": {
+    "zh": "基础机制",
+    "en": "Basics"
+  },
+  "data": {
+    "zh": "数据与状态",
+    "en": "Data & Status"
+  },
+  "diagnostics": {
+    "zh": "错误与诊断",
+    "en": "Errors & Diagnostics"
+  },
+  "configurationChapter": {
+    "zh": "配置、技能与服务",
+    "en": "Configuration, Skills & Services"
+  },
+  "testing": {
+    "zh": "测试、迁移与背景",
+    "en": "Testing, Migration & Background"
+  },
+  "usageSections": {
+    "zh": "常规操作",
+    "en": "Usage"
+  },
+  "robotSystem": {
+    "zh": "机器人系统与本地控制台",
+    "en": "Robot System & Local Console"
+  },
+  "sections": {
+    "zh": "章节",
+    "en": "Sections"
+  },
+  "reference": {
+    "zh": "参考",
+    "en": "Reference"
+  },
   "install": {
     "zh": "安装与配置",
     "en": "Installation & Configuration"

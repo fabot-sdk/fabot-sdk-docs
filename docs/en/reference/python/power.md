@@ -29,7 +29,7 @@ Signatures below are authoritative for names and defaults. Parameters before `*`
 
 ## Channels
 
-This module has no data channels. See [Events & Data Channels](../../usage/events-channels.md).
+This module has no data channels. See [Events & Data Channels](../../usage/data/events-channels.md).
 
 ## Events
 
@@ -52,7 +52,7 @@ Query with `robot.<slot>.faults()`, which returns `Faults` (`revision` plus `rec
 | `severity` | `int` | Severity, aligned with `HealthState` |
 | `timestamp_us` | `int` | Latest timestamp in microseconds |
 
-For human-readable fault text use `Catalogs.format_fault(record)`; see [Catalogs](../../usage/catalogs.md).
+For human-readable fault text use `Catalogs.format_fault(record)`; see [Catalogs](../../usage/diagnostics/catalogs.md).
 
 ## Status
 
@@ -71,7 +71,7 @@ Shared read-only queries:
 - `health()`: `SlotHealth` (`is_usable` / `lifecycle` / `health` / `standing_faults` / `pbit_completed` / `source_instance_id`)
 - `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `pbit_completed` / `source_instance_id`)
 
-Changes arrive through `lifecycle_changed`; see [Status, Faults & Lifecycle](../../usage/status-faults.md).
+Changes arrive through `lifecycle_changed`; see [Status, Faults & Lifecycle](../../usage/data/status-faults.md).
 
 ## Resources
 

@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # 相机示例
 
-抓取多流帧、读取标定与内参、控制成像参数，并订阅图像流与预览地址。相机有五个槽位（`head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera`），同一套 API、各自独立。通道模型见 [事件与数据通道](../../usage/events-channels.md)，接口与字段见 [相机](../../reference/python/camera.md)。
+抓取多流帧、读取标定与内参、控制成像参数，并订阅图像流与预览地址。相机有五个槽位（`head_camera` / `chest_camera` / `waist_camera` / `left_wrist_camera` / `right_wrist_camera`），同一套 API、各自独立。通道模型见 [事件与数据通道](../../usage/data/events-channels.md)，接口与字段见 [相机](../../reference/python/camera.md)。
 
 ## 抓取一组帧
 

@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # Screen example
 
-Control the face screen: overlay text, images, video and the battery readout. The write model is in [Commands & Operations](../../usage/commands-operations.md), the API in [Screen](../../reference/python/screen.md).
+Control the face screen: overlay text, images, video and the battery readout. The write model is in [Commands & Operations](../../usage/basics/commands-operations.md), the API in [Screen](../../reference/python/screen.md).
 
 ## Show text and images
 

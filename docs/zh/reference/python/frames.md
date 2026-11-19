@@ -7,7 +7,7 @@ updated: 2026-11-02
 
 # 坐标系 API
 
-`fabot.frames` 是坐标系功能的公开模块：`FrameSystem`（`robot.frames` 的类型）、`Transform3d` 代数、`TransformBuffer`（离线缓冲）与一批几何函数。概念与用法见 [坐标系与变换](../../usage/frames.md)。
+`fabot.frames` 是坐标系功能的公开模块：`FrameSystem`（`robot.frames` 的类型）、`Transform3d` 代数、`TransformBuffer`（离线缓冲）与一批几何函数。概念与用法见 [坐标系与变换](../../usage/data/frames.md)。
 
 ## 模块概述
 

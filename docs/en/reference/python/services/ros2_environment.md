@@ -12,7 +12,7 @@ updated: 2026-11-17
 - Entry: `robot.environments.ros2`
 - environment id: `fabot_env_ros2`; handle `Ros2EnvironmentHandle`; config type `Ros2EnvironmentConfig`
 - **Configuration** of the robot runtime environment, not a process: it covers the domain id, loopback-only mode and router ownership.
-- Unlike the [ROS 2 service](ros2.md), this is **config** (ROS 2 graph identity) while that is a **process** (graph access service). The domain id is not in the service config.
+- Unlike the [ROS 2 service](./ros2.md), this is **config** (ROS 2 graph identity) while that is a **process** (graph access service). The domain id is not in the service config.
 - No `start()` / `stop()`; only `get_config()` / `set_config()` / `edit_config()`.
 
 ## API Overview
@@ -66,11 +66,11 @@ The entry has no data channels.
 
 ## Events
 
-No event entry. Config changes can be observed through the robot-wide `robot.events.config_changed`, see [Events & Data Channels](../../../usage/events-channels.md).
+No event entry. Config changes can be observed through the robot-wide `robot.events.config_changed`, see [Events & Data Channels](../../../usage/data/events-channels.md).
 
 ## Exceptions
 
-A CAS clash raises `ConfigurationConflict` (see [Error Handling](../../../usage/errors.md)); retry patterns match capability and service config, see [Configuration](../../../usage/configuration.md).
+A CAS clash raises `ConfigurationConflict` (see [Error Handling](../../../usage/diagnostics/errors.md)); retry patterns match capability and service config, see [Configuration](../../../usage/configuration/configuration.md).
 
 ## Status
 
@@ -94,6 +94,6 @@ The domain is `communication`. `field_options()` / `field_help()` / `field_label
 
 ## Related
 
-- Overall service and environment guidance: [Platform Services](../../../usage/services.md)
-- ROS 2 graph access service: [ros2.md](ros2.md)
-- Config-domain access: [Configuration](../../../usage/configuration.md)
+- Overall service and environment guidance: [Platform Services](../../../usage/configuration/services.md)
+- ROS 2 graph access service: [ros2.md](./ros2.md)
+- Config-domain access: [Configuration](../../../usage/configuration/configuration.md)

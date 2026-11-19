@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # Motion example
 
-Query and switch the whole-body motion regime, read whole-body control state and center-of-mass margin, and run homing plus whole-body motions. The command and timeout model is in [Commands & Operations](../../usage/commands-operations.md), channels in [Events & Data Channels](../../usage/events-channels.md), and the full API in [Motion](../../reference/python/motion.md).
+Query and switch the whole-body motion regime, read whole-body control state and center-of-mass margin, and run homing plus whole-body motions. The command and timeout model is in [Commands & Operations](../../usage/basics/commands-operations.md), channels in [Events & Data Channels](../../usage/data/events-channels.md), and the full API in [Motion](../../reference/python/motion.md).
 
 ## Query and switch the motion regime
 

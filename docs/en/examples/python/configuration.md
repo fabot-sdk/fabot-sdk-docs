@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # Configuration CAS retry example
 
-Read and modify robot configuration, retrying on concurrent conflicts. CAS mechanics plus the `RobotConfig` / `SlotBinding` shape are in [Configuration](../../usage/configuration.md); error types in [Error Handling](../../usage/errors.md).
+Read and modify robot configuration, retrying on concurrent conflicts. CAS mechanics plus the `RobotConfig` / `SlotBinding` shape are in [Configuration](../../usage/configuration/configuration.md); error types in [Error Handling](../../usage/diagnostics/errors.md).
 
 ## Robot bindings: patch plus retry
 

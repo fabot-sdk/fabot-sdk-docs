@@ -55,7 +55,7 @@ All motion Operations share the `arms` resource with policy `queue`.
 | `fault_changed` | Event | Fault set changed; payload is `Faults`. |
 | `lifecycle_changed` | Event | Lifecycle changed; payload is `CapabilityLifecycleSnapshot`. |
 
-Commands return their response synchronously, and `timeout_ms` can be overridden per call; Operations return a handle immediately, with progress and results read from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
+Commands return their response synchronously, and `timeout_ms` can be overridden per call; Operations return a handle immediately, with progress and results read from snapshots. See [Commands & Operations](../../usage/basics/commands-operations.md).
 
 Enums used on this page:
 
@@ -699,7 +699,7 @@ Returns a `MovePoseArcByCenterOperation` handle with `id` / `get()` / `wait()` /
 
 ## Channels
 
-Opening a channel takes a lease and returns a handle: iterate with `frames()`, take one sample with `next()`, renew with `renew()`, release with `close()`. See [Events & Data Channels](../../usage/events-channels.md).
+Opening a channel takes a lease and returns a handle: iterate with `frames()`, take one sample with `next()`, renew with `renew()`, release with `close()`. See [Events & Data Channels](../../usage/data/events-channels.md).
 
 ### joint()
 
@@ -752,7 +752,7 @@ Query with `robot.<slot>.faults()`, which returns `Faults` (`revision` plus `rec
 | `severity` | `int` | Severity, aligned with `HealthState` |
 | `timestamp_us` | `int` | Latest timestamp in microseconds |
 
-For human-readable fault text use `Catalogs.format_fault(record)`; see [Catalogs](../../usage/catalogs.md).
+For human-readable fault text use `Catalogs.format_fault(record)`; see [Catalogs](../../usage/diagnostics/catalogs.md).
 
 ## Status
 
@@ -763,7 +763,7 @@ Shared read-only queries:
 - `health()`: `SlotHealth` (`is_usable` / `lifecycle` / `health` / `standing_faults` / `pbit_completed` / `source_instance_id`)
 - `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `pbit_completed` / `source_instance_id`)
 
-Changes arrive through `lifecycle_changed`; see [Status, Faults & Lifecycle](../../usage/status-faults.md).
+Changes arrive through `lifecycle_changed`; see [Status, Faults & Lifecycle](../../usage/data/status-faults.md).
 
 ## Resources
 

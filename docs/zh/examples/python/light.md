@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # 灯效示例
 
-控制灯带：切换灯效模式、颜色、亮度与动画周期。五个方法都是短命令，命令模型见 [命令与长时操作](../../usage/commands-operations.md)，接口见 [灯效](../../reference/python/light.md)。
+控制灯带：切换灯效模式、颜色、亮度与动画周期。五个方法都是短命令，命令模型见 [命令与长时操作](../../usage/basics/commands-operations.md)，接口见 [灯效](../../reference/python/light.md)。
 
 ## 设置灯效模式与颜色
 

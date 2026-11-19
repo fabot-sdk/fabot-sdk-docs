@@ -15,13 +15,13 @@ updated: 2026-11-17
 
 | Property | service id | Handle | Config type | Config domains | Chapter |
 |----------|-----------|--------|-------------|----------------|---------|
-| `robot.services.ros2` | `fabot_ros2` | `Ros2ServiceHandle` | `Ros2Config` | `node` | [ros2.md](ros2.md) |
-| `robot.services.obs_collector` | `fabot_obs_collector` | `ObsCollectorServiceHandle` | `ObsCollectorConfig` | `obs` | [obs_collector.md](obs_collector.md) |
-| `robot.environments.ros2` | `fabot_env_ros2` | `Ros2EnvironmentHandle` | `Ros2EnvironmentConfig` | `communication` | [ros2_environment.md](ros2_environment.md) |
+| `robot.services.ros2` | `fabot_ros2` | `Ros2ServiceHandle` | `Ros2Config` | `node` | [ros2.md](./ros2.md) |
+| `robot.services.obs_collector` | `fabot_obs_collector` | `ObsCollectorServiceHandle` | `ObsCollectorConfig` | `obs` | [obs_collector.md](./obs_collector.md) |
+| `robot.environments.ros2` | `fabot_env_ros2` | `Ros2EnvironmentHandle` | `Ros2EnvironmentConfig` | `communication` | [ros2_environment.md](./ros2_environment.md) |
 
 The `SERVICE_ID` / `CONFIG` class attributes on each handle give the service id and config type. `ros2` also carries a capability-proxy-style slot surface (`handle` / `events` / `health()` / `faults()` / `ping()` and so on); `obs_collector` exposes platform operations only.
 
-For service semantics and operational caveats see [Platform Services](../../../usage/services.md).
+For service semantics and operational caveats see [Platform Services](../../../usage/configuration/services.md).
 
 ## API Overview
 
@@ -122,7 +122,7 @@ All config classes provide `to_yaml()` / `from_yaml(text)` / `field_options()` /
 
 ## Channels
 
-Of the two services only `ros2` has a data channel (`messages()`), documented in the "Channels" section of [ros2.md](ros2.md).
+Of the two services only `ros2` has a data channel (`messages()`), documented in the "Channels" section of [ros2.md](./ros2.md).
 
 ## Events
 
@@ -142,7 +142,7 @@ Callbacks run on the SDK I/O thread: keep them short and never call blocking API
 
 ## Exceptions
 
-Service control and query failures raise `FabotError` subclasses: `Timeout`, `NotFound` for an unknown service, `InvalidArgument` for bad arguments and `ResourceConflict` for contention; a conflicting config commit raises `ConfigurationConflict`. See [Error Handling](../../../usage/errors.md) for the full hierarchy.
+Service control and query failures raise `FabotError` subclasses: `Timeout`, `NotFound` for an unknown service, `InvalidArgument` for bad arguments and `ResourceConflict` for contention; a conflicting config commit raises `ConfigurationConflict`. See [Error Handling](../../../usage/diagnostics/errors.md) for the full hierarchy.
 
 ## Status
 
@@ -161,8 +161,8 @@ A service's `start` / `stop` / `restart` are platform control commands and occup
 
 ## Related
 
-- Service concepts, lifecycle and config caveats: [Platform Services](../../../usage/services.md)
-- Config-domain access and conflict retries: [Configuration](../../../usage/configuration.md)
-- Runtime environment config: [ros2_environment.md](ros2_environment.md)
+- Service concepts, lifecycle and config caveats: [Platform Services](../../../usage/configuration/services.md)
+- Config-domain access and conflict retries: [Configuration](../../../usage/configuration/configuration.md)
+- Runtime environment config: [ros2_environment.md](./ros2_environment.md)
 - Diagnostic codes: [Diagnostic Code Reference](../error-codes.md)
-- Service behaviour under Mock: [Mock Testing](../../../usage/mock.md)
+- Service behaviour under Mock: [Mock Testing](../../../usage/testing/mock.md)

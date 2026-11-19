@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # 配置 CAS 重试示例
 
-读取并修改机器人配置，遇到并发冲突时重试。CAS 机制与 `RobotConfig` / `SlotBinding` 结构见 [配置管理](../../usage/configuration.md)，错误类型见 [错误处理](../../usage/errors.md)。
+读取并修改机器人配置，遇到并发冲突时重试。CAS 机制与 `RobotConfig` / `SlotBinding` 结构见 [配置管理](../../usage/configuration/configuration.md)，错误类型见 [错误处理](../../usage/diagnostics/errors.md)。
 
 ## 整机绑定：补丁 + 重试
 

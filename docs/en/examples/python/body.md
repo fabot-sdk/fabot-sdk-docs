@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # Body example
 
-Control the torso joints and the waist lift / forward reach / pitch. The long-running task model is in [Commands & Operations](../../usage/commands-operations.md), channels in [Events & Data Channels](../../usage/events-channels.md), and the API in [Body](../../reference/python/body.md).
+Control the torso joints and the waist lift / forward reach / pitch. The long-running task model is in [Commands & Operations](../../usage/basics/commands-operations.md), channels in [Events & Data Channels](../../usage/data/events-channels.md), and the API in [Body](../../reference/python/body.md).
 
 ## Waist pose motion
 

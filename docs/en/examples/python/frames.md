@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # Frames example
 
-Query the coordinate tree in-process, transform poses and point clouds between frames, and deproject depth images into point clouds. The mechanics are in [Frames & Transforms](../../usage/frames.md).
+Query the coordinate tree in-process, transform poses and point clouds between frames, and deproject depth images into point clouds. The mechanics are in [Frames & Transforms](../../usage/data/frames.md).
 
 ## Look up two frames
 

@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # 急停与故障事件示例
 
-订阅整机急停与故障事件，并演示触发 / 解除急停的完整流程。事件模型见 [事件与数据通道](../../usage/events-channels.md)，故障与生命周期见 [状态、故障与生命周期](../../usage/status-faults.md)，接口与字段见 [Robot](../../reference/python/robot.md)。
+订阅整机急停与故障事件，并演示触发 / 解除急停的完整流程。事件模型见 [事件与数据通道](../../usage/data/events-channels.md)，故障与生命周期见 [状态、故障与生命周期](../../usage/data/status-faults.md)，接口与字段见 [Robot](../../reference/python/robot.md)。
 
 ## 订阅急停与故障事件
 

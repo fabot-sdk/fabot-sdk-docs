@@ -15,7 +15,7 @@ updated: 2026-11-17
 - 唯一具有能力 Proxy 式槽位表面（`handle` / `events` / `health()` / `lifecycle()` / `faults()` / `ping()` / `self_check()`）的服务句柄。
 - **所有载荷都是 JSON 字符串**，不要在客户端假设具体消息类型的 Python 对象。
 
-平台操作的通用说明（`start` / `state` / `get_config`、CAS 冲突等）见 [平台服务概览](index.md)。
+平台操作的通用说明（`start` / `state` / `get_config`、CAS 冲突等）见 [平台服务概览](./index.md)。
 
 ## API 总览
 
@@ -159,7 +159,7 @@ messages(qos_profile: str = "latest") -> MessagesChannel
 | `stamp_ns` | `int` | 时间戳（纳秒） |
 | `payload` | `str` | JSON 字符串 |
 
-外层 `MessagesChannelFrame` 带 `channel_id` / `sequence` / `timestamp_us` / `payload`。用 `subscribe()` 建立租约后，按 `subscription_id` 过滤自己关心的消息；`next()` 不传参时默认等 5 秒。通用用法见 [事件与数据通道](../../../usage/events-channels.md)。
+外层 `MessagesChannelFrame` 带 `channel_id` / `sequence` / `timestamp_us` / `payload`。用 `subscribe()` 建立租约后，按 `subscription_id` 过滤自己关心的消息；`next()` 不传参时默认等 5 秒。通用用法见 [事件与数据通道](../../../usage/data/events-channels.md)。
 
 ## 事件
 
@@ -177,11 +177,11 @@ messages(qos_profile: str = "latest") -> MessagesChannel
 
 服务控制与查询失败抛 `FabotError` 子类：超时 `Timeout`、服务不存在 `NotFound`、参数非法 `InvalidArgument`、并发冲突 `ResourceConflict`；配置冲突抛 `ConfigurationConflict`。
 
-载荷一律是 JSON 字符串，服务端解析失败会以 `InvalidArgument` 或 `Internal` 返回，客户端不做本地反序列化。槽位级故障查询用 `faults()`，返回 `Faults`（`revision` + `records: list[FaultState]`），字段与能力一致：`code` / `source` / `state` / `severity` / `timestamp_us`。见 [错误处理](../../../usage/errors.md)。
+载荷一律是 JSON 字符串，服务端解析失败会以 `InvalidArgument` 或 `Internal` 返回，客户端不做本地反序列化。槽位级故障查询用 `faults()`，返回 `Faults`（`revision` + `records: list[FaultState]`），字段与能力一致：`code` / `source` / `state` / `severity` / `timestamp_us`。见 [错误处理](../../../usage/diagnostics/errors.md)。
 
 ## 状态
 
-`state()` 返回 `ServiceState`（字段见 [平台服务概览](index.md)）；另有 `health()`（`SlotHealth`）与 `lifecycle()`（`CapabilityLifecycleSnapshot`）。
+`state()` 返回 `ServiceState`（字段见 [平台服务概览](./index.md)）；另有 `health()`（`SlotHealth`）与 `lifecycle()`（`CapabilityLifecycleSnapshot`）。
 
 `Ros2Config` 只有一个配置域 `node`：
 
@@ -190,7 +190,7 @@ messages(qos_profile: str = "latest") -> MessagesChannel
 | `node_name` | `fabot_ros2` | 服务在 ROS 图中的节点名 |
 | `namespace` | `""` | 节点命名空间 |
 
-ROS 2 的 domain id 在 `robot.environments.ros2` 里，不在服务配置里，见 [ros2_environment.md](ros2_environment.md)。
+ROS 2 的 domain id 在 `robot.environments.ros2` 里，不在服务配置里，见 [ros2_environment.md](./ros2_environment.md)。
 
 ## 资源
 
@@ -209,7 +209,7 @@ with robot.services.ros2.edit_config() as cfg:
 
 ## 相关
 
-- 服务概念与启停注意事项：[平台服务管理](../../../usage/services.md)
-- 运行环境的 domain / 通信配置：[ros2_environment.md](ros2_environment.md)
-- 配置域读写：[配置管理](../../../usage/configuration.md)
-- 命令与长时操作：[命令与长时操作](../../../usage/commands-operations.md)
+- 服务概念与启停注意事项：[平台服务管理](../../../usage/configuration/services.md)
+- 运行环境的 domain / 通信配置：[ros2_environment.md](./ros2_environment.md)
+- 配置域读写：[配置管理](../../../usage/configuration/configuration.md)
+- 命令与长时操作：[命令与长时操作](../../../usage/basics/commands-operations.md)

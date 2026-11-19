@@ -7,7 +7,7 @@ updated: 2026-11-16
 
 # Mock example
 
-Use `Robot.mock()` to develop, integrate and unit test without a real robot. Mechanics and limits are in [Mock Testing](../../usage/mock.md).
+Use `Robot.mock()` to develop, integrate and unit test without a real robot. Mechanics and limits are in [Mock Testing](../../usage/testing/mock.md).
 
 ## Quick start
 

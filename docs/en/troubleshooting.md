@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # Troubleshooting
 
-Symptom-oriented checklist. General tools: every failed call raises a `FabotError` subclass carrying `code` (a diagnostic code) / `retryable` / `trace_id` (see [Error Handling](usage/errors.md)); robot state and faults come from `robot.state()` / `robot.faults()` (see [Status, Faults & Lifecycle](usage/status-faults.md)); asynchronous changes arrive as events (see [Events & Data Channels](usage/events-channels.md)).
+Symptom-oriented checklist. General tools: every failed call raises a `FabotError` subclass carrying `code` (a diagnostic code) / `retryable` / `trace_id` (see [Error Handling](./usage/diagnostics/errors.md)); robot state and faults come from `robot.state()` / `robot.faults()` (see [Status, Faults & Lifecycle](./usage/data/status-faults.md)); asynchronous changes arrive as events (see [Events & Data Channels](./usage/data/events-channels.md)).
 
 ## Cannot connect
 
@@ -17,13 +17,13 @@ Symptom-oriented checklist. General tools: every failed call raises a `FabotErro
 |---------|--------------|-------|
 | `TransportError` / `Unavailable` / `Timeout` | Network unreachable, control plane not running, blocked port | Confirm the control-plane endpoint (IP and port, default 7557) and reachability; confirm the platform is running; open the firewall |
 | `Unauthorized` | Authentication failure | Check `ClientConfig.auth_token` |
-| `ProtocolIncompatible` | SDK and platform versions do not match | Check version compatibility, see [Version Compatibility](install/compatibility.md) |
+| `ProtocolIncompatible` | SDK and platform versions do not match | Check version compatibility, see [Version Compatibility](./getting-started/install/compatibility.md) |
 
 Other checks:
 
-- Verify the installation: `import fabot` should work, see [Installing the Python SDK](install/python.md).
+- Verify the installation: `import fabot` should work, see [Installing the Python SDK](./getting-started/install/python.md).
 - When the SDK and the control plane share a host, first try `Robot.connect()` without an address (discovered from the default configuration) to rule out a wrong address.
-- To rule out the robot side, run the flow offline with `Robot.mock()`, see [Mock Testing](usage/mock.md).
+- To rule out the robot side, run the flow offline with `Robot.mock()`, see [Mock Testing](./usage/testing/mock.md).
 
 ```python
 from fabot import Robot, FabotError
@@ -34,15 +34,15 @@ except FabotError as e:
     print(hex(e.code), e.retryable, e.message, e.trace_id)
 ```
 
-If the connection drops while running: query `robot.connection.is_connected()` or subscribe with `robot.connection.subscribe(cb)`, then rebuild the `Robot`. Errors with `retryable == True` can be retried with backoff, see [Error Handling](usage/errors.md). Full connection details are in [Connection & Robot Entry](usage/connection.md).
+If the connection drops while running: query `robot.connection.is_connected()` or subscribe with `robot.connection.subscribe(cb)`, then rebuild the `Robot`. Errors with `retryable == True` can be retried with backoff, see [Error Handling](./usage/diagnostics/errors.md). Full connection details are in [Connection & Robot Entry](./usage/basics/connection.md).
 
 ## wait_ready
 
-`wait_ready(slots=None)` only waits for slots that are **bound, `enabled` and `essential`**; unbound, disabled or non-essential slots are skipped. The per-slot budget is `ClientOptions.resolve_timeout_ms` (default 1000 ms) and a failed resolution raises. Details are in [Robot Entry](reference/python/robot.md).
+`wait_ready(slots=None)` only waits for slots that are **bound, `enabled` and `essential`**; unbound, disabled or non-essential slots are skipped. The per-slot budget is `ClientOptions.resolve_timeout_ms` (default 1000 ms) and a failed resolution raises. Details are in [Robot Entry](./reference/python/robot.md).
 
 Common misunderstandings:
 
-- **"It returned but the slot is still unusable"**: the slot was probably skipped. Check `robot.<slot>.has_adapter`; on an unbound slot `get_config()` / `as_adapter()` raise `AdapterUnbound` and capability methods fail or time out once dispatched. Binding plus `enabled` / `required` configuration is in [Configuration](usage/configuration.md).
+- **"It returned but the slot is still unusable"**: the slot was probably skipped. Check `robot.<slot>.has_adapter`; on an unbound slot `get_config()` / `as_adapter()` raise `AdapterUnbound` and capability methods fail or time out once dispatched. Binding plus `enabled` / `required` configuration is in [Configuration](./usage/configuration/configuration.md).
 - **A timeout was raised**: the adapter may not be started or not ready yet. Check that `robot.<slot>.lifecycle()` reached `Active` and what `health()` reports; if the robot starts slowly, raise `resolve_timeout_ms`.
 - **Waiting on too much**: use `robot.wait_ready(["left_arm", "io"])` to wait only for what your business needs.
 - Do not call blocking APIs such as `wait_ready` from an event callback (SDK I/O thread); it raises `ClientThreadError`.
@@ -63,12 +63,12 @@ with Robot.connect("127.0.0.1", 7557, options) as robot:
 
 ## Operation failure
 
-Long-running tasks (navigation, arm trajectories) do not raise on runtime failure; the failure shows up in the snapshot. See [Commands & Operations](usage/commands-operations.md).
+Long-running tasks (navigation, arm trajectories) do not raise on runtime failure; the failure shows up in the snapshot. See [Commands & Operations](./usage/basics/commands-operations.md).
 
 1. Wait for a terminal state: once `snapshot.terminal` is `True` the state stops advancing, and it is one of `Succeeded` / `Failed` / `Canceled` / `Timeout`.
 2. Read the cause: on `Failed` / `Timeout` read `snapshot.error` (a `FabotError`) for `code` / `retryable` / `trace_id`; the progress text is in `snapshot.feedback.status_message` and the terminal payload in `snapshot.result`.
 3. React by class: `retryable == True` can be retried; `Canceled` means the task was cancelled (`cancel()` is best effort, and a running task may or may not be interruptible); `ResourceConflict` means the resource is busy — `queue` policies queue, `reject` policies refuse outright.
-4. For deeper analysis, correlate `snapshot.error.trace_id` with robot logs (`robot.logs.history()` / `robot.logs.subscribe()` records carry `trace_id`), see [Logs, Metrics & Observability](usage/observability.md).
+4. For deeper analysis, correlate `snapshot.error.trace_id` with robot logs (`robot.logs.history()` / `robot.logs.subscribe()` records carry `trace_id`), see [Logs, Metrics & Observability](./usage/diagnostics/observability.md).
 
 ```python
 from fabot.core import OperationState
@@ -90,7 +90,7 @@ If an Operation sits in `Queued` for a long time: another task on the same resou
 
 ## Recovering from e-stop
 
-The e-stop is a robot-wide latch: after engaging, `robot.state().mode` becomes `RobotMode.Estopped`. Once the site is confirmed safe, recover as follows (API in the estop section of [Robot Entry](reference/python/robot.md)):
+The e-stop is a robot-wide latch: after engaging, `robot.state().mode` becomes `RobotMode.Estopped`. Once the site is confirmed safe, recover as follows (API in the estop section of [Robot Entry](./reference/python/robot.md)):
 
 1. Confirm the latch and its source: `robot.estop.state()` returns `EstopState` (`asserted` / `reason` / `source_id`) and `robot.state().is_estopped` is `True`. Changes can also be watched through `robot.events.estop_changed`.
 2. Clear the latch: after confirming safety, call `robot.estop.release(reason="...")`.
@@ -116,7 +116,7 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 
 ## Frame lookup failures
 
-When `robot.frames.lookup()` raises a `FrameError` subclass, the type tells you why (see [Frames & Transforms](usage/frames.md)):
+When `robot.frames.lookup()` raises a `FrameError` subclass, the type tells you why (see [Frames & Transforms](./usage/data/frames.md)):
 
 | Exception | Cause | Action |
 |-----------|-------|--------|
@@ -149,9 +149,9 @@ For drive-side faults compare `robot.lift.faults()` with `robot.lift.get_height(
 
 ## Where to look up motor / chassis / camera codes
 
-The high byte of a diagnostic code locates the domain and module, see [Diagnostic Codes](reference/python/error-codes.md). Render text with `Catalogs.format_error()` / `format_fault()`; no text means your SDK is older than the platform.
+The high byte of a diagnostic code locates the domain and module, see [Diagnostic Codes](./reference/python/error-codes.md). Render text with `Catalogs.format_error()` / `format_fault()`; no text means your SDK is older than the platform.
 
 ## Threads and disconnects
 
-- Calling a blocking API inside a callback raises `ClientThreadError`; the thread model and the recommended pattern are in [Concurrency, Threading and Safety](usage/concurrency-and-safety.md).
+- Calling a blocking API inside a callback raises `ClientThreadError`; the thread model and the recommended pattern are in [Concurrency, Threading and Safety](./usage/basics/concurrency-and-safety.md).
 - After a disconnect, `SubscriptionToken`s and channels are no longer guaranteed valid and must be re-created; `Robot` cannot reconnect — see "Disconnects and reconnects" on the same page.

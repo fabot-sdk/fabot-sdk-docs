@@ -7,7 +7,7 @@ updated: 2026-11-16
 
 # Diagnostic Codes
 
-Every error and fault the SDK reports carries one 32-bit diagnostic code. This page explains the encoding, the domain/module layout, and how to turn a code into readable text and an actionable response. Per-code text comes from the catalog embedded in the SDK and is queried with `Catalogs`, see [Catalogs](../../usage/catalogs.md).
+Every error and fault the SDK reports carries one 32-bit diagnostic code. This page explains the encoding, the domain/module layout, and how to turn a code into readable text and an actionable response. Per-code text comes from the catalog embedded in the SDK and is queried with `Catalogs`, see [Catalogs](../../usage/diagnostics/catalogs.md).
 
 ## Encoding
 
@@ -101,7 +101,7 @@ code = (domain << 24) | (module << 16) | reason
 | `0x010E000B` | Command target does not match this instance |
 | `0x010E000C` | Capability is not in an active lifecycle state |
 
-Frame-related codes live in `0x010E95xx` (`FrameNotFound` / `FrameDisconnected` / `FrameExtrapolation` and friends), see [Frames & Transforms](../../usage/frames.md).
+Frame-related codes live in `0x010E95xx` (`FrameNotFound` / `FrameDisconnected` / `FrameExtrapolation` and friends), see [Frames & Transforms](../../usage/data/frames.md).
 
 ## Looking up text
 
@@ -136,7 +136,7 @@ Always decide in this order: **code → error class → idempotency → retry**.
 | `ProtocolIncompatible` | At connect time | Do not retry; reconcile both versions |
 | Faults (`FaultState`) | Any domain/module | Faults are persistent state; use `severity` to degrade or stop, never retry them as exceptions |
 
-The full retry and idempotency rules are in [Concurrency, Threading and Safety](../../usage/concurrency-and-safety.md).
+The full retry and idempotency rules are in [Concurrency, Threading and Safety](../../usage/basics/concurrency-and-safety.md).
 
 ## Troubleshooting map
 
@@ -147,11 +147,11 @@ The full retry and idempotency rules are in [Concurrency, Threading and Safety](
 | One joint unresponsive | `0x0202xxxx` / `0x0203xxxx` (joint motors), `0x0303xxxx` (arm) |
 | No camera frames | `0x0300xxxx` (camera), `0x0309xxxx` / `0x030Axxxx` / `0x030Bxxxx` |
 | No audio | `0x030Dxxxx` (audio channel) |
-| Lift will not move | `0x0306xxxx` (lift; per-code list in [Lift](lift.md#common-fault-codes)), `0x0310xxxx` (Leadshine drive) |
+| Lift will not move | `0x0306xxxx` (lift; per-code list in [Lift](./lift.md#common-fault-codes)), `0x0310xxxx` (Leadshine drive) |
 | Battery / charging issues | `0x0107xxxx` (battery), `0x0208xxxx` (raw battery codes), `0x020Cxxxx` (charger) |
 | No joystick input | `0x010Bxxxx` (teleop device), `0x010Dxxxx` (CAN bus) |
 | Thermal warnings | `0x010Axxxx` (thermal) |
 
 :::note The reason table evolves with the platform
-The domain/module allocation above is stable; individual reasons are added over time. For codes not listed here, trust what `Catalogs` returns. If it returns no text, your SDK is older than the platform — see [Version Compatibility](../../install/compatibility.md).
+The domain/module allocation above is stable; individual reasons are added over time. For codes not listed here, trust what `Catalogs` returns. If it returns no text, your SDK is older than the platform — see [Version Compatibility](../../getting-started/install/compatibility.md).
 :::

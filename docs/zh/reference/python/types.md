@@ -31,7 +31,7 @@ updated: 2026-11-16
 `fabot.types.Transform3d` 是 wire 层表对象（仅 `target_frame` / `source_frame` / 平移 / 四元数 / `stamp_ns` 字段）；带 `compose()` / `inverse()` / `from_euler()` / `identity()` 等代数的是 `fabot.frames.Transform3d`，也可从 `fabot` 顶层导入。做坐标运算请用后者。
 :::
 
-`Pose3d` 还有若干便捷成员：`position` / `quaternion` / `euler_rpy` / `to_matrix()` / `to_transform()`，以及 `from_euler()` / `from_matrix()` 等构造器。`Transform3d` 的完整代数见 [坐标系与变换](../../usage/frames.md)。
+`Pose3d` 还有若干便捷成员：`position` / `quaternion` / `euler_rpy` / `to_matrix()` / `to_transform()`，以及 `from_euler()` / `from_matrix()` 等构造器。`Transform3d` 的完整代数见 [坐标系与变换](../../usage/data/frames.md)。
 
 ## 关节与容器类型
 
@@ -64,14 +64,14 @@ updated: 2026-11-16
 
 | 类型 | 说明 |
 |------|------|
-| `RobotState` / `RobotMode` / `HealthState` / `LifecycleState` | 整机状态与健康度，见 [状态、故障与生命周期](../../usage/status-faults.md) |
+| `RobotState` / `RobotMode` / `HealthState` / `LifecycleState` | 整机状态与健康度，见 [状态、故障与生命周期](../../usage/data/status-faults.md) |
 | `OperationState` / `OperationSnapshot` | Operation 状态与快照 |
-| `LogLevel` / `LogRecord` / `LogIdentity` | 日志，见 [日志、指标与可观测性](../../usage/observability.md) |
+| `LogLevel` / `LogRecord` / `LogIdentity` | 日志，见 [日志、指标与可观测性](../../usage/diagnostics/observability.md) |
 | `MetricType` / `MetricRecord` / `MetricValue` / `MetricIdentity` / `SdkMetricSnapshot` | 指标 |
 | `FreezeRequest` / `ObsStore` / `ObsDirectory` / `ObsFreeze` | 冻结请求与机器人端观测存储快照 |
 | `PingReport` / `PingSample`（`fabot.core.types`） | 往返时延探测结果；`fabot.core` 不导出这两个名字 |
 | `QosProfile` / `SubscribeOptions` / `ChannelDescriptor` / `ChannelFrame` | 通道订阅 |
-| `ClientConfig` / `ClientOptions` / `CallOptions` | 客户端选项，见 [连接与 Robot 入口](../../usage/connection.md) |
+| `ClientConfig` / `ClientOptions` / `CallOptions` | 客户端选项，见 [连接与 Robot 入口](../../usage/basics/connection.md) |
 | `ConfigState` / `SlotRuntime` / `ServiceState` | 配置与服务状态 |
 
 ## 能力私有类型
@@ -82,13 +82,13 @@ updated: 2026-11-16
 
 | 枚举 | 取值 | 文档 |
 |------|------|------|
-| `PinDirection` | `INPUT` / `OUTPUT` | [IO](io.md) |
-| `LightMode` | `OFF` / `SOLID` / `BLINK` / `BREATHE` / `RAINBOW` / `CHASE` | [灯效](light.md) |
-| `ChassisMode` / `NavigationMode` / `ChassisStage` | 见文档 | [底盘](chassis.md) |
-| `ArmsMode` / `ImpedanceMode` | `INDEPENDENT` / `COUPLED`、`DISABLED` / `LOW` / `HIGH` | [双臂](arms.md) |
-| `BodyMode` / `HeadMode` | 见文档 | [躯干](body.md) / [头部](head.md) |
-| `MotionMode` / `HomePose` / `SupportStatus` | 见文档 | [运动](motion.md) |
-| `StreamKind` / `PixelFormat` / `RegistrationMode` / `FrameTransportHint` | 见文档 | [相机](camera.md) |
-| `CaptureEnd` / `PlaybackState` | 见文档 | [语音](voice.md) |
+| `PinDirection` | `INPUT` / `OUTPUT` | [IO](./io.md) |
+| `LightMode` | `OFF` / `SOLID` / `BLINK` / `BREATHE` / `RAINBOW` / `CHASE` | [灯效](./light.md) |
+| `ChassisMode` / `NavigationMode` / `ChassisStage` | 见文档 | [底盘](./chassis.md) |
+| `ArmsMode` / `ImpedanceMode` | `INDEPENDENT` / `COUPLED`、`DISABLED` / `LOW` / `HIGH` | [双臂](./arms.md) |
+| `BodyMode` / `HeadMode` | 见文档 | [躯干](./body.md) / [头部](./head.md) |
+| `MotionMode` / `HomePose` / `SupportStatus` | 见文档 | [运动](./motion.md) |
+| `StreamKind` / `PixelFormat` / `RegistrationMode` / `FrameTransportHint` | 见文档 | [相机](./camera.md) |
+| `CaptureEnd` / `PlaybackState` | 见文档 | [语音](./voice.md) |
 
 枚举值在 SDK 里是整型常量（定义在对应能力的 `types` 模块），`LightMode` 等部分枚举同时提供名称常量，可直接与整数比较。

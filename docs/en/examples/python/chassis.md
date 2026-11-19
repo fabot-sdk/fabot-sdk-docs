@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # Chassis example
 
-Run chassis navigation tasks and track progress. The long-running task model is in [Commands & Operations](../../usage/commands-operations.md), the API in [Chassis](../../reference/python/chassis.md).
+Run chassis navigation tasks and track progress. The long-running task model is in [Commands & Operations](../../usage/basics/commands-operations.md), the API in [Chassis](../../reference/python/chassis.md).
 
 ## Navigate to a station
 
@@ -43,7 +43,7 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 Notes:
 
 - `feedback` is a `Progress` (`progress` / `status_message`) and may be `None` right after submission.
-- The terminal `result` is an `Outcome`; failures are read from `error`, see [Error Handling](../../usage/errors.md).
+- The terminal `result` is an `Outcome`; failures are read from `error`, see [Error Handling](../../usage/diagnostics/errors.md).
 - Navigation Operations share the `chassis` resource with policy `queue` and a 180-second default budget, see [Chassis](../../reference/python/chassis.md).
 
 ## Navigate by pose

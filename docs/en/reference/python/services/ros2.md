@@ -15,7 +15,7 @@ updated: 2026-11-17
 - The only service handle with a capability-proxy-style slot surface (`handle` / `events` / `health()` / `lifecycle()` / `faults()` / `ping()` / `self_check()`).
 - **Every payload is a JSON string**; never assume Python objects for a concrete message type on the client.
 
-Shared platform operations (`start` / `state` / `get_config`, CAS conflicts and so on) are in the [Platform Services Overview](index.md).
+Shared platform operations (`start` / `state` / `get_config`, CAS conflicts and so on) are in the [Platform Services Overview](./index.md).
 
 ## API Overview
 
@@ -159,7 +159,7 @@ Frame payload `TopicMessage`:
 | `stamp_ns` | `int` | Timestamp in nanoseconds |
 | `payload` | `str` | JSON string |
 
-The outer `MessagesChannelFrame` carries `channel_id` / `sequence` / `timestamp_us` / `payload`. Create a lease with `subscribe()` and filter on `subscription_id` for the messages you care about; `next()` with no arguments waits 5 seconds. General usage is in [Events & Data Channels](../../../usage/events-channels.md).
+The outer `MessagesChannelFrame` carries `channel_id` / `sequence` / `timestamp_us` / `payload`. Create a lease with `subscribe()` and filter on `subscription_id` for the messages you care about; `next()` with no arguments waits 5 seconds. General usage is in [Events & Data Channels](../../../usage/data/events-channels.md).
 
 ## Events
 
@@ -177,11 +177,11 @@ Process state transitions still arrive on the robot-wide `robot.events.service_s
 
 Service control and query failures raise `FabotError` subclasses: `Timeout`, `NotFound` for an unknown service, `InvalidArgument` for bad arguments and `ResourceConflict` for contention; config clashes raise `ConfigurationConflict`.
 
-Payloads are always JSON strings; a server-side parse failure comes back as `InvalidArgument` or `Internal`, and the client does no local deserialisation. Slot-level faults come from `faults()`, returning `Faults` (`revision` plus `records: list[FaultState]`) with the same fields as capabilities: `code` / `source` / `state` / `severity` / `timestamp_us`. See [Error Handling](../../../usage/errors.md).
+Payloads are always JSON strings; a server-side parse failure comes back as `InvalidArgument` or `Internal`, and the client does no local deserialisation. Slot-level faults come from `faults()`, returning `Faults` (`revision` plus `records: list[FaultState]`) with the same fields as capabilities: `code` / `source` / `state` / `severity` / `timestamp_us`. See [Error Handling](../../../usage/diagnostics/errors.md).
 
 ## Status
 
-`state()` returns `ServiceState` (fields in the [Platform Services Overview](index.md)); `health()` returns `SlotHealth` and `lifecycle()` returns `CapabilityLifecycleSnapshot`.
+`state()` returns `ServiceState` (fields in the [Platform Services Overview](./index.md)); `health()` returns `SlotHealth` and `lifecycle()` returns `CapabilityLifecycleSnapshot`.
 
 `Ros2Config` has a single `node` domain:
 
@@ -190,7 +190,7 @@ Payloads are always JSON strings; a server-side parse failure comes back as `Inv
 | `node_name` | `fabot_ros2` | Node name in the ROS graph |
 | `namespace` | `""` | Node namespace |
 
-The ROS 2 domain id lives in `robot.environments.ros2`, not in the service config, see [ros2_environment.md](ros2_environment.md).
+The ROS 2 domain id lives in `robot.environments.ros2`, not in the service config, see [ros2_environment.md](./ros2_environment.md).
 
 ## Resources
 
@@ -209,7 +209,7 @@ with robot.services.ros2.edit_config() as cfg:
 
 ## Related
 
-- Service concepts and lifecycle caveats: [Platform Services](../../../usage/services.md)
-- Runtime environment domain / communication config: [ros2_environment.md](ros2_environment.md)
-- Config-domain access: [Configuration](../../../usage/configuration.md)
-- Commands and Operations: [Commands & Operations](../../../usage/commands-operations.md)
+- Service concepts and lifecycle caveats: [Platform Services](../../../usage/configuration/services.md)
+- Runtime environment domain / communication config: [ros2_environment.md](./ros2_environment.md)
+- Config-domain access: [Configuration](../../../usage/configuration/configuration.md)
+- Commands and Operations: [Commands & Operations](../../../usage/basics/commands-operations.md)

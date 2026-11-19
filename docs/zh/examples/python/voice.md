@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # 语音示例
 
-音频采集、播放与硬件控制。语义能力（转写、意图识别、合成播报）在技能 `robot.skills.voice_aiui`，见 [技能与扩展](../../usage/skills.md)。长时任务模型见 [命令与长时操作](../../usage/commands-operations.md)，通道用法见 [事件与数据通道](../../usage/events-channels.md)，接口见 [语音](../../reference/python/voice.md)。
+音频采集、播放与硬件控制。语义能力（转写、意图识别、合成播报）在技能 `robot.skills.voice_aiui`，见 [技能与扩展](../../usage/configuration/skills.md)。长时任务模型见 [命令与长时操作](../../usage/basics/commands-operations.md)，通道用法见 [事件与数据通道](../../usage/data/events-channels.md)，接口见 [语音](../../reference/python/voice.md)。
 
 ## 播放一个音频文件
 

@@ -7,7 +7,7 @@ updated: 2026-11-16
 
 # Mock 示例
 
-用 `Robot.mock()` 在没有真实机器人的环境里开发、联调与单元测试。机制与适用边界见 [Mock 测试](../../usage/mock.md)。
+用 `Robot.mock()` 在没有真实机器人的环境里开发、联调与单元测试。机制与适用边界见 [Mock 测试](../../usage/testing/mock.md)。
 
 ## 快速上手
 

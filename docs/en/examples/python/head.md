@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # Head example
 
-Control head yaw / pitch joints and track motion progress. The long-running task model is in [Commands & Operations](../../usage/commands-operations.md), the API in [Head](../../reference/python/head.md).
+Control head yaw / pitch joints and track motion progress. The long-running task model is in [Commands & Operations](../../usage/basics/commands-operations.md), the API in [Head](../../reference/python/head.md).
 
 ## Move to target joint angles
 

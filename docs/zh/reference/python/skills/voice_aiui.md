@@ -14,7 +14,7 @@ updated: 2026-11-17
 - 在 `voice` 硬件能力之上提供转写、意图识别与语义播报。麦克风与扬声器本身的采集、播放仍在 [语音 Voice](../voice.md)，本技能负责语义。
 - `speak` 是 Operation，占用资源 `speaker`，策略 `reject`，默认时限 30 秒，可取消。
 
-公共成员（`is_available` / `handle` / `events` / `health()` / `faults()` / `ping()` / `self_check()` / 配置读写）见 [技能概览](index.md)。
+公共成员（`is_available` / `handle` / `events` / `health()` / `faults()` / `ping()` / `self_check()` / 配置读写）见 [技能概览](./index.md)。
 
 ## API 总览
 
@@ -34,7 +34,7 @@ updated: 2026-11-17
 | `fault_changed` | Event | 故障集合变化，payload 为 `Faults`。 |
 | `lifecycle_changed` | Event | 生命周期变化，payload 为 `CapabilityLifecycleSnapshot`。 |
 
-Command 同步返回响应，`timeout_ms` 可逐次覆盖；Operation 立即返回句柄，进度与结果通过快照获取，见 [命令与长时操作](../../../usage/commands-operations.md)。
+Command 同步返回响应，`timeout_ms` 可逐次覆盖；Operation 立即返回句柄，进度与结果通过快照获取，见 [命令与长时操作](../../../usage/basics/commands-operations.md)。
 
 ## 方法
 
@@ -143,7 +143,7 @@ get_status(*, timeout_ms: int = 1000) -> StatusApplied
 
 ## 通道
 
-打开即建立租约并返回 Channel 句柄；用 `frames()` 迭代，`next()` 取一帧，`renew()` 续租，`close()` 释放。通用用法见 [事件与数据通道](../../../usage/events-channels.md)。
+打开即建立租约并返回 Channel 句柄；用 `frames()` 迭代，`next()` 取一帧，`renew()` 续租，`close()` 释放。通用用法见 [事件与数据通道](../../../usage/data/events-channels.md)。
 
 ### transcript
 
@@ -217,7 +217,7 @@ for event in aiui.transcript().frames(poll_timeout_ms=200, timeout_ms=10000):
 
 展示给人看的文本用 `Catalogs.format_fault(record)`，见 [文本目录 Catalogs](../catalogs.md)。
 
-调用失败：`speak` 被占用时抛 `ResourceConflict`；终态为失败 / 取消 / 超时时，`wait()` 抛 `FabotError` / `Canceled` / `Timeout`。云端凭证缺失时技能仍在运行，但播报与识别不可用——查 `status().cloud_connected` 与 `status()` 的 `activity`。见 [错误处理](../../../usage/errors.md)。
+调用失败：`speak` 被占用时抛 `ResourceConflict`；终态为失败 / 取消 / 超时时，`wait()` 抛 `FabotError` / `Canceled` / `Timeout`。云端凭证缺失时技能仍在运行，但播报与识别不可用——查 `status().cloud_connected` 与 `status()` 的 `activity`。见 [错误处理](../../../usage/diagnostics/errors.md)。
 
 ## 状态
 
@@ -277,7 +277,7 @@ with robot.skills.voice_aiui.edit_config() as conf:
 
 ## 相关
 
-- 技能概念与可用性判断：[技能与扩展](../../../usage/skills.md)
+- 技能概念与可用性判断：[技能与扩展](../../../usage/configuration/skills.md)
 - 语音硬件与流：[语音 Voice](../voice.md)
-- 配置域读写：[配置管理](../../../usage/configuration.md)
-- 命令与长时操作：[命令与长时操作](../../../usage/commands-operations.md)
+- 配置域读写：[配置管理](../../../usage/configuration/configuration.md)
+- 命令与长时操作：[命令与长时操作](../../../usage/basics/commands-operations.md)

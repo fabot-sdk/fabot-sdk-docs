@@ -46,7 +46,7 @@ if robot.lift.has_adapter:
     print(outcome.success, outcome.status_message)
 ```
 
-`move_height` 返回 Operation：`get()` 拉一次快照，`wait()` 等到终态，`cancel()` 尽力取消。模型见 [命令与长时操作](../../usage/commands-operations.md)。`has_adapter` 只表示这个槽绑了适配器。
+`move_height` 返回 Operation：`get()` 拉一次快照，`wait()` 等到终态，`cancel()` 尽力取消。模型见 [命令与长时操作](../../usage/basics/commands-operations.md)。`has_adapter` 只表示这个槽绑了适配器。
 
 ## 相对升降与限速
 
@@ -67,7 +67,7 @@ for target in stream_from_your_source():
 ```
 
 :::warning 伺服不会自动停
-`servo_height()` 每调用一次只下发一个目标。必须在结束时显式 `stop()`；断线不代表升降柱会停。见 [伺服与安全](../../usage/concurrency-and-safety.md)。
+`servo_height()` 每调用一次只下发一个目标。必须在结束时显式 `stop()`；断线不代表升降柱会停。见 [伺服与安全](../../usage/basics/concurrency-and-safety.md)。
 :::
 
 ## 读高度流

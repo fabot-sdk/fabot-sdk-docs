@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # Robot 入口
 
-`Robot` 是 Python SDK 的统一入口：建立连接、按槽位暴露能力 Proxy、聚合整机急停 / 状态 / 故障，并给出日志、指标、事件、坐标系、配置、服务与技能的入口。连接的生命周期与选项见 [连接与 Robot 入口](../../usage/connection.md)。
+`Robot` 是 Python SDK 的统一入口：建立连接、按槽位暴露能力 Proxy、聚合整机急停 / 状态 / 故障，并给出日志、指标、事件、坐标系、配置、服务与技能的入口。连接的生命周期与选项见 [连接与 Robot 入口](../../usage/basics/connection.md)。
 
 ## connect
 
@@ -32,7 +32,7 @@ robot.close() -> None
 | `config` | `ClientConfig` | `None` | 客户端标识与传输选项，见下表；与 `host` 互斥 |
 | `wait_ready` | `bool` | `False` | 为 `True` 时在返回前顺带调用 `wait_ready()` |
 
-`connect` 同时传 `host` 与 `config` 会抛 `TypeError`。`from_endpoint` 是显式端点写法；`from_backend` 接入自定义传输后端（高级用法）；`mock()` 返回无需真实机器人的 `MockRobot`，见 [Mock 测试](../../usage/mock.md)。SDK 与机器人控制面在同一台主机上时，`Robot.connect()` 不传地址即可，按默认配置自动发现端点。
+`connect` 同时传 `host` 与 `config` 会抛 `TypeError`。`from_endpoint` 是显式端点写法；`from_backend` 接入自定义传输后端（高级用法）；`mock()` 返回无需真实机器人的 `MockRobot`，见 [Mock 测试](../../usage/testing/mock.md)。SDK 与机器人控制面在同一台主机上时，`Robot.connect()` 不传地址即可，按默认配置自动发现端点。
 
 `ClientConfig`（客户端标识与传输）：
 
@@ -95,23 +95,23 @@ robot.wait_ready(["left_arm", "io"])     # 只等指定槽位
 
 | 槽位属性 | 能力 id | 文档 |
 |----------|---------|------|
-| `body` | `body` | [躯干 Body](body.md) |
-| `left_arm` / `right_arm` | `arm` | [机械臂 Arm](arm.md) |
-| `left_hand` / `right_hand` | `hand` | [灵巧手 Hand](hand.md) |
-| `left_gripper` / `right_gripper` | `gripper` | [夹爪 Gripper](gripper.md) |
-| `head` | `head` | [头部 Head](head.md) |
-| `chassis` | `chassis` | [底盘 Chassis](chassis.md) |
-| `power_1` / `power_2` | `power` | [电源 Power](power.md) |
-| `io` | `io` | [IO](io.md) |
-| `motion` | `motion` | [运动 Motion](motion.md) |
-| `teleop` | `teleop` | [遥操作 Teleop](teleop.md) |
-| `arms` | `arms` | [双臂 Arms](arms.md) |
-| `head_camera` / `chest_camera` / `waist_camera` | `camera` | [相机 Camera](camera.md) |
-| `left_wrist_camera` / `right_wrist_camera` | `camera` | [相机 Camera](camera.md) |
-| `screen` | `screen` | [面屏 Screen](screen.md) |
-| `light` | `light` | [灯效 Light](light.md) |
-| `voice` | `voice` | [语音 Voice](voice.md) |
-| `lift` | `lift` | [升降柱 Lift](lift.md) |
+| `body` | `body` | [躯干 Body](./body.md) |
+| `left_arm` / `right_arm` | `arm` | [机械臂 Arm](./arm.md) |
+| `left_hand` / `right_hand` | `hand` | [灵巧手 Hand](./hand.md) |
+| `left_gripper` / `right_gripper` | `gripper` | [夹爪 Gripper](./gripper.md) |
+| `head` | `head` | [头部 Head](./head.md) |
+| `chassis` | `chassis` | [底盘 Chassis](./chassis.md) |
+| `power_1` / `power_2` | `power` | [电源 Power](./power.md) |
+| `io` | `io` | [IO](./io.md) |
+| `motion` | `motion` | [运动 Motion](./motion.md) |
+| `teleop` | `teleop` | [遥操作 Teleop](./teleop.md) |
+| `arms` | `arms` | [双臂 Arms](./arms.md) |
+| `head_camera` / `chest_camera` / `waist_camera` | `camera` | [相机 Camera](./camera.md) |
+| `left_wrist_camera` / `right_wrist_camera` | `camera` | [相机 Camera](./camera.md) |
+| `screen` | `screen` | [面屏 Screen](./screen.md) |
+| `light` | `light` | [灯效 Light](./light.md) |
+| `voice` | `voice` | [语音 Voice](./voice.md) |
+| `lift` | `lift` | [升降柱 Lift](./lift.md) |
 
 所有槽位 Proxy 的公共成员：
 
@@ -123,11 +123,11 @@ robot.wait_ready(["left_arm", "io"])     # 只等指定槽位
 | `health()` | 当前健康度 `SlotHealth` |
 | `lifecycle()` | `CapabilityLifecycleSnapshot`（`lifecycle` / `health` / `pbit_completed` / `source_instance_id`） |
 | `faults()` | 该槽位当前故障袋 `Faults` |
-| `self_check(...)` | 主动执行该槽位自检，返回 `SelfCheckReport`；会写入故障锁存，见 [自检](../../usage/self-check.md) |
+| `self_check(...)` | 主动执行该槽位自检，返回 `SelfCheckReport`；会写入故障锁存，见 [自检](../../usage/diagnostics/self-check.md) |
 | `ping(...)` | 运行库往返时延探测，返回 `PingReport` |
 | `has_adapter` | 槽位是否已绑定 adapter（只读属性） |
 | `as_adapter(adapter_type)` | 转为 `fabot.adapters` 下的强类型 adapter 视图 |
-| `get_config()` / `set_config()` / `edit_config()` | 该槽位 adapter 配置域读写，见 [配置管理](../../usage/configuration.md) |
+| `get_config()` / `set_config()` / `edit_config()` | 该槽位 adapter 配置域读写，见 [配置管理](../../usage/configuration/configuration.md) |
 
 槽位未绑定 adapter 时，能力方法本身仍会下发（平台侧返回失败或超时），`as_adapter()` 与 `get_config()` 则会抛 `AdapterUnbound`（属 `NotFound`）；用 `has_adapter` 先判断。`as_adapter` 要求 `adapter_type` 暴露 `ADAPTER_ID`（否则 `TypeError`）；槽位未绑定抛 `AdapterUnbound`，绑定的 adapter 与 `adapter_type` 不符抛 `AdapterMismatch`。
 
@@ -180,7 +180,7 @@ print(robot.estop.state().asserted)
 
 ## state / status / faults
 
-整机状态分三个层次：运行状态（`state()`）、能力状态袋聚合（`status()`）、故障聚合（`faults()`）。三者都是主动查询，没有订阅接口，变化走事件。模型见 [状态、故障与生命周期](../../usage/status-faults.md)。
+整机状态分三个层次：运行状态（`state()`）、能力状态袋聚合（`status()`）、故障聚合（`faults()`）。三者都是主动查询，没有订阅接口，变化走事件。模型见 [状态、故障与生命周期](../../usage/data/status-faults.md)。
 
 | 方法 | 返回 | 说明 |
 |------|------|------|
@@ -223,7 +223,7 @@ print(faults.revision, faults.chassis.records)
 
 ## self_check
 
-整机自检：按机器人规格顺序，对当前**已启用且已绑定 adapter** 的槽位各跑一次槽位自检，汇总为 `RobotSelfCheck`。与只读的 `state()` / `status()` / `faults()` 不同，它会真的执行检查钩子并写入故障锁存。完整说明见 [自检](../../usage/self-check.md)。
+整机自检：按机器人规格顺序，对当前**已启用且已绑定 adapter** 的槽位各跑一次槽位自检，汇总为 `RobotSelfCheck`。与只读的 `state()` / `status()` / `faults()` 不同，它会真的执行检查钩子并写入故障锁存。完整说明见 [自检](../../usage/diagnostics/self-check.md)。
 
 ```python
 self_check(timeout_ms: int = 0, *, timeout: float | None = None) -> RobotSelfCheck
@@ -300,7 +300,7 @@ token = robot.events.estop_changed.subscribe(on_estop)
 token.close()
 ```
 
-注意 `faults_changed` 的 payload 与 `faults()` 不同：事件里是按槽位组织的 `RobotFaults`，而原始总线上是扁平的 `RobotFaultSnapshot`。见 [事件与数据通道](../../usage/events-channels.md)。
+注意 `faults_changed` 的 payload 与 `faults()` 不同：事件里是按槽位组织的 `RobotFaults`，而原始总线上是扁平的 `RobotFaultSnapshot`。见 [事件与数据通道](../../usage/data/events-channels.md)。
 
 ## logs
 
@@ -408,7 +408,7 @@ points = robot.frames.transform_points([[0.0, 0.0, 1.0]], "base_link", "map")
 print(robot.frames.to_mermaid())
 ```
 
-完整的代数（`Transform3d` 的复合、逆、插值、作用于点 / 向量 / 速度 / 力）、`TransformBuffer` 与 `FrameSystem` 的缓存语义见 [坐标系与变换](../../usage/frames.md)，变换矩阵与相机反投影的辅助函数见 [坐标系 API](../python/frames.md)。
+完整的代数（`Transform3d` 的复合、逆、插值、作用于点 / 向量 / 速度 / 力）、`TransformBuffer` 与 `FrameSystem` 的缓存语义见 [坐标系与变换](../../usage/data/frames.md)，变换矩阵与相机反投影的辅助函数见 [坐标系 API](./frames.md)。
 
 ## configuration / connection / services / skills
 
@@ -416,12 +416,12 @@ print(robot.frames.to_mermaid())
 
 | 入口 | 说明 |
 |------|------|
-| `robot.configuration` | 整机配置读写（`get()` / `apply()`），CAS 提交，见 [配置管理](../../usage/configuration.md) |
+| `robot.configuration` | 整机配置读写（`get()` / `apply()`），CAS 提交，见 [配置管理](../../usage/configuration/configuration.md) |
 | `robot.connection` | 连接状态查询与订阅（`is_connected()` / `connected` / `subscribe()`） |
-| `robot.services` | 平台服务句柄（`ros2` / `obs_collector`），见 [平台服务管理](../../usage/services.md)；接口见 [平台服务概览](services/index.md) |
-| `robot.environments` | 运行环境配置（目前只有 `ros2`），只读写配置，见 [平台服务管理](../../usage/services.md)；接口见 [运行环境配置](services/ros2_environment.md) |
-| `robot.obs` | 观测存储快照（`store()`），见 [日志、指标与可观测性](../../usage/observability.md) |
-| `robot.skills` | 技能句柄（`camera_sync` / `voice_aiui`），见 [技能与扩展](../../usage/skills.md)；接口见 [技能概览](skills/index.md) |
+| `robot.services` | 平台服务句柄（`ros2` / `obs_collector`），见 [平台服务管理](../../usage/configuration/services.md)；接口见 [平台服务概览](./services/index.md) |
+| `robot.environments` | 运行环境配置（目前只有 `ros2`），只读写配置，见 [平台服务管理](../../usage/configuration/services.md)；接口见 [运行环境配置](./services/ros2_environment.md) |
+| `robot.obs` | 观测存储快照（`store()`），见 [日志、指标与可观测性](../../usage/diagnostics/observability.md) |
+| `robot.skills` | 技能句柄（`camera_sync` / `voice_aiui`），见 [技能与扩展](../../usage/configuration/skills.md)；接口见 [技能概览](./skills/index.md) |
 
 ## ping / freeze
 
@@ -456,8 +456,8 @@ from fabot.core.types import PingReport
 robot.obs.store(*, timeout_ms: int = 0) -> ObsStore
 ```
 
-`timeout_ms` 为 `0` 表示沿用客户端缺省超时。字段与用法见 [日志、指标与可观测性](../../usage/observability.md) 的「观测存储」一节。
+`timeout_ms` 为 `0` 表示沿用客户端缺省超时。字段与用法见 [日志、指标与可观测性](../../usage/diagnostics/observability.md) 的「观测存储」一节。
 
 ## environments
 
-`robot.environments` 读写运行环境配置，目前只有 `ros2`（`Ros2EnvironmentHandle`：`get_config()` / `set_config()` / `edit_config()`）。它与 `robot.services.ros2` 的区别见 [平台服务管理](../../usage/services.md)。
+`robot.environments` 读写运行环境配置，目前只有 `ros2`（`Ros2EnvironmentHandle`：`get_config()` / `set_config()` / `edit_config()`）。它与 `robot.services.ros2` 的区别见 [平台服务管理](../../usage/configuration/services.md)。

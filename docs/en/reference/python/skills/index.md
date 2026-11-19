@@ -15,8 +15,8 @@ updated: 2026-11-17
 
 | Skill | Entry | `SKILL_ID` | Config type | Config domains | Chapter |
 |-------|-------|-----------|-------------|----------------|---------|
-| Multi-camera sync | `robot.skills.camera_sync` | `fabot_camera_sync` | `CameraSyncConfig` | `alignment` / `frame_region` | [camera_sync.md](camera_sync.md) |
-| Voice semantics | `robot.skills.voice_aiui` | `fabot_voice_aiui` | `VoiceAiuiConfig` | `aiui` | [voice_aiui.md](voice_aiui.md) |
+| Multi-camera sync | `robot.skills.camera_sync` | `fabot_camera_sync` | `CameraSyncConfig` | `alignment` / `frame_region` | [camera_sync.md](./camera_sync.md) |
+| Voice semantics | `robot.skills.voice_aiui` | `fabot_voice_aiui` | `VoiceAiuiConfig` | `aiui` | [voice_aiui.md](./voice_aiui.md) |
 
 Whether a skill is deployed and enabled comes from the robot configuration: read `is_available` before calling anything else. It is true when the skill slot is enabled with an adapter bound; if no configuration is readable it falls back to checking whether the handle is valid. When the skill is not deployed, resolving the handle or issuing commands fails.
 
@@ -68,7 +68,7 @@ robot.skills.<name>.self_check(timeout_ms: int = 0, *, timeout: float | None = N
 | `timeout_ms` | `int` | `0` | Call timeout in milliseconds; `0` uses the client default |
 | `timeout` | `float \| None` | `None` | Seconds spelling of the same bound |
 
-Writes the fault latch, see [Self-check](../../../usage/self-check.md).
+Writes the fault latch, see [Self-check](../../../usage/diagnostics/self-check.md).
 
 ### ping
 
@@ -95,11 +95,11 @@ robot.skills.<name>.edit_config()  # context manager
 | `config` | config dataclass | (required) | Target config |
 | `only_domains` | `set[str] \| None` | `None` | Commit only these domains; `None` means all |
 
-`set_config()` commits with CAS, raises `ConfigurationConflict` on contention and returns the freshly read config on success; `edit_config()` commits only changed domains on exit. The rules match capability config, see [Configuration](../../../usage/configuration.md).
+`set_config()` commits with CAS, raises `ConfigurationConflict` on contention and returns the freshly read config on success; `edit_config()` commits only changed domains on exit. The rules match capability config, see [Configuration](../../../usage/configuration/configuration.md).
 
 ## Channels
 
-`robot.skills` itself has no channels. Per-skill channels are in the "Channels" section of [camera_sync.md](camera_sync.md) and [voice_aiui.md](voice_aiui.md).
+`robot.skills` itself has no channels. Per-skill channels are in the "Channels" section of [camera_sync.md](./camera_sync.md) and [voice_aiui.md](./voice_aiui.md).
 
 ## Events
 
@@ -136,7 +136,7 @@ token.close()
 
 For human-readable text use `Catalogs.format_fault(record)`, see [Catalogs](../catalogs.md). Diagnostic codes are encoded by domain / module, see [Diagnostic Code Reference](../error-codes.md).
 
-Failures look the same as with capabilities: when `is_available` is false, resolving the handle or issuing commands fails; a timed-out command raises `Timeout`, a resource clash raises `ResourceConflict` and a config clash raises `ConfigurationConflict`, see [Error Handling](../../../usage/errors.md).
+Failures look the same as with capabilities: when `is_available` is false, resolving the handle or issuing commands fails; a timed-out command raises `Timeout`, a resource clash raises `ResourceConflict` and a config clash raises `ConfigurationConflict`, see [Error Handling](../../../usage/diagnostics/errors.md).
 
 ## Status
 
@@ -145,7 +145,7 @@ Status-bag fields are defined per skill; see the respective chapter. Common read
 - `health()`: `SlotHealth` (`is_usable` / `lifecycle` / `health` / `standing_faults` / `pbit_completed` / `source_instance_id`)
 - `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `pbit_completed` / `source_instance_id`)
 
-Changes arrive through `lifecycle_changed`, see [Status, Faults & Lifecycle](../../../usage/status-faults.md).
+Changes arrive through `lifecycle_changed`, see [Status, Faults & Lifecycle](../../../usage/data/status-faults.md).
 
 ## Resources
 
@@ -158,7 +158,7 @@ Whether a skill occupies resources depends on its Operations:
 
 ## Related
 
-- Skill concepts and availability checks: [Skills & Extensions](../../../usage/skills.md)
-- Config-domain access and conflict retries: [Configuration](../../../usage/configuration.md)
+- Skill concepts and availability checks: [Skills & Extensions](../../../usage/configuration/skills.md)
+- Config-domain access and conflict retries: [Configuration](../../../usage/configuration/configuration.md)
 - Camera hardware and streams: [Camera](../camera.md)
 - Voice hardware and streams: [Voice](../voice.md)

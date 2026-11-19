@@ -14,18 +14,19 @@
 
 `_version.py` 里的版本号不一定随每次构建更新，**判断 API 是否存在以 `.pyi` / `*.py` 的实际定义为准**，不要用版本字符串比对。
 
+侧栏按三大章节组织：**入门**（Getting Started）、**章节**（Sections）、**参考**（Reference）。三个大标题是根 `_meta.json` 里的 `section-header`，条目由根 `_meta.json` 以嵌套路径（如 `usage/basics`、`getting-started/install`）直接引用目录与文件；只有被根引用的目录才需要自己的 `_meta.json` 做条目排序。标题文案 key 在 `i18n.json`。
+
 | 路径 | 用途 |
 |------|------|
 | `docs/zh/`、`docs/en/` | 中英内容（路径一一对应） |
-| `docs/*/overview.md` | 概览（SDK 位置、术语、两层 API） |
-| `docs/*/install/` | 安装与配置（环境、Python、版本配套） |
-| `docs/*/usage/` | 常规操作（连接、约定、Command/Operation、并发与安全、事件与通道、状态故障、配置、服务、错误、Mock、迁移） |
-| `docs/*/tutorials/` | 入门教程（`python.md`） |
+| `docs/*/getting-started/` | 入门：`overview.md` 概览、`install/` 安装与配置、`quickstart.md` 第一个程序 |
+| `docs/*/usage/` | 常规操作，五个主题章：`basics/`（连接、约定、Command/Operation、并发安全）、`data/`（事件通道、状态故障、坐标系）、`diagnostics/`（错误、文本目录、自检、可观测性）、`configuration/`（配置、技能、服务）、`testing/`（Mock、迁移、机器人系统与本地控制台） |
 | `docs/*/examples/python/` | Python 示例（按能力分页） |
-| `docs/*/reference/python/` | Python API 参考（Robot 入口 + 诊断码 + 16 个能力模块 + 技能 `skills.md` + 平台服务 `services.md`，八段式：模块概述 → API 总览 → 方法 → 通道 → 事件 → 异常 → 状态 → 资源） |
+| `docs/*/reference/python/` | Python API 参考（Robot 入口 + 诊断码 + 16 个能力模块 + 技能 `skills/` + 平台服务 `services/`，八段式：模块概述 → API 总览 → 方法 → 通道 → 事件 → 异常 → 状态 → 资源） |
 | `docs/*/troubleshooting.md` | 故障排除 |
 | `docs/*/changelog.md` | 更新日志（按版本倒序，随发版追加） |
 | `docs/*/_nav.json`、`_meta.json` | 顶栏与全局侧栏 |
+| `docs/public/` | 站点静态资源（截图等，按 `/images/...` 引用） |
 | `i18n.json` | 导航等共用文案 |
 | `theme/` | 顶栏版本切换器（读 `versions.json`） |
 | `scripts/build-all-versions.mjs` | CI 按 `main` + `v*` 分支拼站 |

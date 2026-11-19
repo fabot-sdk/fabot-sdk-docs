@@ -7,7 +7,7 @@ updated: 2026-11-02
 
 # Frames API
 
-`fabot.frames` is the public coordinate-frame module: `FrameSystem` (the type behind `robot.frames`), `Transform3d` algebra, `TransformBuffer` (offline buffer) and a set of geometry helpers. Concepts and usage are in [Frames & Transforms](../../usage/frames.md).
+`fabot.frames` is the public coordinate-frame module: `FrameSystem` (the type behind `robot.frames`), `Transform3d` algebra, `TransformBuffer` (offline buffer) and a set of geometry helpers. Concepts and usage are in [Frames & Transforms](../../usage/data/frames.md).
 
 ## Module overview
 

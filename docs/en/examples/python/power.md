@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # Power example
 
-Read energy and charging state from both power rails, and subscribe to fault and lifecycle events. Power has no Commands, Operations or data channels, only read-only queries and events; the event model is in [Events & Data Channels](../../usage/events-channels.md), faults and lifecycle in [Status, Faults & Lifecycle](../../usage/status-faults.md), and the API in [Power](../../reference/python/power.md).
+Read energy and charging state from both power rails, and subscribe to fault and lifecycle events. Power has no Commands, Operations or data channels, only read-only queries and events; the event model is in [Events & Data Channels](../../usage/data/events-channels.md), faults and lifecycle in [Status, Faults & Lifecycle](../../usage/data/status-faults.md), and the API in [Power](../../reference/python/power.md).
 
 ## Read energy and charging state
 
@@ -52,7 +52,7 @@ def watch(robot, threshold=20, interval=5.0):
 threading.Thread(target=watch, args=(robot,), daemon=True).start()
 ```
 
-Custom logs from `robot.logs.warn(...)` join the same log stream, see [Logs, Metrics & Observability](../../usage/observability.md).
+Custom logs from `robot.logs.warn(...)` join the same log stream, see [Logs, Metrics & Observability](../../usage/diagnostics/observability.md).
 
 ## Subscribe to faults and lifecycle
 

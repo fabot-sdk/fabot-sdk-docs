@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # 遥操作示例
 
-建立与停止手柄遥操作会话。长时任务模型见 [命令与长时操作](../../usage/commands-operations.md)，接口见 [遥操作](../../reference/python/teleop.md)。
+建立与停止手柄遥操作会话。长时任务模型见 [命令与长时操作](../../usage/basics/commands-operations.md)，接口见 [遥操作](../../reference/python/teleop.md)。
 
 ## 开始手柄遥操作会话
 

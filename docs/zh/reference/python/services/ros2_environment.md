@@ -12,7 +12,7 @@ updated: 2026-11-17
 - 入口：`robot.environments.ros2`
 - environment id：`fabot_env_ros2`；句柄 `Ros2EnvironmentHandle`；配置类型 `Ros2EnvironmentConfig`
 - 机器人运行环境的 **配置**，不是进程：只读写 domain id、是否只监听本机、路由器归属。
-- 与 [ROS 2 服务](ros2.md) 的区别：这里是**配置**（ROS 2 图标识），那里是**进程**（图访问服务）。domain id 不在服务配置里。
+- 与 [ROS 2 服务](./ros2.md) 的区别：这里是**配置**（ROS 2 图标识），那里是**进程**（图访问服务）。domain id 不在服务配置里。
 - 没有 `start()` / `stop()`，只有 `get_config()` / `set_config()` / `edit_config()`。
 
 ## API 总览
@@ -66,11 +66,11 @@ with robot.environments.ros2.edit_config() as cfg:
 
 ## 事件
 
-没有事件入口。配置变更可经整机 `robot.events.config_changed` 观察，见 [事件与数据通道](../../../usage/events-channels.md)。
+没有事件入口。配置变更可经整机 `robot.events.config_changed` 观察，见 [事件与数据通道](../../../usage/data/events-channels.md)。
 
 ## 异常
 
-CAS 冲突抛 `ConfigurationConflict`（见 [错误处理](../../../usage/errors.md)）；与能力 / 服务配置的重试模式一致，见 [配置管理](../../../usage/configuration.md)。
+CAS 冲突抛 `ConfigurationConflict`（见 [错误处理](../../../usage/diagnostics/errors.md)）；与能力 / 服务配置的重试模式一致，见 [配置管理](../../../usage/configuration/configuration.md)。
 
 ## 状态
 
@@ -94,6 +94,6 @@ RMW 固定为 `rmw_zenoh_cpp`，不是配置项。
 
 ## 相关
 
-- 服务与环境的整体说明：[平台服务管理](../../../usage/services.md)
-- ROS 2 图访问服务：[ros2.md](ros2.md)
-- 配置域读写：[配置管理](../../../usage/configuration.md)
+- 服务与环境的整体说明：[平台服务管理](../../../usage/configuration/services.md)
+- ROS 2 图访问服务：[ros2.md](./ros2.md)
+- 配置域读写：[配置管理](../../../usage/configuration/configuration.md)

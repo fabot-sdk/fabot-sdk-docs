@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # 双臂示例
 
-控制双臂按关节角或末端位姿协同运动，切换耦合与导纳模式，并订阅关节流。长时任务模型见 [命令与长时操作](../../usage/commands-operations.md)，通道用法见 [事件与数据通道](../../usage/events-channels.md)，接口见 [双臂](../../reference/python/arms.md)。
+控制双臂按关节角或末端位姿协同运动，切换耦合与导纳模式，并订阅关节流。长时任务模型见 [命令与长时操作](../../usage/basics/commands-operations.md)，通道用法见 [事件与数据通道](../../usage/data/events-channels.md)，接口见 [双臂](../../reference/python/arms.md)。
 
 ## 关节运动到目标角度
 

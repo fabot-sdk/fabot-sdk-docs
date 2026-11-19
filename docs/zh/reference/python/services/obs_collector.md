@@ -13,9 +13,9 @@ updated: 2026-11-17
 - service id：`fabot_obs_collector`；句柄 `ObsCollectorServiceHandle`；配置类型 `ObsCollectorConfig`
 - 观测采集服务：日志 / 指标 / 事件的落盘与飞行记录器。配置管配额、各类数据的容量与保留天数、冻结快照的前后窗口。
 - **进程只在启动时读这份配置**：`set_config()` 保存后要 `stop()` 再 `start()` 才生效。
-- 查当前磁盘占用与冻结文件清单用 `robot.obs.store()`，见 [日志、指标与可观测性](../../../usage/observability.md)。
+- 查当前磁盘占用与冻结文件清单用 `robot.obs.store()`，见 [日志、指标与可观测性](../../../usage/diagnostics/observability.md)。
 
-平台操作的通用说明（`start` / `state` / `get_config`、CAS 冲突等）见 [平台服务概览](index.md)。
+平台操作的通用说明（`start` / `state` / `get_config`、CAS 冲突等）见 [平台服务概览](./index.md)。
 
 ## API 总览
 
@@ -49,19 +49,19 @@ svc.start()
 
 ## 通道
 
-本服务没有数据通道。日志 / 指标的读取走 `robot.logs` / `robot.metrics`，见 [日志、指标与可观测性](../../../usage/observability.md)。
+本服务没有数据通道。日志 / 指标的读取走 `robot.logs` / `robot.metrics`，见 [日志、指标与可观测性](../../../usage/diagnostics/observability.md)。
 
 ## 事件
 
-没有服务私有事件；状态迁移走整机 `robot.events.service_state_changed`，见 [平台服务概览](index.md)。冻结观测的触发走 `robot.freeze()` 或 `robot.logs.freeze()`。
+没有服务私有事件；状态迁移走整机 `robot.events.service_state_changed`，见 [平台服务概览](./index.md)。冻结观测的触发走 `robot.freeze()` 或 `robot.logs.freeze()`。
 
 ## 异常
 
-与其它服务一致：控制失败抛 `FabotError`，配置冲突抛 `ConfigurationConflict`。配置值越界（如 `quota_percent` 不大于 0）会在生效时被拒绝或回退到缺省值，见各字段说明。见 [错误处理](../../../usage/errors.md)。
+与其它服务一致：控制失败抛 `FabotError`，配置冲突抛 `ConfigurationConflict`。配置值越界（如 `quota_percent` 不大于 0）会在生效时被拒绝或回退到缺省值，见各字段说明。见 [错误处理](../../../usage/diagnostics/errors.md)。
 
 ## 状态
 
-`state()` 返回 `ServiceState`（字段见 [平台服务概览](index.md)）。
+`state()` 返回 `ServiceState`（字段见 [平台服务概览](./index.md)）。
 
 `ObsCollectorConfig` 只有一个配置域 `obs`：
 
@@ -90,6 +90,6 @@ svc.start()
 
 ## 相关
 
-- 日志、指标与观测存储：[日志、指标与可观测性](../../../usage/observability.md)
-- 服务概念与启停注意事项：[平台服务管理](../../../usage/services.md)
-- 配置域读写：[配置管理](../../../usage/configuration.md)
+- 日志、指标与观测存储：[日志、指标与可观测性](../../../usage/diagnostics/observability.md)
+- 服务概念与启停注意事项：[平台服务管理](../../../usage/configuration/services.md)
+- 配置域读写：[配置管理](../../../usage/configuration/configuration.md)

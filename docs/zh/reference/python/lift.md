@@ -35,7 +35,7 @@ updated: 2026-11-17
 | `fault_changed` | Event | 故障集合变化，payload 为 `Faults`。 |
 | `lifecycle_changed` | Event | 生命周期变化，payload 为 `CapabilityLifecycleSnapshot`。 |
 
-Command 同步返回响应，`timeout_ms` 可逐次覆盖；Operation 立即返回句柄，进度与结果通过快照获取，见 [命令与长时操作](../../usage/commands-operations.md)。
+Command 同步返回响应，`timeout_ms` 可逐次覆盖；Operation 立即返回句柄，进度与结果通过快照获取，见 [命令与长时操作](../../usage/basics/commands-operations.md)。
 
 ## 方法
 
@@ -114,7 +114,7 @@ servo_height(value: float, *, timeout_ms: int = 1000) -> float
 | `timeout_ms` | `int` | `1000` | 调用超时（毫秒） |
 
 :::warning 伺服目标不会自己失效
-`servo_height()` 只下发一次目标，不建立持续会话。停止跟随必须显式调用 `stop()`；不要依赖断开连接来让升降柱停下，见 [伺服与安全](../../usage/concurrency-and-safety.md)。
+`servo_height()` 只下发一次目标，不建立持续会话。停止跟随必须显式调用 `stop()`；不要依赖断开连接来让升降柱停下，见 [伺服与安全](../../usage/basics/concurrency-and-safety.md)。
 :::
 
 ### stop
@@ -192,7 +192,7 @@ finally:
     ch.close()
 ```
 
-通用约定（帧字段、`qos_profile`、租约与 `next()`）见 [事件与数据通道](../../usage/events-channels.md)。
+通用约定（帧字段、`qos_profile`、租约与 `next()`）见 [事件与数据通道](../../usage/data/events-channels.md)。
 
 ## 事件
 
@@ -219,7 +219,7 @@ token.close()
 
 `LiftState.fault_code` 与故障袋记录是两条互补的信息：前者是驱动器上报的原始码，后者是平台归一化后的故障集合。两者不一致时以故障袋为准。
 
-展示给人看的文本用 `Catalogs.format_fault(record)`，见 [文本目录 Catalogs](../../usage/catalogs.md)。
+展示给人看的文本用 `Catalogs.format_fault(record)`，见 [文本目录 Catalogs](../../usage/diagnostics/catalogs.md)。
 
 ### 常见故障码
 

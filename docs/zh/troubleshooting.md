@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # 故障排除
 
-按症状组织的排查条目。通用定位手段：所有失败调用抛出带 `code`（诊断码）/ `retryable` / `trace_id` 的 `FabotError` 子类（见 [错误处理](usage/errors.md)）；整机状态与故障用 `robot.state()` / `robot.faults()` 查询（见 [状态、故障与生命周期](usage/status-faults.md)）；异步变化经事件推送（见 [事件与数据通道](usage/events-channels.md)）。
+按症状组织的排查条目。通用定位手段：所有失败调用抛出带 `code`（诊断码）/ `retryable` / `trace_id` 的 `FabotError` 子类（见 [错误处理](./usage/diagnostics/errors.md)）；整机状态与故障用 `robot.state()` / `robot.faults()` 查询（见 [状态、故障与生命周期](./usage/data/status-faults.md)）；异步变化经事件推送（见 [事件与数据通道](./usage/data/events-channels.md)）。
 
 ## 连不上
 
@@ -17,13 +17,13 @@ updated: 2026-11-17
 |------|----------|------|
 | `TransportError` / `Unavailable` / `Timeout` | 网络不通、控制面未运行、端口被拦 | 确认控制面端点（IP 与端口，默认 7557）正确且网络可达；确认机器人平台已启动；放行防火墙 |
 | `Unauthorized` | 鉴权失败 | 核对 `ClientConfig.auth_token` |
-| `ProtocolIncompatible` | SDK 与机器人平台版本不配套 | 核对版本配套关系，见 [版本配套](install/compatibility.md) |
+| `ProtocolIncompatible` | SDK 与机器人平台版本不配套 | 核对版本配套关系，见 [版本配套](./getting-started/install/compatibility.md) |
 
 其他检查项：
 
-- 确认 SDK 安装无误：`import fabot` 应正常导入，见 [安装 Python SDK](install/python.md)。
+- 确认 SDK 安装无误：`import fabot` 应正常导入，见 [安装 Python SDK](./getting-started/install/python.md)。
 - SDK 与控制面在同一台主机时，可先试不带地址的 `Robot.connect()`（按默认配置自动发现），排除地址填错的因素。
-- 想先排除机器人侧因素，可用 `Robot.mock()` 离线跑通流程，见 [Mock 测试](usage/mock.md)。
+- 想先排除机器人侧因素，可用 `Robot.mock()` 离线跑通流程，见 [Mock 测试](./usage/testing/mock.md)。
 
 ```python
 from fabot import Robot, FabotError
@@ -34,15 +34,15 @@ except FabotError as e:
     print(hex(e.code), e.retryable, e.message, e.trace_id)
 ```
 
-连接建立后运行中断线：用 `robot.connection.is_connected()` 查询当前状态，或用 `robot.connection.subscribe(cb)` 订阅连接变化，断线后重建 `Robot` 连接。`retryable == True` 的错误可按退避策略重试，见 [错误处理](usage/errors.md)。连接建立的完整说明见 [连接与 Robot 入口](usage/connection.md)。
+连接建立后运行中断线：用 `robot.connection.is_connected()` 查询当前状态，或用 `robot.connection.subscribe(cb)` 订阅连接变化，断线后重建 `Robot` 连接。`retryable == True` 的错误可按退避策略重试，见 [错误处理](./usage/diagnostics/errors.md)。连接建立的完整说明见 [连接与 Robot 入口](./usage/basics/connection.md)。
 
 ## wait_ready
 
-`wait_ready(slots=None)` 只等待**已绑定且 `enabled` + `essential`** 的槽位：未绑定、被禁用或非必需的槽位直接跳过，不予等待。单个槽位的解析超时由 `ClientOptions.resolve_timeout_ms`（默认 1000 毫秒）控制，解析失败抛异常。语义详见 [Robot 入口](reference/python/robot.md)。
+`wait_ready(slots=None)` 只等待**已绑定且 `enabled` + `essential`** 的槽位：未绑定、被禁用或非必需的槽位直接跳过，不予等待。单个槽位的解析超时由 `ClientOptions.resolve_timeout_ms`（默认 1000 毫秒）控制，解析失败抛异常。语义详见 [Robot 入口](./reference/python/robot.md)。
 
 常见误解与排查：
 
-- **"等了但槽位仍不可用"**：该槽位可能被跳过。先用 `robot.<slot>.has_adapter` 确认槽位已绑定；未绑定时 `get_config()` / `as_adapter()` 抛 `AdapterUnbound`，能力方法下发后会失败或超时。绑定与 `enabled` / `required` 配置见 [配置管理](usage/configuration.md)。
+- **"等了但槽位仍不可用"**：该槽位可能被跳过。先用 `robot.<slot>.has_adapter` 确认槽位已绑定；未绑定时 `get_config()` / `as_adapter()` 抛 `AdapterUnbound`，能力方法下发后会失败或超时。绑定与 `enabled` / `required` 配置见 [配置管理](./usage/configuration/configuration.md)。
 - **抛超时类异常**：对应 adapter 可能未启动或尚未就绪。查 `robot.<slot>.lifecycle()` 确认生命周期是否到 `Active`、`health()` 是否可用；机器人侧启动较慢时增大 `resolve_timeout_ms`。
 - **等待范围过大**：用 `robot.wait_ready(["left_arm", "io"])` 只等业务需要的槽位，避免被无关槽位拖住。
 - 不要在事件回调（SDK I/O 线程）里调用 `wait_ready` 等阻塞 API，否则抛 `ClientThreadError`。
@@ -63,14 +63,14 @@ with Robot.connect("127.0.0.1", 7557, options) as robot:
 
 ## Operation 失败
 
-长时任务（导航、机械臂轨迹等）返回的 Operation 不抛异常表示失败，失败体现在快照里。用法详见 [命令与长时操作](usage/commands-operations.md)。
+长时任务（导航、机械臂轨迹等）返回的 Operation 不抛异常表示失败，失败体现在快照里。用法详见 [命令与长时操作](./usage/basics/commands-operations.md)。
 
 排查步骤：
 
 1. 等到终态：`snapshot.terminal` 为 `True` 后状态不再推进；终态为 `Succeeded` / `Failed` / `Canceled` / `Timeout` 之一。
 2. 取失败原因：`Failed` / `Timeout` 时读 `snapshot.error`（`FabotError`），看 `code` / `retryable` / `trace_id`；进度描述看 `snapshot.feedback.status_message`；终态结果看 `snapshot.result`。
 3. 按类别处理：`retryable == True` 的可重试；`Canceled` 说明任务被取消（`cancel()` 是尽力而为，已进入执行段的任务由服务端决定是否可中断）；`ResourceConflict` 说明资源被占用——策略为 `queue` 的资源会排队，策略为 `reject` 的会直接拒绝。
-4. 需要进一步定位时，用 `snapshot.error.trace_id` 关联机器人侧日志（`robot.logs.history()` / `robot.logs.subscribe()` 的 `LogRecord` 带 `trace_id`），见 [日志、指标与可观测性](usage/observability.md)。
+4. 需要进一步定位时，用 `snapshot.error.trace_id` 关联机器人侧日志（`robot.logs.history()` / `robot.logs.subscribe()` 的 `LogRecord` 带 `trace_id`），见 [日志、指标与可观测性](./usage/diagnostics/observability.md)。
 
 ```python
 from fabot.core import OperationState
@@ -92,7 +92,7 @@ for snap in op.events(poll_timeout_ms=200, timeout_ms=30000):
 
 ## 急停后恢复
 
-急停是整机闩锁：触发后 `robot.state().mode` 进入 `RobotMode.Estopped`。确认现场安全后按以下步骤恢复（API 详见 [Robot 入口](reference/python/robot.md) 的 estop 一节）：
+急停是整机闩锁：触发后 `robot.state().mode` 进入 `RobotMode.Estopped`。确认现场安全后按以下步骤恢复（API 详见 [Robot 入口](./reference/python/robot.md) 的 estop 一节）：
 
 1. 确认触发状态与来源：`robot.estop.state()` 返回 `EstopState`（`asserted` / `reason` / `source_id`）；`robot.state().is_estopped` 为 `True`。急停变化也可通过 `robot.events.estop_changed` 订阅。
 2. 解除闩锁：确认现场安全后调用 `robot.estop.release(reason="...")`。
@@ -118,7 +118,7 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 
 ## 坐标系查询失败
 
-`robot.frames.lookup()` 抛 `FrameError` 的子类时，按类型区分原因（详见 [坐标系与变换](usage/frames.md)）：
+`robot.frames.lookup()` 抛 `FrameError` 的子类时，按类型区分原因（详见 [坐标系与变换](./usage/data/frames.md)）：
 
 | 异常 | 原因 | 处理 |
 |------|------|------|
@@ -151,9 +151,9 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 
 ## 电机 / 底盘 / 相机的码去哪里查
 
-按诊断码的高位定位域与模块，见 [诊断码参考](reference/python/error-codes.md)。查文案用 `Catalogs.format_error()` / `format_fault()`；查不到说明 SDK 比平台旧。
+按诊断码的高位定位域与模块，见 [诊断码参考](./reference/python/error-codes.md)。查文案用 `Catalogs.format_error()` / `format_fault()`；查不到说明 SDK 比平台旧。
 
 ## 多线程与断线
 
-- 回调里调用阻塞 API 会抛 `ClientThreadError`；线程模型与推荐写法见 [并发、线程与安全](usage/concurrency-and-safety.md)。
+- 回调里调用阻塞 API 会抛 `ClientThreadError`；线程模型与推荐写法见 [并发、线程与安全](./usage/basics/concurrency-and-safety.md)。
 - 断线后 `SubscriptionToken` 与 Channel 不再保证有效，需要重建；`Robot` 不支持重连，见同一页的「断线与重连」。

@@ -77,6 +77,6 @@ for chip in robot.io.chips().chips:
 Notes:
 
 - Repeating `acquire` on the same line with the same direction is idempotent and does not rewrite the level already driven; changing direction requires `release` first.
-- Calling `set_level` / `get_level` on a line that is not acquired raises `FabotError` (`NotSupported`) rather than returning a response with `outcome.success == False`. Use `try/except` to tell "rejected" from "failed"; see [Error Handling](../../usage/errors.md).
+- Calling `set_level` / `get_level` on a line that is not acquired raises `FabotError` (`NotSupported`) rather than returning a response with `outcome.success == False`. Use `try/except` to tell "rejected" from "failed"; see [Error Handling](../../usage/diagnostics/errors.md).
 - `PinDirection.UNKNOWN` is not a legal command value and is rejected.
 - `chip` matches the label first; chips without a label are addressed by device name such as `gpiochipN`. The line number is an **offset inside the chip**, not a global pin number, and `17` / `18` above are examples only.

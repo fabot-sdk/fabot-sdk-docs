@@ -14,7 +14,7 @@ updated: 2026-11-16
 - Voice hardware capability: status and volume, wake word, microphone capture and speaker playback, all stream-oriented.
 - Capture uses `listen` plus the `capture()` channel; playback uses `play_audio` or `begin_playback` with `write_audio` and the `playback()` channel.
 
-Semantic features (transcripts, intents, speech synthesis) live in the `robot.skills.voice_aiui` skill, not this module; see [Skills & Extensions](../../usage/skills.md).
+Semantic features (transcripts, intents, speech synthesis) live in the `robot.skills.voice_aiui` skill, not this module; see [Skills & Extensions](../../usage/configuration/skills.md).
 
 ## API Overview
 
@@ -38,7 +38,7 @@ Semantic features (transcripts, intents, speech synthesis) live in the `robot.sk
 | `fault_changed` | Event | Fault set changed; payload is `Faults`. |
 | `lifecycle_changed` | Event | Lifecycle changed; payload is `CapabilityLifecycleSnapshot`. |
 
-Commands return their response synchronously, and `timeout_ms` can be overridden per call; Operations return a handle immediately, with progress and results read from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
+Commands return their response synchronously, and `timeout_ms` can be overridden per call; Operations return a handle immediately, with progress and results read from snapshots. See [Commands & Operations](../../usage/basics/commands-operations.md).
 
 Enums used on this page:
 
@@ -324,7 +324,7 @@ Returns a `PlayAudioOperation` handle with `id` / `get()` / `wait()` / `cancel()
 
 ## Channels
 
-Opening a channel takes a lease and returns a handle: iterate with `frames()`, take one sample with `next()`, renew with `renew()`, release with `close()`. See [Events & Data Channels](../../usage/events-channels.md).
+Opening a channel takes a lease and returns a handle: iterate with `frames()`, take one sample with `next()`, renew with `renew()`, release with `close()`. See [Events & Data Channels](../../usage/data/events-channels.md).
 
 ### wake()
 
@@ -402,7 +402,7 @@ Query with `robot.<slot>.faults()`, which returns `Faults` (`revision` plus `rec
 | `severity` | `int` | Severity, aligned with `HealthState` |
 | `timestamp_us` | `int` | Latest timestamp in microseconds |
 
-For human-readable fault text use `Catalogs.format_fault(record)`; see [Catalogs](../../usage/catalogs.md).
+For human-readable fault text use `Catalogs.format_fault(record)`; see [Catalogs](../../usage/diagnostics/catalogs.md).
 
 ## Status
 
@@ -417,7 +417,7 @@ Shared read-only queries:
 - `health()`: `SlotHealth` (`is_usable` / `lifecycle` / `health` / `standing_faults` / `pbit_completed` / `source_instance_id`)
 - `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `pbit_completed` / `source_instance_id`)
 
-Changes arrive through `lifecycle_changed`; see [Status, Faults & Lifecycle](../../usage/status-faults.md).
+Changes arrive through `lifecycle_changed`; see [Status, Faults & Lifecycle](../../usage/data/status-faults.md).
 
 ## Resources
 

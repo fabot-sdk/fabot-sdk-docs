@@ -15,7 +15,7 @@ updated: 2026-11-17
 - Check groups with `get_sync_groups()`, then grab one set with `capture_synced()` or subscribe to `synced_frames()` for a continuous stream.
 - The skill has no Operations: `capture_synced` is a short Command and occupies no resources.
 
-Common members (`is_available` / `handle` / `events` / `health()` / `faults()` / `ping()` / `self_check()` and config access) are in the [Skills Overview](index.md).
+Common members (`is_available` / `handle` / `events` / `health()` / `faults()` / `ping()` / `self_check()` and config access) are in the [Skills Overview](./index.md).
 
 ## API Overview
 
@@ -161,7 +161,7 @@ These enums and `StreamKind` all carry `UNKNOWN` for "not reported".
 
 ## Channels
 
-Opening a channel establishes a lease and returns a handle; iterate with `frames()`, take one frame with `next()`, extend with `renew()`, release with `close()`. General usage is in [Events & Data Channels](../../../usage/events-channels.md).
+Opening a channel establishes a lease and returns a handle; iterate with `frames()`, take one frame with `next()`, extend with `renew()`, release with `close()`. General usage is in [Events & Data Channels](../../../usage/data/events-channels.md).
 
 ### synced_frames
 
@@ -227,7 +227,7 @@ token.close()
 
 For human-readable text use `Catalogs.format_fault(record)`, see [Catalogs](../catalogs.md).
 
-Two typical capture failures: `capture_synced` raises `Timeout` when it cannot assemble a set in time; when frames fail to leave shared memory and the inline retry also fails, it raises a frame transport error (the `FrameError` family) — setting `transport_hint` to `INLINE_REQUIRED` explicitly bypasses shared memory. See [Error Handling](../../../usage/errors.md).
+Two typical capture failures: `capture_synced` raises `Timeout` when it cannot assemble a set in time; when frames fail to leave shared memory and the inline retry also fails, it raises a frame transport error (the `FrameError` family) — setting `transport_hint` to `INLINE_REQUIRED` explicitly bypasses shared memory. See [Error Handling](../../../usage/diagnostics/errors.md).
 
 ## Status
 
@@ -297,7 +297,7 @@ Read legal enum values from `CameraSyncConfig.field_options()` rather than hard-
 
 ## Related
 
-- Skill concepts and availability checks: [Skills & Extensions](../../../usage/skills.md)
+- Skill concepts and availability checks: [Skills & Extensions](../../../usage/configuration/skills.md)
 - Camera hardware and streams: [Camera](../camera.md)
-- Config-domain access: [Configuration](../../../usage/configuration.md)
-- Commands and timeouts: [Commands & Operations](../../../usage/commands-operations.md)
+- Config-domain access: [Configuration](../../../usage/configuration/configuration.md)
+- Commands and timeouts: [Commands & Operations](../../../usage/basics/commands-operations.md)

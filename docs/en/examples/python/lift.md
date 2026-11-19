@@ -46,7 +46,7 @@ if robot.lift.has_adapter:
     print(outcome.success, outcome.status_message)
 ```
 
-`move_height` returns an Operation: `get()` pulls one snapshot, `wait()` blocks for the terminal state, `cancel()` makes a best-effort cancel. See [Commands and long-running operations](../../usage/commands-operations.md). `has_adapter` only says the slot has an adapter bound.
+`move_height` returns an Operation: `get()` pulls one snapshot, `wait()` blocks for the terminal state, `cancel()` makes a best-effort cancel. See [Commands and long-running operations](../../usage/basics/commands-operations.md). `has_adapter` only says the slot has an adapter bound.
 
 ## Relative moves and speed limits
 
@@ -67,7 +67,7 @@ for target in stream_from_your_source():
 ```
 
 :::warning The servo does not stop by itself
-Each `servo_height()` call sends one target. You must call `stop()` when you are done; a dropped connection does not guarantee the lift stops. See [Servo and safety](../../usage/concurrency-and-safety.md).
+Each `servo_height()` call sends one target. You must call `stop()` when you are done; a dropped connection does not guarantee the lift stops. See [Servo and safety](../../usage/basics/concurrency-and-safety.md).
 :::
 
 ## Read the height stream

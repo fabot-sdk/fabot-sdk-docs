@@ -7,7 +7,7 @@ updated: 2026-11-16
 
 # Changelog
 
-User-visible changes listed in reverse version order. Each release pairs with the robot platform of the same version number; the newest is the pre-release `1.1.0-alpha.1`. Version semantics and upgrade steps are in [Version Compatibility](install/compatibility.md).
+User-visible changes listed in reverse version order. Each release pairs with the robot platform of the same version number; the newest is the pre-release `1.1.0-alpha.1`. Version semantics and upgrade steps are in [Version Compatibility](./getting-started/install/compatibility.md).
 
 The version dropdown in the top bar switches the documentation for each version; the changelog of a historical version only lists entries up to that version.
 
@@ -17,20 +17,20 @@ The version dropdown in the top bar switches the documentation for each version;
 
 ### Added
 
-- Logs: `robot.logs.history()` for persisted history (`limit` / `slot` / `unit` filters), `robot.logs.emit()` / `debug` / `info` / `warn` / `error` for custom records, and `robot.logs.freeze()` to freeze the flight recorder — see [Logs, Metrics & Observability](usage/observability.md).
+- Logs: `robot.logs.history()` for persisted history (`limit` / `slot` / `unit` filters), `robot.logs.emit()` / `debug` / `info` / `warn` / `error` for custom records, and `robot.logs.freeze()` to freeze the flight recorder — see [Logs, Metrics & Observability](./usage/diagnostics/observability.md).
 - Metrics: the new `robot.metrics` entry — `subscribe()`, `snapshot()` for the SDK's own counters, `records()` to project them into `MetricRecord`s, and `gauge` / `counter` / `histogram` for custom metrics.
-- Frames: `robot.frames` (a `FrameSystem`) with `lookup` / `transform` / `transform_points` / `lookup_full` / `scoped_frame`, plus `Transform3d` algebra and pixel geometry helpers, with no ROS dependency — see [Frames & Transforms](usage/frames.md).
+- Frames: `robot.frames` (a `FrameSystem`) with `lookup` / `transform` / `transform_points` / `lookup_full` / `scoped_frame`, plus `Transform3d` algebra and pixel geometry helpers, with no ROS dependency — see [Frames & Transforms](./usage/data/frames.md).
 - Events: `robot.events.emit()` publishes custom events; `robot.events.subscribe()` accepts `name` / `slot` filters.
-- Skills: new `robot.skills.camera_sync` (multi-camera time pairing) and `robot.skills.voice_aiui` (transcripts, intents and synthesized speech) — see [Skills & Extensions](usage/skills.md).
+- Skills: new `robot.skills.camera_sync` (multi-camera time pairing) and `robot.skills.voice_aiui` (transcripts, intents and synthesized speech) — see [Skills & Extensions](./usage/configuration/skills.md).
 - Telemetry: `robot.ping()` probes runtime round-trip latency, and every slot proxy exposes the same method.
-- Lift: new `lift` capability (`robot.lift`) — height read/write, absolute and relative moves, homing, servo and a height stream, see [Lift](reference/python/lift.md).
-- Observability store: new `robot.obs.store()` to inspect the collector's quota, per-directory usage and freeze files, see [Logs, Metrics & Observability](usage/observability.md).
-- Runtime environment: new `robot.environments.ros2` (domain id / communication settings, config only), see [Platform Services](usage/services.md).
-- Platform services: new `robot.services.ros2` (ROS 2 graph access) and `robot.services.obs_collector` (observability collection), see [Platform Services](usage/services.md).
+- Lift: new `lift` capability (`robot.lift`) — height read/write, absolute and relative moves, homing, servo and a height stream, see [Lift](./reference/python/lift.md).
+- Observability store: new `robot.obs.store()` to inspect the collector's quota, per-directory usage and freeze files, see [Logs, Metrics & Observability](./usage/diagnostics/observability.md).
+- Runtime environment: new `robot.environments.ros2` (domain id / communication settings, config only), see [Platform Services](./usage/configuration/services.md).
+- Platform services: new `robot.services.ros2` (ROS 2 graph access) and `robot.services.obs_collector` (observability collection), see [Platform Services](./usage/configuration/services.md).
 - Chassis: new `stop()` (platform-side braking) and `get_odometer()` (accumulated travel).
 - Voice: new `configure_wakeword()` to set the wake phrase and threshold.
 - Camera: new `perf_frame_shm()` to time the shared-memory frame path with a synthetic frame.
-- Docs: new [Diagnostic Codes](reference/python/error-codes.md), [Concurrency, Threading and Safety](usage/concurrency-and-safety.md), [Time Bases and Coordinate Conventions](usage/conventions.md) and [Migrating from 1.0.x to 1.1.0](usage/migration-1.0-to-1.1.md).
+- Docs: new [Diagnostic Codes](./reference/python/error-codes.md), [Concurrency, Threading and Safety](./usage/basics/concurrency-and-safety.md), [Time Bases and Coordinate Conventions](./usage/basics/conventions.md) and [Migrating from 1.0.x to 1.1.0](./usage/testing/migration-1.0-to-1.1.md).
 
 ### Changed
 
@@ -58,9 +58,9 @@ The version dropdown in the top bar switches the documentation for each version;
 
 ### Added
 
-- Camera: new `get_intrinsics()`, returning the color and depth intrinsics (K and distortion, no extrinsics) — see [Camera](reference/python/camera.md).
-- Slots: new `robot.waist_camera`; camera slots go from 4 to 5 and total robot slots from 22 to 23 — see [Robot Entry](reference/python/robot.md#slots).
-- Services: new `robot.services.orbbec_sdk_ros2` (Orbbec ROS camera backend, not started by default) — see [Platform Services](usage/services.md).
+- Camera: new `get_intrinsics()`, returning the color and depth intrinsics (K and distortion, no extrinsics) — see [Camera](./reference/python/camera.md).
+- Slots: new `robot.waist_camera`; camera slots go from 4 to 5 and total robot slots from 22 to 23 — see [Robot Entry](./reference/python/robot.md#slots).
+- Services: new `robot.services.orbbec_sdk_ros2` (Orbbec ROS camera backend, not started by default) — see [Platform Services](./usage/configuration/services.md).
 
 ### Compatibility
 
@@ -71,12 +71,12 @@ The version dropdown in the top bar switches the documentation for each version;
 2026-09-21 · Runtime fix only
 
 - No changes to the public SDK interfaces; the robot side isolates its runtime libraries so they no longer conflict with other versions of the communication library on the system.
-- Upgrading the SDK to 1.0.1 is still recommended so both ends share the same version — see [Version Compatibility](install/compatibility.md).
+- Upgrading the SDK to 1.0.1 is still recommended so both ends share the same version — see [Version Compatibility](./getting-started/install/compatibility.md).
 
 ## 1.0.0
 
 2026-09-17 · First stable release
 
 - First published `fabot-sdk` (import name `fabot`): 16 capability modules, 22 slots, `fabot/v1` interfaces, Python ≥ 3.12 required.
-- Runtime dependencies are pinned to exact versions; see the dependency table in [Installing the Python SDK](install/python.md).
-- Starting from scratch? Read [Your First Program (Python)](tutorials/python.md) first.
+- Runtime dependencies are pinned to exact versions; see the dependency table in [Installing the Python SDK](./getting-started/install/python.md).
+- Starting from scratch? Read [Your First Program (Python)](./getting-started/quickstart.md) first.

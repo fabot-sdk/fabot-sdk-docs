@@ -31,7 +31,7 @@ The data types reused across capability requests and responses live in `fabot.ty
 `fabot.types.Transform3d` is the wire-level table object (fields only); the algebra (`compose()`, `inverse()`, `from_euler()`, `identity()`, …) lives on `fabot.frames.Transform3d`, which is also re-exported at the `fabot` top level. Use the latter for coordinate maths.
 :::
 
-`Pose3d` also carries conveniences: `position` / `quaternion` / `euler_rpy` / `to_matrix()` / `to_transform()` plus `from_euler()` / `from_matrix()` constructors. Full `Transform3d` algebra is in [Frames & Transforms](../../usage/frames.md).
+`Pose3d` also carries conveniences: `position` / `quaternion` / `euler_rpy` / `to_matrix()` / `to_transform()` plus `from_euler()` / `from_matrix()` constructors. Full `Transform3d` algebra is in [Frames & Transforms](../../usage/data/frames.md).
 
 ## Joints and containers
 
@@ -64,14 +64,14 @@ The wire format requires every root type to be a table, so a single scalar needs
 
 | Type | Description |
 |------|-------------|
-| `RobotState` / `RobotMode` / `HealthState` / `LifecycleState` | Robot state and health, see [Status, Faults & Lifecycle](../../usage/status-faults.md) |
+| `RobotState` / `RobotMode` / `HealthState` / `LifecycleState` | Robot state and health, see [Status, Faults & Lifecycle](../../usage/data/status-faults.md) |
 | `OperationState` / `OperationSnapshot` | Operation state and snapshots |
-| `LogLevel` / `LogRecord` / `LogIdentity` | Logs, see [Logs, Metrics & Observability](../../usage/observability.md) |
+| `LogLevel` / `LogRecord` / `LogIdentity` | Logs, see [Logs, Metrics & Observability](../../usage/diagnostics/observability.md) |
 | `MetricType` / `MetricRecord` / `MetricValue` / `MetricIdentity` / `SdkMetricSnapshot` | Metrics |
 | `FreezeRequest` / `ObsStore` / `ObsDirectory` / `ObsFreeze` | Freeze requests and the robot-side observability store snapshot |
 | `PingReport` / `PingSample` (`fabot.core.types`) | Round-trip probe results; `fabot.core` does not re-export these names |
 | `QosProfile` / `SubscribeOptions` / `ChannelDescriptor` / `ChannelFrame` | Channel subscription |
-| `ClientConfig` / `ClientOptions` / `CallOptions` | Client options, see [Connection & Robot Entry](../../usage/connection.md) |
+| `ClientConfig` / `ClientOptions` / `CallOptions` | Client options, see [Connection & Robot Entry](../../usage/basics/connection.md) |
 | `ConfigState` / `SlotRuntime` / `ServiceState` | Config and service state |
 
 ## Capability-specific types
@@ -82,13 +82,13 @@ Each capability defines its own request / response tables under `fabot.capabilit
 
 | Enum | Values | Page |
 |------|--------|------|
-| `PinDirection` | `INPUT` / `OUTPUT` | [IO](io.md) |
-| `LightMode` | `OFF` / `SOLID` / `BLINK` / `BREATHE` / `RAINBOW` / `CHASE` | [Light](light.md) |
-| `ChassisMode` / `NavigationMode` / `ChassisStage` | see page | [Chassis](chassis.md) |
-| `ArmsMode` / `ImpedanceMode` | `INDEPENDENT` / `COUPLED`, `DISABLED` / `LOW` / `HIGH` | [Arms](arms.md) |
-| `BodyMode` / `HeadMode` | see pages | [Body](body.md) / [Head](head.md) |
-| `MotionMode` / `HomePose` / `SupportStatus` | see page | [Motion](motion.md) |
-| `StreamKind` / `PixelFormat` / `RegistrationMode` / `FrameTransportHint` | see page | [Camera](camera.md) |
-| `CaptureEnd` / `PlaybackState` | see page | [Voice](voice.md) |
+| `PinDirection` | `INPUT` / `OUTPUT` | [IO](./io.md) |
+| `LightMode` | `OFF` / `SOLID` / `BLINK` / `BREATHE` / `RAINBOW` / `CHASE` | [Light](./light.md) |
+| `ChassisMode` / `NavigationMode` / `ChassisStage` | see page | [Chassis](./chassis.md) |
+| `ArmsMode` / `ImpedanceMode` | `INDEPENDENT` / `COUPLED`, `DISABLED` / `LOW` / `HIGH` | [Arms](./arms.md) |
+| `BodyMode` / `HeadMode` | see pages | [Body](./body.md) / [Head](./head.md) |
+| `MotionMode` / `HomePose` / `SupportStatus` | see page | [Motion](./motion.md) |
+| `StreamKind` / `PixelFormat` / `RegistrationMode` / `FrameTransportHint` | see page | [Camera](./camera.md) |
+| `CaptureEnd` / `PlaybackState` | see page | [Voice](./voice.md) |
 
 Enum values are integer constants defined in the capability `types` module; some also expose name constants, and they compare directly against integers.

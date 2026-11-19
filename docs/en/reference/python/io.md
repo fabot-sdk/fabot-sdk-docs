@@ -29,7 +29,7 @@ updated: 2026-11-17
 | `fault_changed` | Event | Fault set changed; payload is `Faults`. |
 | `lifecycle_changed` | Event | Lifecycle changed; payload is `CapabilityLifecycleSnapshot`. |
 
-Commands return their response synchronously, and `timeout_ms` can be overridden per call; Operations return a handle immediately, with progress and results read from snapshots. See [Commands & Operations](../../usage/commands-operations.md).
+Commands return their response synchronously, and `timeout_ms` can be overridden per call; Operations return a handle immediately, with progress and results read from snapshots. See [Commands & Operations](../../usage/basics/commands-operations.md).
 
 Enums used on this page:
 
@@ -211,7 +211,7 @@ for chip in robot.io.chips().chips:
 
 ## Channels
 
-This module has no data channels. See [Events & Data Channels](../../usage/events-channels.md).
+This module has no data channels. See [Events & Data Channels](../../usage/data/events-channels.md).
 
 ## Events
 
@@ -245,7 +245,7 @@ Failures in this module raise `FabotError` directly; they never come back as a r
 
 A successful `acquire` clears the request / busy / permission faults left by an earlier failure.
 
-For human-readable fault text use `Catalogs.format_fault(record)`; see [Catalogs](../../usage/catalogs.md).
+For human-readable fault text use `Catalogs.format_fault(record)`; see [Catalogs](../../usage/diagnostics/catalogs.md).
 
 ## Status
 
@@ -256,7 +256,7 @@ Shared read-only queries:
 - `health()`: `SlotHealth` (`is_usable` / `lifecycle` / `health` / `standing_faults` / `pbit_completed` / `source_instance_id`)
 - `lifecycle()`: `CapabilityLifecycleSnapshot` (`lifecycle` / `health` / `pbit_completed` / `source_instance_id`)
 
-Changes arrive through `lifecycle_changed`; see [Status, Faults & Lifecycle](../../usage/status-faults.md).
+Changes arrive through `lifecycle_changed`; see [Status, Faults & Lifecycle](../../usage/data/status-faults.md).
 
 ## Resources
 

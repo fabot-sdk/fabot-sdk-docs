@@ -7,7 +7,7 @@ updated: 2026-11-17
 
 # Arms example
 
-Move both arms together by joint angles or end-effector poses, switch coupling and impedance modes, and subscribe to joint streams. The long-running task model is in [Commands & Operations](../../usage/commands-operations.md), channels in [Events & Data Channels](../../usage/events-channels.md), and the API in [Arms](../../reference/python/arms.md).
+Move both arms together by joint angles or end-effector poses, switch coupling and impedance modes, and subscribe to joint streams. The long-running task model is in [Commands & Operations](../../usage/basics/commands-operations.md), channels in [Events & Data Channels](../../usage/data/events-channels.md), and the API in [Arms](../../reference/python/arms.md).
 
 ## Move joints to target angles
 

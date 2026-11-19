@@ -25,12 +25,12 @@
     "type": "dir",
     "name": "skills",
     "label": "技能",
-    "collapsed": false
+    "collapsed": true
   },
   {
     "type": "dir",
     "name": "services",
     "label": "平台服务",
-    "collapsed": false
+    "collapsed": true
   }
 ]

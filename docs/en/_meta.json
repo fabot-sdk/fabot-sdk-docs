@@ -5,39 +5,89 @@
     "label": "home"
   },
   {
+    "type": "section-header",
+    "label": "gettingStarted"
+  },
+  {
     "type": "file",
-    "name": "overview",
+    "name": "getting-started/overview",
     "label": "overview"
   },
   {
-    "type": "dir-section-header",
-    "name": "install",
-    "label": "install"
+    "type": "dir",
+    "name": "getting-started/install",
+    "label": "install",
+    "collapsed": true
   },
   {
-    "type": "dir-section-header",
-    "name": "tutorials",
+    "type": "file",
+    "name": "getting-started/quickstart",
     "label": "quickStart"
   },
   {
-    "type": "dir-section-header",
-    "name": "usage",
-    "label": "usage"
+    "type": "section-header",
+    "label": "sections"
   },
   {
-    "type": "dir-section-header",
-    "name": "examples",
-    "label": "pythonExamples"
+    "type": "file",
+    "name": "usage/index",
+    "label": "usageSections"
   },
   {
-    "type": "dir-section-header",
-    "name": "reference",
-    "label": "pythonApi"
+    "type": "dir",
+    "name": "usage/basics",
+    "label": "basics",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "usage/data",
+    "label": "data",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "usage/diagnostics",
+    "label": "diagnostics",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "usage/configuration",
+    "label": "configurationChapter",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "usage/testing",
+    "label": "testing",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "examples/python",
+    "label": "pythonExamples",
+    "collapsed": true
+  },
+  {
+    "type": "file",
+    "name": "usage/testing/robot-system",
+    "label": "robotSystem"
   },
   {
     "type": "file",
     "name": "troubleshooting",
     "label": "troubleshooting"
+  },
+  {
+    "type": "section-header",
+    "label": "reference"
+  },
+  {
+    "type": "dir",
+    "name": "reference/python",
+    "label": "pythonApi",
+    "collapsed": true
   },
   {
     "type": "file",
