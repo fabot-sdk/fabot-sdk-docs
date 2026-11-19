@@ -2,7 +2,7 @@
 title: Lift
 status: draft
 owner: fabot-core
-updated: 2026-11-17
+updated: 2026-11-19
 ---
 
 # Lift
@@ -138,22 +138,26 @@ set_height_zero(*, timeout_ms: int = 2000) -> Outcome
 Absolute height move.
 
 ```python
-move_height(target: float, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveHeightOperation
+move_height(target: float, *, tolerance: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0, duration: float = 0.0) -> MoveHeightOperation
 ```
 
 | Name | Type | Default | Description |
 |------|------|---------|-------------|
 | `target` | `float` | (required) | Target height, metres |
 | `tolerance` | `float` | `0.0` | Arrival tolerance (m); `0` keeps the controller default |
-| `duration` | `float` | `0.0` | Desired motion duration (s); `0` keeps the controller default |
-| `wait_timeout` | `float` | `0.0` | Extra arrival-wait budget on top of `duration`; `0` uses `default_wait_timeout_s` (15 s in the template) |
+| `wait_timeout` | `float` | `0.0` | Total wait budget for this move in seconds; `0` uses `default_wait_timeout_s` (15 s in the template) |
+| `mode` | `TimingMode` | `DEFAULT` | Timing mode: `DEFAULT` keeps slot defaults, `DURATION` uses `duration`, `VELOCITY` solves from the velocity constraints |
+| `velocity` | `float` | `0.0` | Velocity constraint, required > 0 with `mode=VELOCITY`; m/s |
+| `acceleration` | `float` | `0.0` | Acceleration constraint (optional with `mode=VELOCITY`); m/s² |
+| `jerk` | `float` | `0.0` | Jerk constraint (optional with `mode=VELOCITY`) |
+| `duration` | `float` | `0.0` | Total duration (s); required > 0 with `mode=DURATION`, ignored otherwise |
 
 ### move_height_relative
 
 Move by a delta from the current height.
 
 ```python
-move_height_relative(target: float, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveHeightRelativeOperation
+move_height_relative(target: float, *, tolerance: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0, duration: float = 0.0) -> MoveHeightRelativeOperation
 ```
 
 `target` is the delta: positive goes up, negative goes down.
@@ -163,7 +167,7 @@ move_height_relative(target: float, *, tolerance: float = 0.0, duration: float =
 Homing move. On success `LiftState.homed` becomes `True`.
 
 ```python
-move_home(*, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveHomeOperation
+move_home(*, tolerance: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0, duration: float = 0.0) -> MoveHomeOperation
 ```
 
 ```python

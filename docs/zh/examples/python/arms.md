@@ -2,7 +2,7 @@
 title: 双臂示例
 status: draft
 owner: fabot-core
-updated: 2026-11-17
+updated: 2026-11-19
 ---
 
 # 双臂示例
@@ -18,6 +18,7 @@ from fabot import Robot
 from fabot.capabilities.arms import DualJoints
 from fabot.core import OperationState
 from fabot.types import JointPositions
+from fabot.types.TimingMode import TimingMode
 
 with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["arms"])
@@ -29,6 +30,7 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 
     op = robot.arms.move_joint(
         DualJoints(left=JointPositions(positions=left), right=JointPositions(positions=right)),
+        mode=TimingMode.DURATION,
         duration=3.0,
     )
     for snap in op.events(poll_timeout_ms=200, timeout_ms=30000):

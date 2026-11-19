@@ -2,7 +2,7 @@
 title: 升降柱 Lift
 status: draft
 owner: fabot-core
-updated: 2026-11-17
+updated: 2026-11-19
 ---
 
 # 升降柱 Lift
@@ -138,22 +138,26 @@ set_height_zero(*, timeout_ms: int = 2000) -> Outcome
 绝对高度运动。
 
 ```python
-move_height(target: float, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveHeightOperation
+move_height(target: float, *, tolerance: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0, duration: float = 0.0) -> MoveHeightOperation
 ```
 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
 | `target` | `float` | （必填） | 目标高度，米 |
 | `tolerance` | `float` | `0.0` | 到位容差（米）；`0` 表示沿用控制器缺省 |
-| `duration` | `float` | `0.0` | 期望运动时长（秒）；`0` 表示沿用控制器缺省 |
-| `wait_timeout` | `float` | `0.0` | 在运动时长之外额外等待到位的上限；`0` 表示沿用 `default_wait_timeout_s`（模板 15 秒） |
+| `wait_timeout` | `float` | `0.0` | 本次运动的总等待预算（秒）；`0` 表示沿用 `default_wait_timeout_s`（模板 15 秒） |
+| `mode` | `TimingMode` | `DEFAULT` | 时长模式：`DEFAULT` 沿用缺省，`DURATION` 用 `duration`，`VELOCITY` 按速度约束求解 |
+| `velocity` | `float` | `0.0` | 速度约束，`mode=VELOCITY` 时必须 > 0；米/秒 |
+| `acceleration` | `float` | `0.0` | 加速度约束（`mode=VELOCITY` 可选）；米/秒² |
+| `jerk` | `float` | `0.0` | 加加速度约束（`mode=VELOCITY` 可选） |
+| `duration` | `float` | `0.0` | 总时长（秒），`mode=DURATION` 时必须 > 0，其余模式忽略 |
 
 ### move_height_relative
 
 相对当前高度的增量运动。
 
 ```python
-move_height_relative(target: float, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveHeightRelativeOperation
+move_height_relative(target: float, *, tolerance: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0, duration: float = 0.0) -> MoveHeightRelativeOperation
 ```
 
 `target` 为增量，向上为正、向下为负。
@@ -163,7 +167,7 @@ move_height_relative(target: float, *, tolerance: float = 0.0, duration: float =
 回零运动。成功后 `LiftState.homed` 为 `True`。
 
 ```python
-move_home(*, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveHomeOperation
+move_home(*, tolerance: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0, duration: float = 0.0) -> MoveHomeOperation
 ```
 
 ```python

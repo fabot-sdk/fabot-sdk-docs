@@ -2,7 +2,7 @@
 title: Body
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-19
 ---
 
 # Body
@@ -475,14 +475,14 @@ get_arrival_thresholds(*, timeout_ms: int = 1000) -> ArrivalThresholds
 | Field | Type | Description |
 |------|------|------|
 | `joint_tolerance` | `float` | Joint arrival tolerance in radians; must be finite and positive |
-| `max_timeout_s` | `float` | Extra arrival budget in seconds added to the motion duration |
+| `wait_timeout` | `float` | Extra arrival budget in seconds added to the motion duration |
 
 ### set_arrival_thresholds
 
 Replace the arrival thresholds for this slot. The change is in-memory only and applies to later motions.
 
 ```python
-set_arrival_thresholds(*, joint_tolerance: float = 0.02, max_timeout_s: float = 5.0, timeout_ms: int = 1000) -> ArrivalThresholds
+set_arrival_thresholds(*, joint_tolerance: float = 0.02, wait_timeout: float = 5.0, timeout_ms: int = 1000) -> ArrivalThresholds
 ```
 
 **Parameters**
@@ -490,7 +490,7 @@ set_arrival_thresholds(*, joint_tolerance: float = 0.02, max_timeout_s: float = 
 | Name | Type | Default | Description |
 |------|------|------|------|
 | `joint_tolerance` | `float` | `0.02` | Joint arrival tolerance in radians |
-| `max_timeout_s` | `float` | `5.0` | Extra arrival budget in seconds |
+| `wait_timeout` | `float` | `5.0` | Extra arrival budget in seconds |
 | `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
 **Returns** `ArrivalThresholds`
@@ -498,14 +498,14 @@ set_arrival_thresholds(*, joint_tolerance: float = 0.02, max_timeout_s: float = 
 | Field | Type | Description |
 |------|------|------|
 | `joint_tolerance` | `float` | Joint arrival tolerance in radians; must be finite and positive |
-| `max_timeout_s` | `float` | Extra arrival budget in seconds added to the motion duration |
+| `wait_timeout` | `float` | Extra arrival budget in seconds added to the motion duration |
 
 ### move_joint
 
 Joint-space motion. `tolerance` is the arrival tolerance, `duration` the requested time, `wait_timeout` the extra arrival wait; 0 uses the defaults.
 
 ```python
-move_joint(target: JointPositions, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveJointOperation
+move_joint(target: JointPositions, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0) -> MoveJointOperation
 ```
 
 **Parameters**
@@ -514,8 +514,12 @@ move_joint(target: JointPositions, *, tolerance: float = 0.0, duration: float = 
 |------|------|------|------|
 | `target` | `JointPositions` | (required) | Goal value |
 | `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
-| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `duration` | `float` | `0.0` | Total duration (s); required > 0 with `mode=DURATION`, ignored otherwise |
 | `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+| `mode` | `TimingMode` | `DEFAULT` | Timing mode: `DEFAULT` keeps slot defaults, `DURATION` uses `duration`, `VELOCITY` solves from the velocity constraints |
+| `velocity` | `float` | `0.0` | Velocity constraint, required > 0 with `mode=VELOCITY`; rad/s (m/s linear for pose moves) |
+| `acceleration` | `float` | `0.0` | Acceleration constraint (optional with `mode=VELOCITY`) |
+| `jerk` | `float` | `0.0` | Jerk constraint (optional with `mode=VELOCITY`) |
 
 Returns a `MoveJointOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
@@ -524,7 +528,7 @@ Returns a `MoveJointOperation` handle with `id` / `get()` / `wait()` / `cancel()
 Follow a joint waypoint sequence; at least two waypoints, the first reached from the current joints.
 
 ```python
-move_joint_path(waypoints: list[JointPositions], *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveJointPathOperation
+move_joint_path(waypoints: list[JointPositions], *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0) -> MoveJointPathOperation
 ```
 
 **Parameters**
@@ -533,8 +537,12 @@ move_joint_path(waypoints: list[JointPositions], *, tolerance: float = 0.0, dura
 |------|------|------|------|
 | `waypoints` | `list[JointPositions]` | (required) | Waypoints, at least two |
 | `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
-| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `duration` | `float` | `0.0` | Total duration (s); required > 0 with `mode=DURATION`, ignored otherwise |
 | `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+| `mode` | `TimingMode` | `DEFAULT` | Timing mode: `DEFAULT` keeps slot defaults, `DURATION` uses `duration`, `VELOCITY` solves from the velocity constraints |
+| `velocity` | `float` | `0.0` | Velocity constraint, required > 0 with `mode=VELOCITY`; rad/s (m/s linear for pose moves) |
+| `acceleration` | `float` | `0.0` | Acceleration constraint (optional with `mode=VELOCITY`) |
+| `jerk` | `float` | `0.0` | Jerk constraint (optional with `mode=VELOCITY`) |
 
 Returns a `MoveJointPathOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
@@ -543,7 +551,7 @@ Returns a `MoveJointPathOperation` handle with `id` / `get()` / `wait()` / `canc
 Absolute motion of the degenerate waist pose (`x` forward, `z` lift, `phi` pitch).
 
 ```python
-move_waist(target: WaistPose, *, position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveWaistOperation
+move_waist(target: WaistPose, *, position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0) -> MoveWaistOperation
 ```
 
 **Parameters**
@@ -553,15 +561,20 @@ move_waist(target: WaistPose, *, position_tolerance: float = 0.0, orientation_to
 | `target` | `WaistPose` | (required) | Goal value |
 | `position_tolerance` | `float` | `0.0` | Position tolerance in meters; 0 uses the slot default |
 | `orientation_tolerance` | `float` | `0.0` | Orientation tolerance; 0 uses the slot default |
-| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `duration` | `float` | `0.0` | Total duration (s); required > 0 with `mode=DURATION`, ignored otherwise |
 | `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+| `mode` | `TimingMode` | `DEFAULT` | Timing mode: `DEFAULT` keeps slot defaults, `DURATION` uses `duration`, `VELOCITY` solves from the velocity constraints |
+| `velocity` | `float` | `0.0` | Velocity constraint, required > 0 with `mode=VELOCITY`; rad/s (m/s linear for pose moves) |
+| `acceleration` | `float` | `0.0` | Acceleration constraint (optional with `mode=VELOCITY`) |
+| `jerk` | `float` | `0.0` | Jerk constraint (optional with `mode=VELOCITY`) |
 
 Returns a `MoveWaistOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
 ```python
 from fabot.capabilities.body import WaistPose
+from fabot.types.TimingMode import TimingMode
 
-op = robot.body.move_waist(WaistPose(x=0.05, z=0.10, phi=0.0), duration=3.0)
+op = robot.body.move_waist(WaistPose(x=0.05, z=0.10, phi=0.0), mode=TimingMode.DURATION, duration=3.0)
 op.wait(timeout=15.0)
 print(robot.body.get_pose().z)
 ```
@@ -571,7 +584,7 @@ print(robot.body.get_pose().z)
 Incremental motion of the degenerate waist pose.
 
 ```python
-move_waist_relative(target: WaistPose, *, position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveWaistRelativeOperation
+move_waist_relative(target: WaistPose, *, position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0) -> MoveWaistRelativeOperation
 ```
 
 **Parameters**
@@ -581,8 +594,12 @@ move_waist_relative(target: WaistPose, *, position_tolerance: float = 0.0, orien
 | `target` | `WaistPose` | (required) | Goal value |
 | `position_tolerance` | `float` | `0.0` | Position tolerance in meters; 0 uses the slot default |
 | `orientation_tolerance` | `float` | `0.0` | Orientation tolerance; 0 uses the slot default |
-| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `duration` | `float` | `0.0` | Total duration (s); required > 0 with `mode=DURATION`, ignored otherwise |
 | `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+| `mode` | `TimingMode` | `DEFAULT` | Timing mode: `DEFAULT` keeps slot defaults, `DURATION` uses `duration`, `VELOCITY` solves from the velocity constraints |
+| `velocity` | `float` | `0.0` | Velocity constraint, required > 0 with `mode=VELOCITY`; rad/s (m/s linear for pose moves) |
+| `acceleration` | `float` | `0.0` | Acceleration constraint (optional with `mode=VELOCITY`) |
+| `jerk` | `float` | `0.0` | Jerk constraint (optional with `mode=VELOCITY`) |
 
 Returns a `MoveWaistRelativeOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
@@ -591,7 +608,7 @@ Returns a `MoveWaistRelativeOperation` handle with `id` / `get()` / `wait()` / `
 Absolute end-effector motion. The reference frame comes from `target.frame_id` (empty uses the slot base); `end_frame` empty uses the active TCP or flange.
 
 ```python
-move_pose(target: Pose3d, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MovePoseOperation
+move_pose(target: Pose3d, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0) -> MovePoseOperation
 ```
 
 **Parameters**
@@ -602,8 +619,12 @@ move_pose(target: Pose3d, *, end_frame: str = "", position_tolerance: float = 0.
 | `end_frame` | `str` | `""` | Controlled end frame; empty means the active tool TCP, or the flange without a tool |
 | `position_tolerance` | `float` | `0.0` | Position tolerance in meters; 0 uses the slot default |
 | `orientation_tolerance` | `float` | `0.0` | Orientation tolerance; 0 uses the slot default |
-| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `duration` | `float` | `0.0` | Total duration (s); required > 0 with `mode=DURATION`, ignored otherwise |
 | `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+| `mode` | `TimingMode` | `DEFAULT` | Timing mode: `DEFAULT` keeps slot defaults, `DURATION` uses `duration`, `VELOCITY` solves from the velocity constraints |
+| `velocity` | `float` | `0.0` | Velocity constraint, required > 0 with `mode=VELOCITY`; rad/s (m/s linear for pose moves) |
+| `acceleration` | `float` | `0.0` | Acceleration constraint (optional with `mode=VELOCITY`) |
+| `jerk` | `float` | `0.0` | Jerk constraint (optional with `mode=VELOCITY`) |
 
 Returns a `MovePoseOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
@@ -612,7 +633,7 @@ Returns a `MovePoseOperation` handle with `id` / `get()` / `wait()` / `cancel()`
 Relative end-effector motion; `target` is an increment from the current pose.
 
 ```python
-move_pose_relative(target: Pose3d, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MovePoseRelativeOperation
+move_pose_relative(target: Pose3d, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0) -> MovePoseRelativeOperation
 ```
 
 **Parameters**
@@ -623,8 +644,12 @@ move_pose_relative(target: Pose3d, *, end_frame: str = "", position_tolerance: f
 | `end_frame` | `str` | `""` | Controlled end frame; empty means the active tool TCP, or the flange without a tool |
 | `position_tolerance` | `float` | `0.0` | Position tolerance in meters; 0 uses the slot default |
 | `orientation_tolerance` | `float` | `0.0` | Orientation tolerance; 0 uses the slot default |
-| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `duration` | `float` | `0.0` | Total duration (s); required > 0 with `mode=DURATION`, ignored otherwise |
 | `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+| `mode` | `TimingMode` | `DEFAULT` | Timing mode: `DEFAULT` keeps slot defaults, `DURATION` uses `duration`, `VELOCITY` solves from the velocity constraints |
+| `velocity` | `float` | `0.0` | Velocity constraint, required > 0 with `mode=VELOCITY`; rad/s (m/s linear for pose moves) |
+| `acceleration` | `float` | `0.0` | Acceleration constraint (optional with `mode=VELOCITY`) |
+| `jerk` | `float` | `0.0` | Jerk constraint (optional with `mode=VELOCITY`) |
 
 Returns a `MovePoseRelativeOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 

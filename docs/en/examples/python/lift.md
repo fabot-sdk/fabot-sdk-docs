@@ -2,7 +2,7 @@
 title: Lift example
 status: draft
 owner: fabot-core
-updated: 2026-11-17
+updated: 2026-11-19
 ---
 
 # Lift example
@@ -32,7 +32,7 @@ With `require_homed: true` (the template default) absolute height commands requi
 
 Dispatching a command lets the lower layer perform fault recovery and reach Operation Enabled, so `set_enable(True)` is not a prerequisite (it only enables, it does not move); `set_enable(False)` drops torque.
 
-Omitting `duration` and `wait_timeout` gives a server-side budget of `default_wait_timeout_s` (15 s in the template). `wait(timeout=...)` / `get(timeout=...)` only bound that one client-side wait and do not extend the motion; pass seconds to the command's own `wait_timeout` instead. The template stroke is `0`–`0.30` m (`min_height_m` / `max_height_m`), and the target must fall inside it.
+Omitting `duration` / `wait_timeout` / `mode` gives a server-side budget of `default_wait_timeout_s` (15 s in the template); `mode=TimingMode.DURATION` sets the budget for this move, and `mode=VELOCITY` writes the given speed (m/s) for this move only. `wait(timeout=...)` / `get(timeout=...)` only bound that one client-side wait and do not extend the motion; pass seconds to the command's own `wait_timeout` instead. The template stroke is `0`–`0.30` m (`min_height_m` / `max_height_m`), and the target must fall inside it.
 
 ```python
 if robot.lift.has_adapter:

@@ -2,7 +2,7 @@
 title: Gripper
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-19
 ---
 
 # Gripper
@@ -196,10 +196,10 @@ The proxy unwraps `JointPositions` into `list[float]`.
 
 ### move_opening
 
-Normalized opening motion. `tolerance` / `duration` of 0 use the adapter defaults; `duration` is a wait budget, not a trajectory duration.
+Normalized opening motion. `tolerance` / `wait_timeout` of 0 use the adapter defaults. The gripper has no trajectory duration: with `mode=TimingMode.DURATION`, `duration` is the wait budget for this move; with `mode=VELOCITY`, `velocity` (opening fraction per second, (0, 1]) is written to the controller for this move only and restored afterwards.
 
 ```python
-move_opening(target: float, *, tolerance: float = 0.0, duration: float = 0.0) -> MoveOpeningOperation
+move_opening(target: float, *, tolerance: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0, duration: float = 0.0) -> MoveOpeningOperation
 ```
 
 **Parameters**
@@ -208,12 +208,19 @@ move_opening(target: float, *, tolerance: float = 0.0, duration: float = 0.0) ->
 |------|------|------|------|
 | `target` | `float` | (required) | Goal value |
 | `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
-| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Total wait budget for this move in seconds; 0 keeps the default wait policy |
+| `mode` | `TimingMode` | `DEFAULT` | Timing mode: `DEFAULT` keeps slot defaults, `DURATION` uses `duration`, `VELOCITY` solves from the velocity constraints |
+| `velocity` | `float` | `0.0` | Velocity constraint, required > 0 with `mode=VELOCITY`; opening fraction per second, (0, 1] |
+| `acceleration` | `float` | `0.0` | Acceleration constraint (optional with `mode=VELOCITY`) |
+| `jerk` | `float` | `0.0` | Jerk constraint (optional with `mode=VELOCITY`) |
+| `duration` | `float` | `0.0` | Total duration (s); required > 0 with `mode=DURATION`, ignored otherwise |
 
 Returns a `MoveOpeningOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
 ```python
-op = robot.left_gripper.move_opening(0.0, duration=1.0)   # 全闭
+from fabot.types.TimingMode import TimingMode
+
+op = robot.left_gripper.move_opening(0.0, mode=TimingMode.DURATION, duration=1.0)   # fully closed
 op.wait(timeout=5.0)
 print(robot.left_gripper.get_opening())
 ```
@@ -223,7 +230,7 @@ print(robot.left_gripper.get_opening())
 Physical-stroke motion. `target.values` must have length 1; with a percentage-only actuator it equals the opening and is clamped to [0, 1].
 
 ```python
-move_joint(target: Doubles, *, tolerance: float = 0.0, duration: float = 0.0) -> MoveJointOperation
+move_joint(target: Doubles, *, tolerance: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0, duration: float = 0.0) -> MoveJointOperation
 ```
 
 **Parameters**
@@ -232,7 +239,12 @@ move_joint(target: Doubles, *, tolerance: float = 0.0, duration: float = 0.0) ->
 |------|------|------|------|
 | `target` | `Doubles` | (required) | Goal value |
 | `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
-| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Total wait budget for this move in seconds; 0 keeps the default wait policy |
+| `mode` | `TimingMode` | `DEFAULT` | Timing mode: `DEFAULT` keeps slot defaults, `DURATION` uses `duration`, `VELOCITY` solves from the velocity constraints |
+| `velocity` | `float` | `0.0` | Velocity constraint, required > 0 with `mode=VELOCITY`; opening fraction per second, (0, 1] |
+| `acceleration` | `float` | `0.0` | Acceleration constraint (optional with `mode=VELOCITY`) |
+| `jerk` | `float` | `0.0` | Jerk constraint (optional with `mode=VELOCITY`) |
+| `duration` | `float` | `0.0` | Total duration (s); required > 0 with `mode=DURATION`, ignored otherwise |
 
 Returns a `MoveJointOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 

@@ -2,7 +2,7 @@
 title: 灵巧手 Hand
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-19
 ---
 
 # 灵巧手 Hand
@@ -248,14 +248,14 @@ get_arrival_thresholds(*, timeout_ms: int = 1000) -> ArrivalThresholds
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `joint_tolerance` | `float` | 关节到位容差（弧度）；须为有限正数 |
-| `max_timeout_s` | `float` | 在运动时长之上追加的到位等待上限（秒） |
+| `wait_timeout` | `float` | 在运动时长之上追加的到位等待上限（秒） |
 
 ### set_arrival_thresholds
 
 整体替换该槽位的到位判定阈值；只改内存，不持久化，后续运动生效。
 
 ```python
-set_arrival_thresholds(*, joint_tolerance: float = 0.02, max_timeout_s: float = 10.0, timeout_ms: int = 1000) -> ArrivalThresholdsApplied
+set_arrival_thresholds(*, joint_tolerance: float = 0.02, wait_timeout: float = 10.0, timeout_ms: int = 1000) -> ArrivalThresholdsApplied
 ```
 
 **参数**
@@ -263,7 +263,7 @@ set_arrival_thresholds(*, joint_tolerance: float = 0.02, max_timeout_s: float = 
 | 名称 | 类型 | 默认 | 说明 |
 |------|------|------|------|
 | `joint_tolerance` | `float` | `0.02` | 关节到位容差（弧度） |
-| `max_timeout_s` | `float` | `10.0` | 追加到位等待上限（秒） |
+| `wait_timeout` | `float` | `10.0` | 追加到位等待上限（秒） |
 | `timeout_ms` | `int` | `1000` | 调用超时（毫秒） |
 
 **返回** `ArrivalThresholdsApplied`
@@ -275,10 +275,10 @@ set_arrival_thresholds(*, joint_tolerance: float = 0.02, max_timeout_s: float = 
 
 ### move_opening
 
-开合度运动。`tolerance` 用开合度单位；`duration` 取 0 时用槽位 `max_timeout_s`。
+开合度运动。`tolerance` 用开合度单位；`wait_timeout` 取 0 时用槽位 `wait_timeout`。
 
 ```python
-move_opening(target: list[float], *, tolerance: float = 0.0, duration: float = 0.0) -> MoveOpeningOperation
+move_opening(target: list[float], *, tolerance: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0, duration: float = 0.0) -> MoveOpeningOperation
 ```
 
 **参数**
@@ -287,16 +287,21 @@ move_opening(target: list[float], *, tolerance: float = 0.0, duration: float = 0
 |------|------|------|------|
 | `target` | `list[float]` | （必填） | 目标值 |
 | `tolerance` | `float` | `0.0` | 到位容差；0 表示沿用槽位缺省 |
-| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+| `wait_timeout` | `float` | `0.0` | 本次运动的总等待预算（秒）；0 表示沿用缺省等待策略 |
+| `mode` | `TimingMode` | `DEFAULT` | 时长模式：`DEFAULT` 沿用缺省，`DURATION` 用 `duration`，`VELOCITY` 按速度约束求解 |
+| `velocity` | `float` | `0.0` | 速度约束，`mode=VELOCITY` 时必须 > 0；开合度/秒或弧度/秒 |
+| `acceleration` | `float` | `0.0` | 加速度约束（`mode=VELOCITY` 可选） |
+| `jerk` | `float` | `0.0` | 加加速度约束（`mode=VELOCITY` 可选） |
+| `duration` | `float` | `0.0` | 总时长（秒），`mode=DURATION` 时必须 > 0，其余模式忽略 |
 
 返回 `MoveOpeningOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
 
 ### move_joint
 
-关节弧度运动。`tolerance` 单位弧度；`duration` 取 0 时用槽位 `max_timeout_s`。
+关节弧度运动。`tolerance` 单位弧度；`wait_timeout` 取 0 时用槽位 `wait_timeout`。
 
 ```python
-move_joint(target: list[float], *, tolerance: float = 0.0, duration: float = 0.0) -> MoveJointOperation
+move_joint(target: list[float], *, tolerance: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0, duration: float = 0.0) -> MoveJointOperation
 ```
 
 **参数**
@@ -305,7 +310,12 @@ move_joint(target: list[float], *, tolerance: float = 0.0, duration: float = 0.0
 |------|------|------|------|
 | `target` | `list[float]` | （必填） | 目标值 |
 | `tolerance` | `float` | `0.0` | 到位容差；0 表示沿用槽位缺省 |
-| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+| `wait_timeout` | `float` | `0.0` | 本次运动的总等待预算（秒）；0 表示沿用缺省等待策略 |
+| `mode` | `TimingMode` | `DEFAULT` | 时长模式：`DEFAULT` 沿用缺省，`DURATION` 用 `duration`，`VELOCITY` 按速度约束求解 |
+| `velocity` | `float` | `0.0` | 速度约束，`mode=VELOCITY` 时必须 > 0；开合度/秒或弧度/秒 |
+| `acceleration` | `float` | `0.0` | 加速度约束（`mode=VELOCITY` 可选） |
+| `jerk` | `float` | `0.0` | 加加速度约束（`mode=VELOCITY` 可选） |
+| `duration` | `float` | `0.0` | 总时长（秒），`mode=DURATION` 时必须 > 0，其余模式忽略 |
 
 返回 `MoveJointOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
 
@@ -314,7 +324,7 @@ move_joint(target: list[float], *, tolerance: float = 0.0, duration: float = 0.0
 沿关节路点序列运动；至少两个路点，当前关节接到第一个路点。
 
 ```python
-move_joint_path(waypoints: list[JointPositions], *, tolerance: float = 0.0, duration: float = 0.0) -> MoveJointPathOperation
+move_joint_path(waypoints: list[JointPositions], *, tolerance: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0, duration: float = 0.0) -> MoveJointPathOperation
 ```
 
 **参数**
@@ -323,7 +333,12 @@ move_joint_path(waypoints: list[JointPositions], *, tolerance: float = 0.0, dura
 |------|------|------|------|
 | `waypoints` | `list[JointPositions]` | （必填） | 路点序列，至少两个 |
 | `tolerance` | `float` | `0.0` | 到位容差；0 表示沿用槽位缺省 |
-| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+| `wait_timeout` | `float` | `0.0` | 本次运动的总等待预算（秒）；0 表示沿用缺省等待策略 |
+| `mode` | `TimingMode` | `DEFAULT` | 时长模式：`DEFAULT` 沿用缺省，`DURATION` 用 `duration`，`VELOCITY` 按速度约束求解 |
+| `velocity` | `float` | `0.0` | 速度约束，`mode=VELOCITY` 时必须 > 0；开合度/秒或弧度/秒 |
+| `acceleration` | `float` | `0.0` | 加速度约束（`mode=VELOCITY` 可选） |
+| `jerk` | `float` | `0.0` | 加加速度约束（`mode=VELOCITY` 可选） |
+| `duration` | `float` | `0.0` | 总时长（秒），`mode=DURATION` 时必须 > 0，其余模式忽略 |
 
 返回 `MoveJointPathOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
 

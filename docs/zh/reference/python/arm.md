@@ -2,7 +2,7 @@
 title: 机械臂 Arm
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-19
 ---
 
 # 机械臂 Arm
@@ -742,14 +742,14 @@ get_arrival_thresholds(*, timeout_ms: int = 1000) -> ArrivalThresholds
 | `joint_tolerance` | `float` | 关节到位容差（弧度）；须为有限正数 |
 | `pose_position_tolerance` | `float` | 位姿位置到位容差（米）；须为有限正数 |
 | `pose_orientation_tolerance` | `float` | 位姿姿态容差，取 `1 - \|dot(q, q_target)\|`，不是弧度 |
-| `max_timeout_s` | `float` | 在运动时长之上追加的到位等待上限（秒） |
+| `wait_timeout` | `float` | 在运动时长之上追加的到位等待上限（秒） |
 
 ### set_arrival_thresholds
 
 整体替换该槽位的到位判定阈值，返回 `outcome` 与实际生效值。到位判定要求连续两次采样都在阈值内。
 
 ```python
-set_arrival_thresholds(*, joint_tolerance: float = 0.02, pose_position_tolerance: float = 0.02, pose_orientation_tolerance: float = 0.05, max_timeout_s: float = 5.0, timeout_ms: int = 1000) -> ArrivalThresholdsApplied
+set_arrival_thresholds(*, joint_tolerance: float = 0.02, pose_position_tolerance: float = 0.02, pose_orientation_tolerance: float = 0.05, wait_timeout: float = 5.0, timeout_ms: int = 1000) -> ArrivalThresholdsApplied
 ```
 
 **参数**
@@ -759,7 +759,7 @@ set_arrival_thresholds(*, joint_tolerance: float = 0.02, pose_position_tolerance
 | `joint_tolerance` | `float` | `0.02` | 关节到位容差（弧度） |
 | `pose_position_tolerance` | `float` | `0.02` | 位姿位置容差（米） |
 | `pose_orientation_tolerance` | `float` | `0.05` | 位姿姿态容差，取 `1 - \|dot(q, q_target)\|` |
-| `max_timeout_s` | `float` | `5.0` | 追加到位等待上限（秒） |
+| `wait_timeout` | `float` | `5.0` | 追加到位等待上限（秒） |
 | `timeout_ms` | `int` | `1000` | 调用超时（毫秒） |
 
 **返回** `ArrivalThresholdsApplied`
@@ -771,10 +771,10 @@ set_arrival_thresholds(*, joint_tolerance: float = 0.02, pose_position_tolerance
 
 ### move_joint
 
-关节空间运动。`tolerance` 为到位容差（弧度），`duration` 为期望时长，`wait_timeout` 为额外到位等待；取 0 均表示沿用缺省。目标也可直接传 `list[float]`，会自动包装为 `JointPositions`。
+关节空间运动。`tolerance` 为到位容差（弧度），`wait_timeout` 为额外到位等待；取 0 均表示沿用缺省。时长由 `mode` 决定：`TimingMode.DEFAULT` 沿用槽位限值与缺省时长，`DURATION` 用 `duration` 指定总时长，`VELOCITY` 由 `velocity` / `acceleration` / `jerk` 约束求解时间最优时长（求解值是下界）。目标也可直接传 `list[float]`，会自动包装为 `JointPositions`。
 
 ```python
-move_joint(target: JointPositions, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveJointOperation
+move_joint(target: JointPositions, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0) -> MoveJointOperation
 ```
 
 **参数**
@@ -783,8 +783,12 @@ move_joint(target: JointPositions, *, tolerance: float = 0.0, duration: float = 
 |------|------|------|------|
 | `target` | `JointPositions` | （必填） | 目标值 |
 | `tolerance` | `float` | `0.0` | 到位容差；0 表示沿用槽位缺省 |
-| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+| `duration` | `float` | `0.0` | 总时长（秒），`mode=DURATION` 时必须 > 0，其余模式忽略 |
 | `wait_timeout` | `float` | `0.0` | 额外到位等待（秒）；0 表示沿用缺省等待策略 |
+| `mode` | `TimingMode` | `DEFAULT` | 时长模式：`DEFAULT` 沿用缺省，`DURATION` 用 `duration`，`VELOCITY` 按速度约束求解 |
+| `velocity` | `float` | `0.0` | 速度约束，`mode=VELOCITY` 时必须 > 0；弧度/秒（位姿运动为线速度米/秒） |
+| `acceleration` | `float` | `0.0` | 加速度约束（`mode=VELOCITY` 可选） |
+| `jerk` | `float` | `0.0` | 加加速度约束（`mode=VELOCITY` 可选） |
 
 返回 `MoveJointOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
 
@@ -793,7 +797,9 @@ from fabot.types import JointPositions
 
 positions = list(robot.left_arm.get_joint().positions)
 positions[1] += 0.2
-op = robot.left_arm.move_joint(JointPositions(positions=positions), duration=2.0)
+from fabot.types.TimingMode import TimingMode
+
+op = robot.left_arm.move_joint(JointPositions(positions=positions), mode=TimingMode.DURATION, duration=2.0)
 result = op.wait(timeout=10.0)          # 等终态，失败时抛错
 print(result.success, result.status_message)
 ```
@@ -803,7 +809,7 @@ print(result.success, result.status_message)
 沿关节路点序列运动；至少两个路点，当前关节接到第一个路点。
 
 ```python
-move_joint_path(waypoints: list[JointPositions], *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveJointPathOperation
+move_joint_path(waypoints: list[JointPositions], *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0) -> MoveJointPathOperation
 ```
 
 **参数**
@@ -812,8 +818,12 @@ move_joint_path(waypoints: list[JointPositions], *, tolerance: float = 0.0, dura
 |------|------|------|------|
 | `waypoints` | `list[JointPositions]` | （必填） | 路点序列，至少两个 |
 | `tolerance` | `float` | `0.0` | 到位容差；0 表示沿用槽位缺省 |
-| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+| `duration` | `float` | `0.0` | 总时长（秒），`mode=DURATION` 时必须 > 0，其余模式忽略 |
 | `wait_timeout` | `float` | `0.0` | 额外到位等待（秒）；0 表示沿用缺省等待策略 |
+| `mode` | `TimingMode` | `DEFAULT` | 时长模式：`DEFAULT` 沿用缺省，`DURATION` 用 `duration`，`VELOCITY` 按速度约束求解 |
+| `velocity` | `float` | `0.0` | 速度约束，`mode=VELOCITY` 时必须 > 0；弧度/秒（位姿运动为线速度米/秒） |
+| `acceleration` | `float` | `0.0` | 加速度约束（`mode=VELOCITY` 可选） |
+| `jerk` | `float` | `0.0` | 加加速度约束（`mode=VELOCITY` 可选） |
 
 返回 `MoveJointPathOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
 
@@ -822,7 +832,7 @@ move_joint_path(waypoints: list[JointPositions], *, tolerance: float = 0.0, dura
 末端位姿绝对运动。参考系取 `target.frame_id`，空串缺省槽位基准；`end_frame` 空串缺省当前 TCP 或法兰。
 
 ```python
-move_pose(target: Pose3d, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MovePoseOperation
+move_pose(target: Pose3d, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0) -> MovePoseOperation
 ```
 
 **参数**
@@ -833,8 +843,12 @@ move_pose(target: Pose3d, *, end_frame: str = "", position_tolerance: float = 0.
 | `end_frame` | `str` | `""` | 受控末端坐标系；空串表示当前工具 TCP，无工具时为法兰 |
 | `position_tolerance` | `float` | `0.0` | 位置到位容差（米）；0 表示沿用槽位缺省 |
 | `orientation_tolerance` | `float` | `0.0` | 姿态到位容差；0 表示沿用槽位缺省 |
-| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+| `duration` | `float` | `0.0` | 总时长（秒），`mode=DURATION` 时必须 > 0，其余模式忽略 |
 | `wait_timeout` | `float` | `0.0` | 额外到位等待（秒）；0 表示沿用缺省等待策略 |
+| `mode` | `TimingMode` | `DEFAULT` | 时长模式：`DEFAULT` 沿用缺省，`DURATION` 用 `duration`，`VELOCITY` 按速度约束求解 |
+| `velocity` | `float` | `0.0` | 速度约束，`mode=VELOCITY` 时必须 > 0；弧度/秒（位姿运动为线速度米/秒） |
+| `acceleration` | `float` | `0.0` | 加速度约束（`mode=VELOCITY` 可选） |
+| `jerk` | `float` | `0.0` | 加加速度约束（`mode=VELOCITY` 可选） |
 
 返回 `MovePoseOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
 
@@ -856,7 +870,7 @@ for snap in op.events(poll_timeout_ms=200, timeout_ms=30000):
 末端位姿增量运动。`target` 表示相对当前位姿的增量。
 
 ```python
-move_pose_relative(target: Pose3d, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MovePoseRelativeOperation
+move_pose_relative(target: Pose3d, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0) -> MovePoseRelativeOperation
 ```
 
 **参数**
@@ -867,8 +881,12 @@ move_pose_relative(target: Pose3d, *, end_frame: str = "", position_tolerance: f
 | `end_frame` | `str` | `""` | 受控末端坐标系；空串表示当前工具 TCP，无工具时为法兰 |
 | `position_tolerance` | `float` | `0.0` | 位置到位容差（米）；0 表示沿用槽位缺省 |
 | `orientation_tolerance` | `float` | `0.0` | 姿态到位容差；0 表示沿用槽位缺省 |
-| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+| `duration` | `float` | `0.0` | 总时长（秒），`mode=DURATION` 时必须 > 0，其余模式忽略 |
 | `wait_timeout` | `float` | `0.0` | 额外到位等待（秒）；0 表示沿用缺省等待策略 |
+| `mode` | `TimingMode` | `DEFAULT` | 时长模式：`DEFAULT` 沿用缺省，`DURATION` 用 `duration`，`VELOCITY` 按速度约束求解 |
+| `velocity` | `float` | `0.0` | 速度约束，`mode=VELOCITY` 时必须 > 0；弧度/秒（位姿运动为线速度米/秒） |
+| `acceleration` | `float` | `0.0` | 加速度约束（`mode=VELOCITY` 可选） |
+| `jerk` | `float` | `0.0` | 加加速度约束（`mode=VELOCITY` 可选） |
 
 返回 `MovePoseRelativeOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
 
@@ -877,7 +895,7 @@ move_pose_relative(target: Pose3d, *, end_frame: str = "", position_tolerance: f
 沿末端位姿路点序列运动，每个路点自带 `frame_id`。
 
 ```python
-move_pose_path(waypoints: list[Pose3d], *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MovePosePathOperation
+move_pose_path(waypoints: list[Pose3d], *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0) -> MovePosePathOperation
 ```
 
 **参数**
@@ -888,8 +906,12 @@ move_pose_path(waypoints: list[Pose3d], *, end_frame: str = "", position_toleran
 | `end_frame` | `str` | `""` | 受控末端坐标系；空串表示当前工具 TCP，无工具时为法兰 |
 | `position_tolerance` | `float` | `0.0` | 位置到位容差（米）；0 表示沿用槽位缺省 |
 | `orientation_tolerance` | `float` | `0.0` | 姿态到位容差；0 表示沿用槽位缺省 |
-| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+| `duration` | `float` | `0.0` | 总时长（秒），`mode=DURATION` 时必须 > 0，其余模式忽略 |
 | `wait_timeout` | `float` | `0.0` | 额外到位等待（秒）；0 表示沿用缺省等待策略 |
+| `mode` | `TimingMode` | `DEFAULT` | 时长模式：`DEFAULT` 沿用缺省，`DURATION` 用 `duration`，`VELOCITY` 按速度约束求解 |
+| `velocity` | `float` | `0.0` | 速度约束，`mode=VELOCITY` 时必须 > 0；弧度/秒（位姿运动为线速度米/秒） |
+| `acceleration` | `float` | `0.0` | 加速度约束（`mode=VELOCITY` 可选） |
+| `jerk` | `float` | `0.0` | 加加速度约束（`mode=VELOCITY` 可选） |
 
 返回 `MovePosePathOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
 
@@ -898,7 +920,7 @@ move_pose_path(waypoints: list[Pose3d], *, end_frame: str = "", position_toleran
 三点圆弧运动：起点为当前位姿，经 `via` 到 `end`。
 
 ```python
-move_pose_arc_by_points(target: PoseArcByPoints, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MovePoseArcByPointsOperation
+move_pose_arc_by_points(target: PoseArcByPoints, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0) -> MovePoseArcByPointsOperation
 ```
 
 **参数**
@@ -909,8 +931,12 @@ move_pose_arc_by_points(target: PoseArcByPoints, *, end_frame: str = "", positio
 | `end_frame` | `str` | `""` | 受控末端坐标系；空串表示当前工具 TCP，无工具时为法兰 |
 | `position_tolerance` | `float` | `0.0` | 位置到位容差（米）；0 表示沿用槽位缺省 |
 | `orientation_tolerance` | `float` | `0.0` | 姿态到位容差；0 表示沿用槽位缺省 |
-| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+| `duration` | `float` | `0.0` | 总时长（秒），`mode=DURATION` 时必须 > 0，其余模式忽略 |
 | `wait_timeout` | `float` | `0.0` | 额外到位等待（秒）；0 表示沿用缺省等待策略 |
+| `mode` | `TimingMode` | `DEFAULT` | 时长模式：`DEFAULT` 沿用缺省，`DURATION` 用 `duration`，`VELOCITY` 按速度约束求解 |
+| `velocity` | `float` | `0.0` | 速度约束，`mode=VELOCITY` 时必须 > 0；弧度/秒（位姿运动为线速度米/秒） |
+| `acceleration` | `float` | `0.0` | 加速度约束（`mode=VELOCITY` 可选） |
+| `jerk` | `float` | `0.0` | 加加速度约束（`mode=VELOCITY` 可选） |
 
 返回 `MovePoseArcByPointsOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
 
@@ -919,7 +945,7 @@ move_pose_arc_by_points(target: PoseArcByPoints, *, end_frame: str = "", positio
 圆心圆弧运动：圆心由 `center.frame_id` 定位。
 
 ```python
-move_pose_arc_by_center(target: PoseArcByCenter, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MovePoseArcByCenterOperation
+move_pose_arc_by_center(target: PoseArcByCenter, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0) -> MovePoseArcByCenterOperation
 ```
 
 **参数**
@@ -930,8 +956,12 @@ move_pose_arc_by_center(target: PoseArcByCenter, *, end_frame: str = "", positio
 | `end_frame` | `str` | `""` | 受控末端坐标系；空串表示当前工具 TCP，无工具时为法兰 |
 | `position_tolerance` | `float` | `0.0` | 位置到位容差（米）；0 表示沿用槽位缺省 |
 | `orientation_tolerance` | `float` | `0.0` | 姿态到位容差；0 表示沿用槽位缺省 |
-| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+| `duration` | `float` | `0.0` | 总时长（秒），`mode=DURATION` 时必须 > 0，其余模式忽略 |
 | `wait_timeout` | `float` | `0.0` | 额外到位等待（秒）；0 表示沿用缺省等待策略 |
+| `mode` | `TimingMode` | `DEFAULT` | 时长模式：`DEFAULT` 沿用缺省，`DURATION` 用 `duration`，`VELOCITY` 按速度约束求解 |
+| `velocity` | `float` | `0.0` | 速度约束，`mode=VELOCITY` 时必须 > 0；弧度/秒（位姿运动为线速度米/秒） |
+| `acceleration` | `float` | `0.0` | 加速度约束（`mode=VELOCITY` 可选） |
+| `jerk` | `float` | `0.0` | 加加速度约束（`mode=VELOCITY` 可选） |
 
 返回 `MovePoseArcByCenterOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
 

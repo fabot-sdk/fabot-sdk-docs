@@ -2,14 +2,31 @@
 title: 更新日志
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-19
 ---
 
 # 更新日志
 
-按 SDK 版本倒序列出对外可见的变更。每个版本与同版本号的机器人平台配套；当前最新为预发布版 `1.1.0-alpha.1`。版本号语义与升级步骤见 [版本配套](./getting-started/install/compatibility.md)。
+按 SDK 版本倒序列出对外可见的变更。每个版本与同版本号的机器人平台配套；当前最新为预发布版 `1.1.0-beta.2`。版本号语义与升级步骤见 [版本配套](./getting-started/install/compatibility.md)。
 
 顶栏版本下拉可切换各版本对应的文档；某个历史版本的更新日志只包含到该版本为止的条目。
+
+## 1.1.0-beta.2
+
+2026-11-19 · 预发布版
+
+### 新增
+
+- 运动接口支持时长 / 速度双模式：`arm` / `arms` / `body` / `head` / `motion` / `gripper` / `hand` / `lift` 的 `move_*` 新增 `mode`（`TimingMode.DEFAULT` / `DURATION` / `VELOCITY`）与 `velocity` / `acceleration` / `jerk` 参数。`DEFAULT` 沿用槽位缺省；`DURATION` 显式指定总时长；`VELOCITY` 由速度约束求解时间最优时长（求解值是下界），夹爪 / 灵巧手 / 升降柱在该模式下临时改写控制器速度、结束后还原。
+- 安装：机器人系统包内置同版本 SDK wheel，新增 `fabot sdk` 命令（`show` / `export` / `install` / `upgrade` / `init`），见 [安装 Python SDK](./getting-started/install/python.md)。
+
+### 变更
+
+- 等待参数统一改名：`gripper` / `hand` / `chassis` 请求里的 `duration` 与到达阈值的 `max_timeout_s` 统一改为 `wait_timeout`；`lift` 与 `head.move_pose` 没有控制器时长参数，原来的 `duration` 与 `wait_timeout` 合并为一个总等待预算。
+
+### 兼容性
+
+- **破坏性变更**：显式指定运动时长必须带 `mode=TimingMode.DURATION`——只写 `duration=2.0` 不再生效。夹爪 / 灵巧手 / 升降柱 / 底盘的旧 `duration` 参数改名为 `wait_timeout`。
 
 ## 1.1.0-alpha.1
 

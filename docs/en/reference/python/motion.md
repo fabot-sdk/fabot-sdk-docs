@@ -2,7 +2,7 @@
 title: Motion
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-19
 ---
 
 # Motion
@@ -219,7 +219,7 @@ servo_pose(*, left_arm: Pose3d, right_arm: Pose3d, body: Pose3d, timeout_ms: int
 Move to a preset home pose; `HomePose.PRIMARY` is the default.
 
 ```python
-move_home(target: HomePose = HomePose.PRIMARY, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveHomeOperation
+move_home(target: HomePose = HomePose.PRIMARY, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0) -> MoveHomeOperation
 ```
 
 **Parameters**
@@ -228,15 +228,21 @@ move_home(target: HomePose = HomePose.PRIMARY, *, tolerance: float = 0.0, durati
 |------|------|------|------|
 | `target` | `HomePose` | `HomePose.PRIMARY` | Goal value |
 | `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
-| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `duration` | `float` | `0.0` | Total duration (s); required > 0 with `mode=DURATION`, ignored otherwise |
 | `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+| `mode` | `TimingMode` | `DEFAULT` | Timing mode: `DEFAULT` keeps slot defaults, `DURATION` uses `duration`, `VELOCITY` solves from the velocity constraints |
+| `velocity` | `float` | `0.0` | Velocity constraint, required > 0 with `mode=VELOCITY`; rad/s (m/s linear for pose moves) |
+| `acceleration` | `float` | `0.0` | Acceleration constraint (optional with `mode=VELOCITY`) |
+| `jerk` | `float` | `0.0` | Jerk constraint (optional with `mode=VELOCITY`) |
 
 Returns a `MoveHomeOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
 ```python
 from fabot.capabilities.motion import HomePose
 
-robot.motion.move_home(HomePose.PRIMARY, duration=5.0).wait(timeout=30.0)
+from fabot.types.TimingMode import TimingMode
+
+robot.motion.move_home(HomePose.PRIMARY, mode=TimingMode.DURATION, duration=5.0).wait(timeout=30.0)
 ```
 
 ### move_preset
@@ -244,7 +250,7 @@ robot.motion.move_home(HomePose.PRIMARY, duration=5.0).wait(timeout=30.0)
 Move to a named preset configuration.
 
 ```python
-move_preset(target: str, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MovePresetOperation
+move_preset(target: str, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0) -> MovePresetOperation
 ```
 
 **Parameters**
@@ -253,8 +259,12 @@ move_preset(target: str, *, tolerance: float = 0.0, duration: float = 0.0, wait_
 |------|------|------|------|
 | `target` | `str` | (required) | Goal value |
 | `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
-| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `duration` | `float` | `0.0` | Total duration (s); required > 0 with `mode=DURATION`, ignored otherwise |
 | `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+| `mode` | `TimingMode` | `DEFAULT` | Timing mode: `DEFAULT` keeps slot defaults, `DURATION` uses `duration`, `VELOCITY` solves from the velocity constraints |
+| `velocity` | `float` | `0.0` | Velocity constraint, required > 0 with `mode=VELOCITY`; rad/s (m/s linear for pose moves) |
+| `acceleration` | `float` | `0.0` | Acceleration constraint (optional with `mode=VELOCITY`) |
+| `jerk` | `float` | `0.0` | Jerk constraint (optional with `mode=VELOCITY`) |
 
 Returns a `MovePresetOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
@@ -263,7 +273,7 @@ Returns a `MovePresetOperation` handle with `id` / `get()` / `wait()` / `cancel(
 Joint-space motion. `tolerance` is the arrival tolerance, `duration` the requested time, `wait_timeout` the extra arrival wait; 0 uses the defaults.
 
 ```python
-move_joint(target: WholeBodyJointTarget, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveJointOperation
+move_joint(target: WholeBodyJointTarget, *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0) -> MoveJointOperation
 ```
 
 **Parameters**
@@ -272,8 +282,12 @@ move_joint(target: WholeBodyJointTarget, *, tolerance: float = 0.0, duration: fl
 |------|------|------|------|
 | `target` | `WholeBodyJointTarget` | (required) | Goal value |
 | `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
-| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `duration` | `float` | `0.0` | Total duration (s); required > 0 with `mode=DURATION`, ignored otherwise |
 | `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+| `mode` | `TimingMode` | `DEFAULT` | Timing mode: `DEFAULT` keeps slot defaults, `DURATION` uses `duration`, `VELOCITY` solves from the velocity constraints |
+| `velocity` | `float` | `0.0` | Velocity constraint, required > 0 with `mode=VELOCITY`; rad/s (m/s linear for pose moves) |
+| `acceleration` | `float` | `0.0` | Acceleration constraint (optional with `mode=VELOCITY`) |
+| `jerk` | `float` | `0.0` | Jerk constraint (optional with `mode=VELOCITY`) |
 
 Returns a `MoveJointOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
@@ -282,7 +296,7 @@ Returns a `MoveJointOperation` handle with `id` / `get()` / `wait()` / `cancel()
 Follow a joint waypoint sequence; at least two waypoints, the first reached from the current joints.
 
 ```python
-move_joint_path(waypoints: list[WholeBodyJointTarget], *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MoveJointPathOperation
+move_joint_path(waypoints: list[WholeBodyJointTarget], *, tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0) -> MoveJointPathOperation
 ```
 
 **Parameters**
@@ -291,8 +305,12 @@ move_joint_path(waypoints: list[WholeBodyJointTarget], *, tolerance: float = 0.0
 |------|------|------|------|
 | `waypoints` | `list[WholeBodyJointTarget]` | (required) | Waypoints, at least two |
 | `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
-| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `duration` | `float` | `0.0` | Total duration (s); required > 0 with `mode=DURATION`, ignored otherwise |
 | `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+| `mode` | `TimingMode` | `DEFAULT` | Timing mode: `DEFAULT` keeps slot defaults, `DURATION` uses `duration`, `VELOCITY` solves from the velocity constraints |
+| `velocity` | `float` | `0.0` | Velocity constraint, required > 0 with `mode=VELOCITY`; rad/s (m/s linear for pose moves) |
+| `acceleration` | `float` | `0.0` | Acceleration constraint (optional with `mode=VELOCITY`) |
+| `jerk` | `float` | `0.0` | Jerk constraint (optional with `mode=VELOCITY`) |
 
 Returns a `MoveJointPathOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
@@ -301,7 +319,7 @@ Returns a `MoveJointPathOperation` handle with `id` / `get()` / `wait()` / `canc
 Absolute end-effector motion. The reference frame comes from `target.frame_id` (empty uses the slot base); `end_frame` empty uses the active TCP or flange.
 
 ```python
-move_pose(target: WholeBodyPoseTarget, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0) -> MovePoseOperation
+move_pose(target: WholeBodyPoseTarget, *, end_frame: str = "", position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0) -> MovePoseOperation
 ```
 
 **Parameters**
@@ -312,8 +330,12 @@ move_pose(target: WholeBodyPoseTarget, *, end_frame: str = "", position_toleranc
 | `end_frame` | `str` | `""` | Controlled end frame; empty means the active tool TCP, or the flange without a tool |
 | `position_tolerance` | `float` | `0.0` | Position tolerance in meters; 0 uses the slot default |
 | `orientation_tolerance` | `float` | `0.0` | Orientation tolerance; 0 uses the slot default |
-| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `duration` | `float` | `0.0` | Total duration (s); required > 0 with `mode=DURATION`, ignored otherwise |
 | `wait_timeout` | `float` | `0.0` | Extra arrival wait in seconds; 0 keeps the default wait policy |
+| `mode` | `TimingMode` | `DEFAULT` | Timing mode: `DEFAULT` keeps slot defaults, `DURATION` uses `duration`, `VELOCITY` solves from the velocity constraints |
+| `velocity` | `float` | `0.0` | Velocity constraint, required > 0 with `mode=VELOCITY`; rad/s (m/s linear for pose moves) |
+| `acceleration` | `float` | `0.0` | Acceleration constraint (optional with `mode=VELOCITY`) |
+| `jerk` | `float` | `0.0` | Jerk constraint (optional with `mode=VELOCITY`) |
 
 Returns a `MovePoseOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 

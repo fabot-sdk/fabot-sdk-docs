@@ -2,7 +2,7 @@
 title: 头部示例
 status: draft
 owner: fabot-core
-updated: 2026-11-17
+updated: 2026-11-19
 ---
 
 # 头部示例
@@ -18,6 +18,7 @@ from fabot import Robot
 from fabot.capabilities.head import HeadMode
 from fabot.core import OperationState
 from fabot.types import JointPositions
+from fabot.types.TimingMode import TimingMode
 
 with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["head"])
@@ -25,7 +26,7 @@ with Robot.connect("127.0.0.1", 7557) as robot:
     print("当前模式:", robot.head.get_mode())
     print("当前关节:", robot.head.get_joint().positions)
 
-    op = robot.head.move_joint(JointPositions(positions=[0.3, -0.2]), duration=1.5)
+    op = robot.head.move_joint(JointPositions(positions=[0.3, -0.2]), mode=TimingMode.DURATION, duration=1.5)
     snap = op.get(timeout=10.0)
     if snap.state is not OperationState.Succeeded:
         print("失败:", snap.error)
@@ -54,7 +55,7 @@ robot.head.servo_pose(Pose3d(x=1.0, y=0.2, z=1.2, qw=1.0))
 ```python
 robot.head.move_pose(
     Pose3d(x=0.1, y=0.0, z=0.05, qw=1.0, frame_id="base_link"),
-    duration=1.0,
+    wait_timeout=5.0,
 ).wait(timeout=10.0)
 
 robot.head.servo_pose(y=0.1)
@@ -66,7 +67,7 @@ robot.head.servo_pose(y=0.1)
 robot.head.set_joint_velocity_limit(1.5)      # 弧度/秒
 robot.head.set_joint_acceleration_limit(5.0)  # 弧度/秒²
 
-applied = robot.head.set_arrival_thresholds(joint_tolerance=0.01, max_timeout_s=3.0)
+applied = robot.head.set_arrival_thresholds(joint_tolerance=0.01, wait_timeout=3.0)
 print(applied.outcome.success)
 ```
 

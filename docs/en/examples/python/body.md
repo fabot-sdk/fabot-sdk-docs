@@ -2,7 +2,7 @@
 title: Body example
 status: draft
 owner: fabot-core
-updated: 2026-11-17
+updated: 2026-11-19
 ---
 
 # Body example
@@ -17,11 +17,12 @@ Control the torso joints and the waist lift / forward reach / pitch. The long-ru
 from fabot import Robot
 from fabot.capabilities.body import WaistPose
 from fabot.core import OperationState
+from fabot.types.TimingMode import TimingMode
 
 with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["body"])
 
-    op = robot.body.move_waist(WaistPose(x=0.05, z=0.10, phi=0.0), duration=3.0)
+    op = robot.body.move_waist(WaistPose(x=0.05, z=0.10, phi=0.0), mode=TimingMode.DURATION, duration=3.0)
     snap = op.get(timeout=15.0)
     if snap.state is not OperationState.Succeeded:
         print("failed:", snap.error)
@@ -49,7 +50,7 @@ from fabot.types import JointPositions
 
 joints = list(robot.body.get_joint().positions)
 joints[1] += 0.05
-robot.body.move_joint(JointPositions(positions=joints), duration=2.0).wait(timeout=30.0)
+robot.body.move_joint(JointPositions(positions=joints), mode=TimingMode.DURATION, duration=2.0).wait(timeout=30.0)
 ```
 
 ## Torso constraint mode

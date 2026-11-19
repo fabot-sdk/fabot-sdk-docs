@@ -2,7 +2,7 @@
 title: Installing the Python SDK
 status: draft
 owner: fabot-core
-updated: 2026-11-17
+updated: 2026-11-19
 ---
 
 # Installing the Python SDK
@@ -11,7 +11,20 @@ The product Python SDK for fabot robots ships as the `fabot-sdk` package and ins
 
 ## Install
 
-The SDK is distributed as a wheel. Install it locally once you have the file:
+The SDK is distributed as a wheel, and there are two ways to install it.
+
+**Option 1 (recommended): use the copy bundled with the robot system.** The fabot system package ships the matching SDK wheel, so on the robot itself the `fabot sdk` command installs it straight into your own environment:
+
+```console
+$ fabot sdk show                    # name and version of the bundled SDK
+$ python3 -m venv .venv
+$ fabot sdk install .venv          # into an existing venv / uv / Miniforge / Mamba environment
+$ .venv/bin/python -c "import fabot; print(fabot.__version__)"
+```
+
+uv and Miniforge / Mamba environments work the same way (create with `uv venv .venv` or `mamba create -p .venv python=3.12`, then `fabot sdk install .venv`); plain conda prefixes are rejected. After the robot's system package is updated, align your environment with `fabot sdk upgrade .venv`; `fabot sdk export <dest>` copies the wheel for offline machines, and `fabot sdk init <empty-dir>` writes a minimal runnable example (`main.py --mock` runs without a robot).
+
+**Option 2: install from the wheel file.** Install it locally once you have the file:
 
 ```console
 $ pip install /path/to/fabot_sdk-<version>.whl

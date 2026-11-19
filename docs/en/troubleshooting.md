@@ -2,7 +2,7 @@
 title: Troubleshooting
 status: draft
 owner: fabot-core
-updated: 2026-11-17
+updated: 2026-11-19
 ---
 
 # Troubleshooting
@@ -73,9 +73,10 @@ Long-running tasks (navigation, arm trajectories) do not raise on runtime failur
 ```python
 from fabot.core import OperationState
 from fabot.types import JointPositions
+from fabot.types.TimingMode import TimingMode
 
 positions = list(robot.left_arm.get_joint().positions)
-op = robot.left_arm.move_joint(JointPositions(positions=positions), duration=2.0)
+op = robot.left_arm.move_joint(JointPositions(positions=positions), mode=TimingMode.DURATION, duration=2.0)
 for snap in op.events(poll_timeout_ms=200, timeout_ms=30000):
     if snap.terminal:
         if snap.state is OperationState.Succeeded:

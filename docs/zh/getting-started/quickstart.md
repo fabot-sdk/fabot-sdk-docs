@@ -36,8 +36,8 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 预期输出形如：
 
 ```console
-平台版本: 1.1.0-alpha.1
-SDK 版本: 1.1.0-alpha.1
+平台版本: 1.1.0-beta.2
+SDK 版本: 1.1.0-beta.2
 运行模式: Idle 健康度: Normal
 ```
 

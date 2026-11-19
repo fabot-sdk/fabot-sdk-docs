@@ -10,7 +10,7 @@ updated: 2026-11-18
 fabot SDK 是面向集成开发者的客户端开发包，用于在应用侧连接、控制并监控一台 fabot 机器人。本文档只覆盖客户端 SDK（`fabot-sdk` Python wheel），不含机器人内部实现；机器人主机上随机器预装的系统软件只做背景介绍，见 [机器人系统与本地控制台](./usage/testing/robot-system.md)。
 
 - **Python**：`fabot-sdk`（import 名 `fabot`），要求 Python ≥ 3.12
-- 本站对应 SDK **1.1.0-alpha.1**；与已安装版本不一致时以 `fabot.__version__` 为准，见 [版本配套](./getting-started/install/compatibility.md)
+- 本站对应 SDK **1.1.0-beta.2**；与已安装版本不一致时以 `fabot.__version__` 为准，见 [版本配套](./getting-started/install/compatibility.md)
 
 ## 一分钟上手
 
@@ -42,7 +42,7 @@ with Robot.connect() as robot:      # 本机使用，不传 IP
 预期输出（值随现场变化，能打印即说明连通；`RobotMode` / `HealthState` 是 `IntEnum`，直接打印是数字，所以用 `.name` 取名称）：
 
 ```console
-1.1.0-alpha.1 1.1.0-alpha.1
+1.1.0-beta.2 1.1.0-beta.2
 Idle Normal
 ```
 

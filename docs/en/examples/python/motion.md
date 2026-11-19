@@ -2,7 +2,7 @@
 title: Motion example
 status: draft
 owner: fabot-core
-updated: 2026-11-17
+updated: 2026-11-19
 ---
 
 # Motion example
@@ -16,6 +16,7 @@ Query and switch the whole-body motion regime, read whole-body control state and
 ```python
 from fabot import Robot
 from fabot.capabilities.motion import MotionMode
+from fabot.types.TimingMode import TimingMode
 
 with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["motion"])
@@ -52,13 +53,13 @@ print(com.position, com.status, com.min_safe_margin)   # status is SupportStatus
 ```python
 from fabot.capabilities.motion import HomePose
 
-robot.motion.move_home(HomePose.PRIMARY, duration=5.0).wait(timeout=60.0)
+robot.motion.move_home(HomePose.PRIMARY, mode=TimingMode.DURATION, duration=5.0).wait(timeout=60.0)
 ```
 
 `move_preset` moves to a named preset defined by the robot configuration:
 
 ```python
-robot.motion.move_preset("carry", duration=4.0).wait(timeout=60.0)
+robot.motion.move_preset("carry", mode=TimingMode.DURATION, duration=4.0).wait(timeout=60.0)
 ```
 
 ## Whole-body joint and pose goals
@@ -73,7 +74,7 @@ target = WholeBodyJointTarget(
     left_arm=JointPositions(positions=[0.0, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0]),
     body=JointPositions(positions=[0.0, 0.05, 0.0, 0.0]),
 )
-robot.motion.move_joint(target, duration=3.0).wait(timeout=60.0)
+robot.motion.move_joint(target, mode=TimingMode.DURATION, duration=3.0).wait(timeout=60.0)
 
 # Whole-body pose servo (short cycle)
 # robot.motion.servo_pose(left_arm=left_pose, right_arm=right_pose, body=body_pose)

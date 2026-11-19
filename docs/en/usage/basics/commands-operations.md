@@ -128,8 +128,9 @@ Do not confuse the four time concepts:
 |---------|-------|---------|
 | Command timeout | `timeout_ms` | Wait budget for one request/response |
 | Operation default budget | per capability (for example 180 s chassis navigation, 60 s motion control, 45 s teleop) | Server-side ceiling for the task; it ends automatically |
-| Motion `duration` | method parameter | Requested motion time; `0` uses the controller default |
-| Arrival wait `wait_timeout` | method parameter | Extra wait for arrival on top of the duration; `0` keeps the default policy |
+| Motion `duration` | method parameter | The planned trajectory time (s); only takes effect with `mode=TimingMode.DURATION` and must be > 0 |
+| Motion `velocity` / `acceleration` / `jerk` | method parameter | Constraints under `mode=TimingMode.VELOCITY`; the solved duration is a lower bound |
+| Arrival wait `wait_timeout` | method parameter | The arrival wait budget: an **extra** wait on top of the planned time for arms / torso / head / whole-body motion; for the gripper / hand / lift / chassis there is no planned time, so it **is** the total budget. `0` keeps the default policy |
 
 ## Low-level handles (advanced)
 

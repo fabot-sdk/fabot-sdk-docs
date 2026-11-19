@@ -36,8 +36,8 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 Expected output looks like:
 
 ```console
-platform: 1.1.0-alpha.1
-sdk: 1.1.0-alpha.1
+platform: 1.1.0-beta.2
+sdk: 1.1.0-beta.2
 mode: Idle health: Normal
 ```
 

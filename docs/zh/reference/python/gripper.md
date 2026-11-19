@@ -2,7 +2,7 @@
 title: 夹爪 Gripper
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-19
 ---
 
 # 夹爪 Gripper
@@ -199,7 +199,7 @@ servo_joint(values: list[float], *, timeout_ms: int = 1000) -> list[float]
 归一化开合度运动。`tolerance` / `duration` 取 0 表示沿用适配器缺省；`duration` 是等待预算而不是轨迹时长。
 
 ```python
-move_opening(target: float, *, tolerance: float = 0.0, duration: float = 0.0) -> MoveOpeningOperation
+move_opening(target: float, *, tolerance: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0, duration: float = 0.0) -> MoveOpeningOperation
 ```
 
 **参数**
@@ -208,12 +208,18 @@ move_opening(target: float, *, tolerance: float = 0.0, duration: float = 0.0) ->
 |------|------|------|------|
 | `target` | `float` | （必填） | 目标值 |
 | `tolerance` | `float` | `0.0` | 到位容差；0 表示沿用槽位缺省 |
-| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+| `wait_timeout` | `float` | `0.0` | 本次运动的总等待预算（秒）；0 表示沿用缺省等待策略 |
+| `mode` | `TimingMode` | `DEFAULT` | 时长模式：`DEFAULT` 沿用缺省，`DURATION` 用 `duration`，`VELOCITY` 按速度约束求解 |
+| `velocity` | `float` | `0.0` | 速度约束，`mode=VELOCITY` 时必须 > 0；归一化开合度/秒，取值 (0, 1] |
+| `acceleration` | `float` | `0.0` | 加速度约束（`mode=VELOCITY` 可选） |
+| `jerk` | `float` | `0.0` | 加加速度约束（`mode=VELOCITY` 可选） |
+| `duration` | `float` | `0.0` | 总时长（秒），`mode=DURATION` 时必须 > 0，其余模式忽略 |
 
 返回 `MoveOpeningOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
 
 ```python
-op = robot.left_gripper.move_opening(0.0, duration=1.0)   # 全闭
+from fabot.types.TimingMode import TimingMode
+op = robot.left_gripper.move_opening(0.0, mode=TimingMode.DURATION, duration=1.0)   # 全闭
 op.wait(timeout=5.0)
 print(robot.left_gripper.get_opening())
 ```
@@ -223,7 +229,7 @@ print(robot.left_gripper.get_opening())
 物理行程运动。`target.values` 长度必须为 1；只有百分比执行器时与开合度恒等，同样限制在 [0, 1]。
 
 ```python
-move_joint(target: Doubles, *, tolerance: float = 0.0, duration: float = 0.0) -> MoveJointOperation
+move_joint(target: Doubles, *, tolerance: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0, duration: float = 0.0) -> MoveJointOperation
 ```
 
 **参数**
@@ -232,7 +238,12 @@ move_joint(target: Doubles, *, tolerance: float = 0.0, duration: float = 0.0) ->
 |------|------|------|------|
 | `target` | `Doubles` | （必填） | 目标值 |
 | `tolerance` | `float` | `0.0` | 到位容差；0 表示沿用槽位缺省 |
-| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+| `wait_timeout` | `float` | `0.0` | 本次运动的总等待预算（秒）；0 表示沿用缺省等待策略 |
+| `mode` | `TimingMode` | `DEFAULT` | 时长模式：`DEFAULT` 沿用缺省，`DURATION` 用 `duration`，`VELOCITY` 按速度约束求解 |
+| `velocity` | `float` | `0.0` | 速度约束，`mode=VELOCITY` 时必须 > 0；归一化开合度/秒，取值 (0, 1] |
+| `acceleration` | `float` | `0.0` | 加速度约束（`mode=VELOCITY` 可选） |
+| `jerk` | `float` | `0.0` | 加加速度约束（`mode=VELOCITY` 可选） |
+| `duration` | `float` | `0.0` | 总时长（秒），`mode=DURATION` 时必须 > 0，其余模式忽略 |
 
 返回 `MoveJointOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
 

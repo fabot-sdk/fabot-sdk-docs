@@ -2,7 +2,7 @@
 title: Hand
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-19
 ---
 
 # Hand
@@ -248,14 +248,14 @@ get_arrival_thresholds(*, timeout_ms: int = 1000) -> ArrivalThresholds
 | Field | Type | Description |
 |------|------|------|
 | `joint_tolerance` | `float` | Joint arrival tolerance in radians; must be finite and positive |
-| `max_timeout_s` | `float` | Extra arrival budget in seconds added to the motion duration |
+| `wait_timeout` | `float` | Extra arrival budget in seconds added to the motion duration |
 
 ### set_arrival_thresholds
 
 Replace the arrival thresholds for this slot. The change is in-memory only and applies to later motions.
 
 ```python
-set_arrival_thresholds(*, joint_tolerance: float = 0.02, max_timeout_s: float = 10.0, timeout_ms: int = 1000) -> ArrivalThresholdsApplied
+set_arrival_thresholds(*, joint_tolerance: float = 0.02, wait_timeout: float = 10.0, timeout_ms: int = 1000) -> ArrivalThresholdsApplied
 ```
 
 **Parameters**
@@ -263,7 +263,7 @@ set_arrival_thresholds(*, joint_tolerance: float = 0.02, max_timeout_s: float = 
 | Name | Type | Default | Description |
 |------|------|------|------|
 | `joint_tolerance` | `float` | `0.02` | Joint arrival tolerance in radians |
-| `max_timeout_s` | `float` | `10.0` | Extra arrival budget in seconds |
+| `wait_timeout` | `float` | `10.0` | Extra arrival budget in seconds |
 | `timeout_ms` | `int` | `1000` | Timeout in milliseconds |
 
 **Returns** `ArrivalThresholdsApplied`
@@ -275,10 +275,10 @@ set_arrival_thresholds(*, joint_tolerance: float = 0.02, max_timeout_s: float = 
 
 ### move_opening
 
-Opening motion. `tolerance` is in opening units; a `duration` of 0 uses the slot `max_timeout_s`.
+Opening motion. `tolerance` is in opening units; a `wait_timeout` of 0 uses the slot `wait_timeout`.
 
 ```python
-move_opening(target: list[float], *, tolerance: float = 0.0, duration: float = 0.0) -> MoveOpeningOperation
+move_opening(target: list[float], *, tolerance: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0, duration: float = 0.0) -> MoveOpeningOperation
 ```
 
 **Parameters**
@@ -287,16 +287,21 @@ move_opening(target: list[float], *, tolerance: float = 0.0, duration: float = 0
 |------|------|------|------|
 | `target` | `list[float]` | (required) | Goal value |
 | `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
-| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Total wait budget for this move in seconds; 0 keeps the default wait policy |
+| `mode` | `TimingMode` | `DEFAULT` | Timing mode: `DEFAULT` keeps slot defaults, `DURATION` uses `duration`, `VELOCITY` solves from the velocity constraints |
+| `velocity` | `float` | `0.0` | Velocity constraint, required > 0 with `mode=VELOCITY`; opening/s or rad/s |
+| `acceleration` | `float` | `0.0` | Acceleration constraint (optional with `mode=VELOCITY`) |
+| `jerk` | `float` | `0.0` | Jerk constraint (optional with `mode=VELOCITY`) |
+| `duration` | `float` | `0.0` | Total duration (s); required > 0 with `mode=DURATION`, ignored otherwise |
 
 Returns a `MoveOpeningOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
 ### move_joint
 
-Joint motion in radians. `tolerance` is in radians; a `duration` of 0 uses the slot `max_timeout_s`.
+Joint motion in radians. `tolerance` is in radians; a `wait_timeout` of 0 uses the slot `wait_timeout`.
 
 ```python
-move_joint(target: list[float], *, tolerance: float = 0.0, duration: float = 0.0) -> MoveJointOperation
+move_joint(target: list[float], *, tolerance: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0, duration: float = 0.0) -> MoveJointOperation
 ```
 
 **Parameters**
@@ -305,7 +310,12 @@ move_joint(target: list[float], *, tolerance: float = 0.0, duration: float = 0.0
 |------|------|------|------|
 | `target` | `list[float]` | (required) | Goal value |
 | `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
-| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Total wait budget for this move in seconds; 0 keeps the default wait policy |
+| `mode` | `TimingMode` | `DEFAULT` | Timing mode: `DEFAULT` keeps slot defaults, `DURATION` uses `duration`, `VELOCITY` solves from the velocity constraints |
+| `velocity` | `float` | `0.0` | Velocity constraint, required > 0 with `mode=VELOCITY`; opening/s or rad/s |
+| `acceleration` | `float` | `0.0` | Acceleration constraint (optional with `mode=VELOCITY`) |
+| `jerk` | `float` | `0.0` | Jerk constraint (optional with `mode=VELOCITY`) |
+| `duration` | `float` | `0.0` | Total duration (s); required > 0 with `mode=DURATION`, ignored otherwise |
 
 Returns a `MoveJointOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
@@ -314,7 +324,7 @@ Returns a `MoveJointOperation` handle with `id` / `get()` / `wait()` / `cancel()
 Follow a joint waypoint sequence; at least two waypoints, the first reached from the current joints.
 
 ```python
-move_joint_path(waypoints: list[JointPositions], *, tolerance: float = 0.0, duration: float = 0.0) -> MoveJointPathOperation
+move_joint_path(waypoints: list[JointPositions], *, tolerance: float = 0.0, wait_timeout: float = 0.0, mode: TimingMode = TimingMode.DEFAULT, velocity: float = 0.0, acceleration: float = 0.0, jerk: float = 0.0, duration: float = 0.0) -> MoveJointPathOperation
 ```
 
 **Parameters**
@@ -323,7 +333,12 @@ move_joint_path(waypoints: list[JointPositions], *, tolerance: float = 0.0, dura
 |------|------|------|------|
 | `waypoints` | `list[JointPositions]` | (required) | Waypoints, at least two |
 | `tolerance` | `float` | `0.0` | Arrival tolerance; 0 uses the slot default |
-| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Total wait budget for this move in seconds; 0 keeps the default wait policy |
+| `mode` | `TimingMode` | `DEFAULT` | Timing mode: `DEFAULT` keeps slot defaults, `DURATION` uses `duration`, `VELOCITY` solves from the velocity constraints |
+| `velocity` | `float` | `0.0` | Velocity constraint, required > 0 with `mode=VELOCITY`; opening/s or rad/s |
+| `acceleration` | `float` | `0.0` | Acceleration constraint (optional with `mode=VELOCITY`) |
+| `jerk` | `float` | `0.0` | Jerk constraint (optional with `mode=VELOCITY`) |
+| `duration` | `float` | `0.0` | Total duration (s); required > 0 with `mode=DURATION`, ignored otherwise |
 
 Returns a `MoveJointPathOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 

@@ -2,7 +2,7 @@
 title: 升降柱示例
 status: draft
 owner: fabot-core
-updated: 2026-11-17
+updated: 2026-11-19
 ---
 
 # 升降柱示例
@@ -32,7 +32,7 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 
 命令下发时底层自行完成故障恢复并进入 Operation Enabled，无需先调 `set_enable(True)`（它只使能、不运动）；`set_enable(False)` 用于卸力矩。
 
-省略 `duration` 和 `wait_timeout` 时，服务端按 `default_wait_timeout_s`（模板 15 秒）计算预算。`wait(timeout=...)` / `get(timeout=...)` 只限客户端这次等待，不加长运动；要加时就把秒数传给命令自己的 `wait_timeout`。模板行程 `0`–`0.30` m（`min_height_m` / `max_height_m`），目标必须落在其中。
+省略 `duration` / `wait_timeout` / `mode` 时，服务端按 `default_wait_timeout_s`（模板 15 秒）计算预算；也可用 `mode=TimingMode.DURATION` 指定预算，或 `mode=VELOCITY` 临时指定速度（米/秒）。`wait(timeout=...)` / `get(timeout=...)` 只限客户端这次等待，不加长运动；要加时就把秒数传给命令自己的 `wait_timeout`。模板行程 `0`–`0.30` m（`min_height_m` / `max_height_m`），目标必须落在其中。
 
 ```python
 if robot.lift.has_adapter:

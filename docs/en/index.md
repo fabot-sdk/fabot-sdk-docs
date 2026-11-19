@@ -10,7 +10,7 @@ updated: 2026-11-18
 The fabot SDK is a client development kit for integrators: it connects to, controls and monitors a fabot robot from your application. This documentation covers the client SDK (the `fabot-sdk` Python wheel) only, not the robot internals; the system software preinstalled on the robot host is covered as background in [Robot System & Local Console](./usage/testing/robot-system.md).
 
 - **Python**: `fabot-sdk` (import name `fabot`), requires Python ≥ 3.12
-- This site documents **fabot-sdk 1.1.0-alpha.1**; when it disagrees with your installation, `fabot.__version__` wins — see [Version Compatibility](./getting-started/install/compatibility.md)
+- This site documents **fabot-sdk 1.1.0-beta.2**; when it disagrees with your installation, `fabot.__version__` wins — see [Version Compatibility](./getting-started/install/compatibility.md)
 
 ## One-minute quick start
 
@@ -42,7 +42,7 @@ with Robot.connect() as robot:      # local use, no IP needed
 Expected output (values follow the live state; anything that prints proves connectivity — `RobotMode` / `HealthState` are `IntEnum`s, so print `.name` to get names instead of numbers):
 
 ```console
-1.1.0-alpha.1 1.1.0-alpha.1
+1.1.0-beta.2 1.1.0-beta.2
 Idle Normal
 ```
 

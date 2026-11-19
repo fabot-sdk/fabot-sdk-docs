@@ -2,7 +2,7 @@
 title: Hand example
 status: draft
 owner: fabot-core
-updated: 2026-11-17
+updated: 2026-11-19
 ---
 
 # Hand example
@@ -16,6 +16,7 @@ Velocity and force limits are persistent; both opening and joint angles are list
 ```python
 from fabot import Robot
 from fabot.core import OperationState
+from fabot.types.TimingMode import TimingMode
 
 with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["right_hand"])
@@ -25,7 +26,7 @@ with Robot.connect("127.0.0.1", 7557) as robot:
     robot.right_hand.set_force_limit([20.0] * n)
 
     opening = [1.0] * n                       # fully open
-    op = robot.right_hand.move_opening(opening, duration=2.0)
+    op = robot.right_hand.move_opening(opening, mode=TimingMode.DURATION, duration=2.0)
     snap = op.get(timeout=10.0)
     print(snap.state is OperationState.Succeeded, robot.right_hand.get_opening())
 ```
@@ -34,7 +35,7 @@ Hand motion Operations share the `hand` resource with policy `queue`.
 
 ## Joint control in radians
 
-`move_joint` takes radians (length matching the controller `joints`) and `tolerance` is in radians too; a `duration` of 0 uses the slot `max_timeout_s` (10 seconds by default).
+`move_joint` takes radians (length matching the controller `joints`) and `tolerance` is in radians too; a `wait_timeout` of 0 uses the slot `wait_timeout` (10 seconds by default); `mode=TimingMode.DURATION` sets the budget for this move, and `mode=VELOCITY` writes the given speed for this move only.
 
 ```python
 joints = list(robot.right_hand.get_joint().positions)
@@ -49,6 +50,7 @@ from fabot.types import JointPositions
 
 robot.right_hand.move_joint_path(
     [JointPositions(positions=joints), JointPositions(positions=[0.0] * len(joints))],
+    mode=TimingMode.DURATION,
     duration=3.0,
 ).wait(timeout=15.0)
 ```

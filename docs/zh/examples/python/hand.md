@@ -2,7 +2,7 @@
 title: 灵巧手示例
 status: draft
 owner: fabot-core
-updated: 2026-11-17
+updated: 2026-11-19
 ---
 
 # 灵巧手示例
@@ -16,6 +16,7 @@ updated: 2026-11-17
 ```python
 from fabot import Robot
 from fabot.core import OperationState
+from fabot.types.TimingMode import TimingMode
 
 with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["right_hand"])
@@ -25,7 +26,7 @@ with Robot.connect("127.0.0.1", 7557) as robot:
     robot.right_hand.set_force_limit([20.0] * n)
 
     opening = [1.0] * n                       # 全部张开
-    op = robot.right_hand.move_opening(opening, duration=2.0)
+    op = robot.right_hand.move_opening(opening, mode=TimingMode.DURATION, duration=2.0)
     snap = op.get(timeout=10.0)
     print(snap.state is OperationState.Succeeded, robot.right_hand.get_opening())
 ```
@@ -34,7 +35,7 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 
 ## 关节弧度控制
 
-`move_joint` 的目标是弧度列表（长度与手控制器 `joints` 一致），`tolerance` 单位也是弧度；`duration` 取 0 时用槽位 `max_timeout_s`（默认 10 秒）。
+`move_joint` 的目标是弧度列表（长度与手控制器 `joints` 一致），`tolerance` 单位也是弧度；`wait_timeout` 取 0 时用槽位 `wait_timeout`（默认 10 秒）；也可用 `mode=TimingMode.DURATION` 指定本次等待预算，或 `mode=VELOCITY` 临时指定速度。
 
 ```python
 joints = list(robot.right_hand.get_joint().positions)
@@ -49,6 +50,7 @@ from fabot.types import JointPositions
 
 robot.right_hand.move_joint_path(
     [JointPositions(positions=joints), JointPositions(positions=[0.0] * len(joints))],
+    mode=TimingMode.DURATION,
     duration=3.0,
 ).wait(timeout=15.0)
 ```

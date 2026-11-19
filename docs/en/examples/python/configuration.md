@@ -2,7 +2,7 @@
 title: Configuration CAS retry example
 status: draft
 owner: fabot-core
-updated: 2026-11-17
+updated: 2026-11-19
 ---
 
 # Configuration CAS retry example
@@ -41,7 +41,7 @@ Capability parameters do not need a robot-wide patch; read and write that slot's
 ```python
 with robot.left_arm.edit_config() as conf:
     conf.arrival.joint_tolerance = 0.01
-    conf.arrival.max_timeout_s = 8.0
+    conf.arrival.wait_timeout = 8.0
 # the arrival domain is committed on exit
 ```
 

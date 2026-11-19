@@ -2,7 +2,7 @@
 title: Chassis
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-19
 ---
 
 # Chassis
@@ -617,7 +617,7 @@ robot.chassis.stop()
 Navigate to an absolute map-frame pose.
 
 ```python
-move_pose(target: Pose2d, *, mode: NavigationMode = NavigationMode.AUTONOMOUS, position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0) -> MovePoseOperation
+move_pose(target: Pose2d, *, mode: NavigationMode = NavigationMode.AUTONOMOUS, position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, wait_timeout: float = 0.0) -> MovePoseOperation
 ```
 
 **Parameters**
@@ -628,7 +628,7 @@ move_pose(target: Pose2d, *, mode: NavigationMode = NavigationMode.AUTONOMOUS, p
 | `mode` | `NavigationMode` | `NavigationMode.AUTONOMOUS` | Mode value |
 | `position_tolerance` | `float` | `0.0` | Position tolerance in meters; 0 uses the slot default |
 | `orientation_tolerance` | `float` | `0.0` | Orientation tolerance; 0 uses the slot default |
-| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Total wait budget for this navigation in seconds; 0 keeps the default wait policy |
 
 Returns a `MovePoseOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
@@ -637,7 +637,7 @@ Returns a `MovePoseOperation` handle with `id` / `get()` / `wait()` / `cancel()`
 Body-frame relative navigation; `target.x` / `y` / `theta` are `dx` / `dy` / `dyaw`.
 
 ```python
-move_pose_relative(target: Pose2d, *, position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0) -> MovePoseRelativeOperation
+move_pose_relative(target: Pose2d, *, position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, wait_timeout: float = 0.0) -> MovePoseRelativeOperation
 ```
 
 **Parameters**
@@ -647,7 +647,7 @@ move_pose_relative(target: Pose2d, *, position_tolerance: float = 0.0, orientati
 | `target` | `Pose2d` | (required) | Goal value |
 | `position_tolerance` | `float` | `0.0` | Position tolerance in meters; 0 uses the slot default |
 | `orientation_tolerance` | `float` | `0.0` | Orientation tolerance; 0 uses the slot default |
-| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Total wait budget for this navigation in seconds; 0 keeps the default wait policy |
 
 Returns a `MovePoseRelativeOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 
@@ -656,7 +656,7 @@ Returns a `MovePoseRelativeOperation` handle with `id` / `get()` / `wait()` / `c
 Navigate to a map station; `station_id` comes from `get_station()`.
 
 ```python
-move_station(station_id: int, *, mode: NavigationMode = NavigationMode.AUTONOMOUS, duration: float = 0.0) -> MoveStationOperation
+move_station(station_id: int, *, mode: NavigationMode = NavigationMode.AUTONOMOUS, wait_timeout: float = 0.0) -> MoveStationOperation
 ```
 
 **Parameters**
@@ -665,7 +665,7 @@ move_station(station_id: int, *, mode: NavigationMode = NavigationMode.AUTONOMOU
 |------|------|------|------|
 | `station_id` | `int` | (required) | Station id |
 | `mode` | `NavigationMode` | `NavigationMode.AUTONOMOUS` | Mode value |
-| `duration` | `float` | `0.0` | Requested motion duration in seconds; 0 uses the controller default |
+| `wait_timeout` | `float` | `0.0` | Total wait budget for this navigation in seconds; 0 keeps the default wait policy |
 
 Returns a `MoveStationOperation` handle with `id` / `get()` / `wait()` / `cancel()` / `events()`; it is also iterable and a context manager.
 

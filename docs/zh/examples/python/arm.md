@@ -2,7 +2,7 @@
 title: 机械臂示例
 status: draft
 owner: fabot-core
-updated: 2026-11-17
+updated: 2026-11-19
 ---
 
 # 机械臂示例
@@ -11,12 +11,13 @@ updated: 2026-11-17
 
 ## 使能并执行关节运动
 
-运动前先 `set_enable` 使能手臂；`move_joint` 返回长时 Operation，用 `events()` 轮询进度，终态后读结果。目标关节角由 `JointPositions` 承载（单位弧度，长度与关节数一致）；`duration` 是期望运动时长，`0` 表示沿用控制器缺省。
+运动前先 `set_enable` 使能手臂；`move_joint` 返回长时 Operation，用 `events()` 轮询进度，终态后读结果。目标关节角由 `JointPositions` 承载（单位弧度，长度与关节数一致）；时长由 `mode` 决定（`TimingMode`）：`DEFAULT` 沿用槽位限值与缺省时长；`DURATION` 用 `duration` 指定总时长；`VELOCITY` 由 `velocity` / `acceleration` / `jerk` 约束求解时间最优时长。
 
 ```python
 from fabot import Robot
 from fabot.core import OperationState
 from fabot.types import JointPositions
+from fabot.types.TimingMode import TimingMode
 
 with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["left_arm"])
@@ -25,7 +26,7 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 
     positions = list(robot.left_arm.get_joint().positions)
     positions[1] += 0.2                       # 第 2 个关节转动 0.2 弧度
-    op = robot.left_arm.move_joint(JointPositions(positions=positions), duration=2.0)
+    op = robot.left_arm.move_joint(JointPositions(positions=positions), mode=TimingMode.DURATION, duration=2.0)
 
     for snap in op.events(poll_timeout_ms=200, timeout_ms=30000):
         if snap.feedback is not None:
@@ -54,7 +55,7 @@ from fabot.types import Pose3d
 
 pose = Pose3d(x=0.3, y=0.0, z=0.4, qw=1.0, frame_id="arm_base")   # 无旋转
 
-op = robot.right_arm.move_pose(pose, position_tolerance=0.01, duration=3.0)
+op = robot.right_arm.move_pose(pose, position_tolerance=0.01, mode=TimingMode.DURATION, duration=3.0)
 snap = op.get(timeout=30.0)
 print(snap.state, snap.result)
 
@@ -85,11 +86,11 @@ applied = robot.left_arm.set_arrival_thresholds(
     joint_tolerance=0.01,            # 关节 L2 误差，弧度
     pose_position_tolerance=0.005,   # 位置误差，米
     pose_orientation_tolerance=0.02, # 1 - |dot(q, q_target)|
-    max_timeout_s=8.0,               # 追加到位等待，秒
+    wait_timeout=8.0,                # 追加到位等待，秒
 )
 print(applied.outcome.success)
 if applied.applied is not None:
-    print(applied.applied.joint_tolerance, applied.applied.max_timeout_s)
+    print(applied.applied.joint_tolerance, applied.applied.wait_timeout)
 ```
 
 ## 订阅关节位置流

@@ -2,7 +2,7 @@
 title: Gripper example
 status: draft
 owner: fabot-core
-updated: 2026-11-17
+updated: 2026-11-19
 ---
 
 # Gripper example
@@ -16,6 +16,7 @@ Velocity and force limits are persistent settings, not per-call arguments: call 
 ```python
 from fabot import Robot
 from fabot.core import OperationState
+from fabot.types.TimingMode import TimingMode
 
 with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["left_gripper"])
@@ -25,12 +26,12 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 
     print("current opening:", robot.left_gripper.get_opening())
 
-    op = robot.left_gripper.move_opening(1.0, duration=1.0)   # fully open
+    op = robot.left_gripper.move_opening(1.0, mode=TimingMode.DURATION, duration=1.0)   # fully open
     snap = op.get(timeout=5.0)
     print(snap.state is OperationState.Succeeded, robot.left_gripper.get_opening())
 ```
 
-Note: `opening` and `joint[0]` map to the same actuator on the current adapter and both read back from the same joint position; `duration` is a wait budget rather than a trajectory duration, and speed is governed by the velocity limit.
+Note: `opening` and `joint[0]` map to the same actuator on the current adapter and both read back from the same joint position; the gripper has no trajectory duration — with `mode=DURATION`, `duration` is the wait budget for this move, and speed is governed by the velocity limit. `mode=VELOCITY` writes the given speed for this move only and restores it afterwards.
 
 ## Opening servo
 

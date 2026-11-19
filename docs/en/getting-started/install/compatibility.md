@@ -20,9 +20,9 @@ Interfaces, error codes, and behavior follow the installed `fabot-sdk` type hint
 
 ## Version this documentation covers
 
-This site (`main`) documents **1.1.0-alpha.1**. Compare it against `fabot.__version__` / `robot.sdk_version`; when they differ, the installed package wins.
+This site (`main`) documents **1.1.0-beta.2**. Compare it against `fabot.__version__` / `robot.sdk_version`; when they differ, the installed package wins.
 
-The "latest" entry in the top-bar version dropdown comes from the site's `package.json` at build time, which is why it reads `v1.1.0-alpha.1(latest)`. A pre-release is meant for integration and validation work, not for production as-is.
+The "latest" entry in the top-bar version dropdown comes from the site's `package.json` at build time, which is why it reads `v1.1.0-beta.2(latest)`. A pre-release is meant for integration and validation work, not for production as-is.
 
 ## Version Number Semantics
 

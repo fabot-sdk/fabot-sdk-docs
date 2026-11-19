@@ -2,7 +2,7 @@
 title: 底盘 Chassis
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-19
 ---
 
 # 底盘 Chassis
@@ -617,7 +617,7 @@ robot.chassis.stop()
 地图系绝对位姿导航。
 
 ```python
-move_pose(target: Pose2d, *, mode: NavigationMode = NavigationMode.AUTONOMOUS, position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0) -> MovePoseOperation
+move_pose(target: Pose2d, *, mode: NavigationMode = NavigationMode.AUTONOMOUS, position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, wait_timeout: float = 0.0) -> MovePoseOperation
 ```
 
 **参数**
@@ -628,7 +628,7 @@ move_pose(target: Pose2d, *, mode: NavigationMode = NavigationMode.AUTONOMOUS, p
 | `mode` | `NavigationMode` | `NavigationMode.AUTONOMOUS` | 模式取值 |
 | `position_tolerance` | `float` | `0.0` | 位置到位容差（米）；0 表示沿用槽位缺省 |
 | `orientation_tolerance` | `float` | `0.0` | 姿态到位容差；0 表示沿用槽位缺省 |
-| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+| `wait_timeout` | `float` | `0.0` | 本次导航的总等待预算（秒）；0 表示沿用缺省等待策略 |
 
 返回 `MovePoseOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
 
@@ -637,7 +637,7 @@ move_pose(target: Pose2d, *, mode: NavigationMode = NavigationMode.AUTONOMOUS, p
 车体系相对位移导航，`target.x` / `y` / `theta` 即 `dx` / `dy` / `dyaw`。
 
 ```python
-move_pose_relative(target: Pose2d, *, position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, duration: float = 0.0) -> MovePoseRelativeOperation
+move_pose_relative(target: Pose2d, *, position_tolerance: float = 0.0, orientation_tolerance: float = 0.0, wait_timeout: float = 0.0) -> MovePoseRelativeOperation
 ```
 
 **参数**
@@ -647,7 +647,7 @@ move_pose_relative(target: Pose2d, *, position_tolerance: float = 0.0, orientati
 | `target` | `Pose2d` | （必填） | 目标值 |
 | `position_tolerance` | `float` | `0.0` | 位置到位容差（米）；0 表示沿用槽位缺省 |
 | `orientation_tolerance` | `float` | `0.0` | 姿态到位容差；0 表示沿用槽位缺省 |
-| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+| `wait_timeout` | `float` | `0.0` | 本次导航的总等待预算（秒）；0 表示沿用缺省等待策略 |
 
 返回 `MovePoseRelativeOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
 
@@ -656,7 +656,7 @@ move_pose_relative(target: Pose2d, *, position_tolerance: float = 0.0, orientati
 导航到地图站点，`station_id` 取自 `get_station()`。
 
 ```python
-move_station(station_id: int, *, mode: NavigationMode = NavigationMode.AUTONOMOUS, duration: float = 0.0) -> MoveStationOperation
+move_station(station_id: int, *, mode: NavigationMode = NavigationMode.AUTONOMOUS, wait_timeout: float = 0.0) -> MoveStationOperation
 ```
 
 **参数**
@@ -665,7 +665,7 @@ move_station(station_id: int, *, mode: NavigationMode = NavigationMode.AUTONOMOU
 |------|------|------|------|
 | `station_id` | `int` | （必填） | 站点 id |
 | `mode` | `NavigationMode` | `NavigationMode.AUTONOMOUS` | 模式取值 |
-| `duration` | `float` | `0.0` | 期望运动时长（秒）；0 表示沿用控制器缺省 |
+| `wait_timeout` | `float` | `0.0` | 本次导航的总等待预算（秒）；0 表示沿用缺省等待策略 |
 
 返回 `MoveStationOperation` 句柄：`id` / `get()` / `wait()` / `cancel()` / `events()`，也可作迭代器与上下文管理器。
 

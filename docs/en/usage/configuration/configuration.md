@@ -2,7 +2,7 @@
 title: Configuration
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-19
 ---
 
 # Configuration
@@ -120,7 +120,7 @@ The explicit equivalent:
 
 ```python
 conf = robot.left_arm.get_config()
-conf.arrival.max_timeout_s = 8.0
+conf.arrival.wait_timeout = 8.0
 robot.left_arm.set_config(conf)
 ```
 

@@ -2,7 +2,7 @@
 title: 运动示例
 status: draft
 owner: fabot-core
-updated: 2026-11-17
+updated: 2026-11-19
 ---
 
 # 运动示例
@@ -16,6 +16,7 @@ updated: 2026-11-17
 ```python
 from fabot import Robot
 from fabot.capabilities.motion import MotionMode
+from fabot.types.TimingMode import TimingMode
 
 with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["motion"])
@@ -52,13 +53,13 @@ print(com.position, com.status, com.min_safe_margin)   # status 为 SupportStatu
 ```python
 from fabot.capabilities.motion import HomePose
 
-robot.motion.move_home(HomePose.PRIMARY, duration=5.0).wait(timeout=60.0)
+robot.motion.move_home(HomePose.PRIMARY, mode=TimingMode.DURATION, duration=5.0).wait(timeout=60.0)
 ```
 
 `move_preset` 按具名预设构型运动，名字由机器人配置定义：
 
 ```python
-robot.motion.move_preset("carry", duration=4.0).wait(timeout=60.0)
+robot.motion.move_preset("carry", mode=TimingMode.DURATION, duration=4.0).wait(timeout=60.0)
 ```
 
 ## 全身关节与位姿目标
@@ -73,7 +74,7 @@ target = WholeBodyJointTarget(
     left_arm=JointPositions(positions=[0.0, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0]),
     body=JointPositions(positions=[0.0, 0.05, 0.0, 0.0]),
 )
-robot.motion.move_joint(target, duration=3.0).wait(timeout=60.0)
+robot.motion.move_joint(target, mode=TimingMode.DURATION, duration=3.0).wait(timeout=60.0)
 
 # 全身位姿伺服（短周期）
 # robot.motion.servo_pose(left_arm=left_pose, right_arm=right_pose, body=body_pose)

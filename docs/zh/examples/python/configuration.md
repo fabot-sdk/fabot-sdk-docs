@@ -2,7 +2,7 @@
 title: 配置 CAS 重试示例
 status: draft
 owner: fabot-core
-updated: 2026-11-17
+updated: 2026-11-19
 ---
 
 # 配置 CAS 重试示例
@@ -41,7 +41,7 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 ```python
 with robot.left_arm.edit_config() as conf:
     conf.arrival.joint_tolerance = 0.01
-    conf.arrival.max_timeout_s = 8.0
+    conf.arrival.wait_timeout = 8.0
 # 退出时自动提交 arrival 域
 ```
 

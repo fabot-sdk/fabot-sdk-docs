@@ -2,7 +2,7 @@
 title: Migrating from 1.0.x to 1.1.0
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-19
 ---
 
 # Migrating from 1.0.x to 1.1.0
@@ -57,8 +57,8 @@ If your code contains any of the following, it fails immediately on 1.1.0 with `
 | 1.0.x | 1.1.0 |
 |-------|-------|
 | `get_joints()` | `get_joint()` (returns `JointState`) |
-| `move_joints(positions, wait=...)` | `move_joint(JointPositions(...), duration=, wait_timeout=)` |
-| `smooth_move_pose(pose, wait=, frame_id=)` | `move_pose(pose, end_frame=, duration=, wait_timeout=)` |
+| `move_joints(positions, wait=...)` | `move_joint(JointPositions(...), mode=TimingMode.DURATION, duration=, wait_timeout=)` |
+| `smooth_move_pose(pose, wait=, frame_id=)` | `move_pose(pose, end_frame=, mode=TimingMode.DURATION, duration=, wait_timeout=)` |
 | `direct_move_pose(pose)` | `servo_pose(pose)` (short cycle) |
 | `set_enabled(enabled)` | `set_enable(enabled)` |
 | `get_move_duration()` / `set_move_duration()` | Removed; use the `duration` argument of each `move_*` |
@@ -132,8 +132,9 @@ robot.chassis.move(vx=0.2, vy=0.0, vtheta=0.1)
 ```python
 # 1.1.0
 from fabot.types import JointPositions
+from fabot.types.TimingMode import TimingMode
 
-robot.left_arm.move_joint(JointPositions(positions=positions), duration=2.0).wait(timeout=10.0)
+robot.left_arm.move_joint(JointPositions(positions=positions), mode=TimingMode.DURATION, duration=2.0).wait(timeout=10.0)
 robot.chassis.servo_twist(vx=0.2, vy=0.0, vtheta=0.1)
 ```
 

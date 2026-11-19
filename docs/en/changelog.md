@@ -2,14 +2,31 @@
 title: Changelog
 status: draft
 owner: fabot-core
-updated: 2026-11-16
+updated: 2026-11-19
 ---
 
 # Changelog
 
-User-visible changes listed in reverse version order. Each release pairs with the robot platform of the same version number; the newest is the pre-release `1.1.0-alpha.1`. Version semantics and upgrade steps are in [Version Compatibility](./getting-started/install/compatibility.md).
+User-visible changes listed in reverse version order. Each release pairs with the robot platform of the same version number; the newest is the pre-release `1.1.0-beta.2`. Version semantics and upgrade steps are in [Version Compatibility](./getting-started/install/compatibility.md).
 
 The version dropdown in the top bar switches the documentation for each version; the changelog of a historical version only lists entries up to that version.
+
+## 1.1.0-beta.2
+
+2026-11-19 · Pre-release
+
+### Added
+
+- Motion interfaces gained a duration / velocity timing mode: the `move_*` calls of `arm` / `arms` / `body` / `head` / `motion` / `gripper` / `hand` / `lift` take `mode` (`TimingMode.DEFAULT` / `DURATION` / `VELOCITY`) plus `velocity` / `acceleration` / `jerk`. `DEFAULT` keeps the slot defaults; `DURATION` sets the total time explicitly; `VELOCITY` solves a time-optimal duration from the constraints (the solved value is a lower bound) — the gripper / hand / lift write the controller speed for that move only and restore it afterwards.
+- Install: the robot system package now bundles the matching SDK wheel, with a new `fabot sdk` command (`show` / `export` / `install` / `upgrade` / `init`), see [Installing the Python SDK](./getting-started/install/python.md).
+
+### Changed
+
+- Wait parameters were renamed uniformly: the `duration` request field of `gripper` / `hand` / `chassis` and the arrival-threshold `max_timeout_s` are now `wait_timeout`; `lift` and `head.move_pose` have no controller duration, so their former `duration` and `wait_timeout` merged into a single total wait budget.
+
+### Compatibility
+
+- **Breaking**: explicitly setting a motion duration now requires `mode=TimingMode.DURATION` — a bare `duration=2.0` no longer takes effect. The old `duration` parameter of the gripper / hand / lift / chassis is renamed to `wait_timeout`.
 
 ## 1.1.0-alpha.1
 

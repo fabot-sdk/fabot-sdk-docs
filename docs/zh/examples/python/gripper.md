@@ -2,7 +2,7 @@
 title: 夹爪示例
 status: draft
 owner: fabot-core
-updated: 2026-11-17
+updated: 2026-11-19
 ---
 
 # 夹爪示例
@@ -16,6 +16,7 @@ updated: 2026-11-17
 ```python
 from fabot import Robot
 from fabot.core import OperationState
+from fabot.types.TimingMode import TimingMode
 
 with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["left_gripper"])
@@ -25,12 +26,12 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 
     print("当前开合度:", robot.left_gripper.get_opening())
 
-    op = robot.left_gripper.move_opening(1.0, duration=1.0)   # 全开
+    op = robot.left_gripper.move_opening(1.0, mode=TimingMode.DURATION, duration=1.0)   # 全开
     snap = op.get(timeout=5.0)
     print(snap.state is OperationState.Succeeded, robot.left_gripper.get_opening())
 ```
 
-注意：`opening` 与 `joint[0]` 在当前执行器上恒等映射，反馈都来自同一关节位置；`duration` 是等待预算，不是轨迹时长，运动速度由速度上限控制。
+注意：`opening` 与 `joint[0]` 在当前执行器上恒等映射，反馈都来自同一关节位置；夹爪没有轨迹时长，`duration` 在 `mode=DURATION` 下是本次等待预算，运动速度由速度上限控制，也可用 `mode=VELOCITY` 临时指定速度。
 
 ## 开合度伺服
 

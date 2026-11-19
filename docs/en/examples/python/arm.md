@@ -2,7 +2,7 @@
 title: Arm example
 status: draft
 owner: fabot-core
-updated: 2026-11-17
+updated: 2026-11-19
 ---
 
 # Arm example
@@ -11,12 +11,13 @@ Drive the left (`robot.left_arm`) or right (`robot.right_arm`) arm with joint mo
 
 ## Enable and move the joints
 
-Enable the arm with `set_enable` first; `move_joint` returns a long-running Operation — poll progress with `events()` and read the result once terminal. The goal is a `JointPositions` (radians, one per joint); `duration` is the requested motion time and `0` keeps the controller default.
+Enable the arm with `set_enable` first; `move_joint` returns a long-running Operation — poll progress with `events()` and read the result once terminal. The goal is a `JointPositions` (radians, one per joint); Timing comes from `mode` (`TimingMode`): `DEFAULT` keeps the slot limits and default duration, `DURATION` sets the total time via `duration`, and `VELOCITY` solves a time-optimal duration from the `velocity` / `acceleration` / `jerk` constraints.
 
 ```python
 from fabot import Robot
 from fabot.core import OperationState
 from fabot.types import JointPositions
+from fabot.types.TimingMode import TimingMode
 
 with Robot.connect("127.0.0.1", 7557) as robot:
     robot.wait_ready(["left_arm"])
@@ -25,7 +26,7 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 
     positions = list(robot.left_arm.get_joint().positions)
     positions[1] += 0.2                       # rotate joint 2 by 0.2 rad
-    op = robot.left_arm.move_joint(JointPositions(positions=positions), duration=2.0)
+    op = robot.left_arm.move_joint(JointPositions(positions=positions), mode=TimingMode.DURATION, duration=2.0)
 
     for snap in op.events(poll_timeout_ms=200, timeout_ms=30000):
         if snap.feedback is not None:
@@ -54,7 +55,7 @@ from fabot.types import Pose3d
 
 pose = Pose3d(x=0.3, y=0.0, z=0.4, qw=1.0, frame_id="arm_base")   # no rotation
 
-op = robot.right_arm.move_pose(pose, position_tolerance=0.01, duration=3.0)
+op = robot.right_arm.move_pose(pose, position_tolerance=0.01, mode=TimingMode.DURATION, duration=3.0)
 snap = op.get(timeout=30.0)
 print(snap.state, snap.result)
 
@@ -85,11 +86,11 @@ applied = robot.left_arm.set_arrival_thresholds(
     joint_tolerance=0.01,            # joint L2 error in radians
     pose_position_tolerance=0.005,   # position error in meters
     pose_orientation_tolerance=0.02, # 1 - |dot(q, q_target)|
-    max_timeout_s=8.0,               # extra arrival budget in seconds
+    wait_timeout=8.0,                # extra arrival budget in seconds
 )
 print(applied.outcome.success)
 if applied.applied is not None:
-    print(applied.applied.joint_tolerance, applied.applied.max_timeout_s)
+    print(applied.applied.joint_tolerance, applied.applied.wait_timeout)
 ```
 
 ## Subscribe to the joint stream
