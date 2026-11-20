@@ -101,7 +101,9 @@ export function VersionSelect() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(withBase('/versions.json'))
+    // versions.json 随每次发版重写，而 Pages 会给它 max-age=600；不绕过缓存的话，
+    // 发版后十分钟内顶栏仍显示上一个版本号（正文已是新的，只有标签是旧的）
+    fetch(withBase('/versions.json'), { cache: 'no-store' })
       .then(async (res) => {
         if (!res.ok) {
           return null;
