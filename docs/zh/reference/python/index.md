@@ -140,6 +140,6 @@ updated: 2026-11-17
 
 ## 文档对应的 SDK 基线
 
-本站对应 **fabot-sdk 1.1.0-beta.2**。当页面描述与已安装的包不一致时，以已安装的包为准：先看 `fabot.__version__` 与 `robot.sdk_version`，再查 [版本配套](../../getting-started/install/compatibility.md)。
+本站对应 **fabot-sdk 1.1.0**。当页面描述与已安装的包不一致时，以已安装的包为准：先看 `fabot.__version__` 与 `robot.sdk_version`，再查 [版本配套](../../getting-started/install/compatibility.md)。
 
 新增或调整接口后，可运行 `npm run check:api` 校验文档里出现的每个 `robot.*` 调用名在 `Robot.mock()` 上确实存在。

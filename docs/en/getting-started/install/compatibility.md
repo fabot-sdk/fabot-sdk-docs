@@ -2,12 +2,14 @@
 title: Version Compatibility
 status: draft
 owner: fabot-core
-updated: 2026-11-17
+updated: 2026-11-20
 ---
 
 # Version Compatibility
 
-The fabot SDK and the robot platform (the control-plane software running on the robot) are released under **the same product version scheme**, formatted as `MAJOR.MINOR.PATCH[-stage.N]` (e.g. `1.2.3`, `1.2.3-rc.1`). This page explains the version pairing rules between the SDK and the robot platform, plus upgrade notes.
+The fabot SDK and the robot system are released under **the same product version scheme**, formatted as `MAJOR.MINOR.PATCH[-stage.N]` (e.g. `1.2.3`, `1.2.3-rc.1`). This page covers how to check both versions, how to read a release number, and what to watch when upgrading.
+
+The product is still moving quickly and its interfaces and release rhythm have not fully settled, so **we do not currently commit to compatibility across versions**. Once that phase is behind us we will publish an explicit commitment — which versions are guaranteed to work together and what the upgrade path is — and update this page.
 
 | Item | Baseline |
 |------|----------|
@@ -20,17 +22,19 @@ Interfaces, error codes, and behavior follow the installed `fabot-sdk` type hint
 
 ## Version this documentation covers
 
-This site (`main`) documents **1.1.0-beta.2**. Compare it against `fabot.__version__` / `robot.sdk_version`; when they differ, the installed package wins.
+This site (`main`) documents **1.1.0**. Compare it against `fabot.__version__` / `robot.sdk_version`; when they differ, the installed package wins.
 
-The "latest" entry in the top-bar version dropdown comes from the site's `package.json` at build time, which is why it reads `v1.1.0-beta.2(latest)`. A pre-release is meant for integration and validation work, not for production as-is.
+The "latest" entry in the top-bar version dropdown comes from the site's `package.json` at build time, which is why it reads `v1.1.0(latest)`. `1.1.0` is a general release; builds carrying a `-dev` / `-alpha` / `-beta` / `-rc` suffix are pre-releases, meant for integration and validation work rather than production as-is.
 
-## Version Number Semantics
+## Reading a version number
 
-| Digit | Incremented when | Compatibility meaning |
-|-------|------------------|-----------------------|
-| MAJOR | The public API changes incompatibly | No compatibility guarantee across MAJOR versions |
-| MINOR | Backward-compatible features or interfaces are added | Older clients keep working |
-| PATCH | Bug fixes only, no behavior change | Fully compatible |
+A version number places this release on the product's timeline; for now it is not a signal of whether it works with another release:
+
+| Digit | Means |
+|-------|-------|
+| MAJOR | The product's major line |
+| MINOR | A feature increment within that line |
+| PATCH | A revision on that feature set |
 
 Pre-release stages order as `dev` < `alpha` < `beta` < `rc` < final release; within a stage the trailing number increases, so `1.1.0-alpha.1` < `1.1.0-alpha.2`.
 
@@ -58,9 +62,9 @@ with Robot.connect("127.0.0.1", 7557) as robot:
 
 ## Pairing Rules
 
-- **Same version recommended**: running the SDK and the robot platform at the same release version is the only fully validated combination.
-- **Mismatched versions within the same MAJOR**: by the version semantics above, MINOR / PATCH differences are backward compatible and generally work, but they are outside the fully validated matrix — for example, interfaces newly added on the SDK side may be unavailable on an older robot. After upgrading either side in production, validate the setup yourself.
-- **Across MAJOR versions**: no compatibility guarantee. When the wire protocol is incompatible, connecting or calling fails with a `ProtocolIncompatible` error (see [Error Handling](../../usage/diagnostics/errors.md)).
+- **Matched versions are recommended**: the SDK and the robot system are released under one product version number, and the matched pair is the combination our testing mainly covers.
+- **Mixed versions are yours to validate**: at this stage we do not judge whether an unmatched pair works, and you may hit missing interfaces or behavioral differences. Validate thoroughly in a test environment before going live.
+- **When a connection is refused**: if the wire protocol does not line up, connecting or calling fails with `ProtocolIncompatible` (see [Error Handling](../../usage/diagnostics/errors.md)). That is the runtime outcome, not a statement about any other combination.
 
 ## eclipse-zenoh Versions Must Match
 
@@ -73,11 +77,11 @@ Among the other dependencies, `flatbuffers` is likewise pinned exactly while `Py
 
 ## Error Text Catalogs Ship as an SDK Snapshot
 
-The localized log / error / fault texts in `Catalogs` are a snapshot embedded at the SDK's release version. If the robot platform is updated while the SDK is not, newly added error codes or faults are still reported correctly; they simply have no catalog entry yet and fall back to the raw ID. Upgrading the SDK brings the latest texts. See [Localized Text (Catalogs)](../../usage/diagnostics/catalogs.md) for usage.
+The localized log / error / fault texts in `Catalogs` are a snapshot embedded at the SDK's release version. If the robot system is updated while the SDK is not, newly added error codes or faults are still reported correctly; they simply have no catalog entry yet and fall back to the raw ID. Upgrading the SDK brings the latest texts. See [Localized Text (Catalogs)](../../usage/diagnostics/catalogs.md) for usage.
 
 ## Upgrade Steps
 
-1. After upgrading the robot platform, upgrade the SDK to the same version: reinstall from the wheel shipped with the new release (see [Installing the Python SDK](./python.md)).
+1. After upgrading the robot system, move the SDK to the same version: reinstall from the wheel shipped with the new release (see [Installing the Python SDK](./python.md)). The robot-side upgrade procedure is in [Installing & Upgrading the Robot System](./robot-system.md).
 2. Verify both sides match with `fabot.__version__` and `robot.version()`.
 3. Run your key flows (connect, `wait_ready`, core capability calls) in a test environment before switching production over.
 
@@ -85,5 +89,6 @@ The localized log / error / fault texts in `Catalogs` are a snapshot embedded at
 
 - [Requirements](./requirements.md): OS, architecture, Python, and network conditions
 - [Installing the Python SDK](./python.md): wheel installation and dependency notes
+- [Installing & Upgrading the Robot System](./robot-system.md): installing, upgrading and rolling back the robot-side software
 - [Error Handling](../../usage/diagnostics/errors.md): error categories, `ProtocolIncompatible`, and retry strategy
 - [Troubleshooting](../../troubleshooting.md): diagnosing connection failures and related issues

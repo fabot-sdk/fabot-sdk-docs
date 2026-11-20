@@ -2,7 +2,7 @@
 title: Troubleshooting
 status: draft
 owner: fabot-core
-updated: 2026-11-19
+updated: 2026-11-20
 ---
 
 # Troubleshooting
@@ -15,13 +15,14 @@ Symptom-oriented checklist. General tools: every failed call raises a `FabotErro
 
 | Symptom | Likely cause | Check |
 |---------|--------------|-------|
-| `TransportError` / `Unavailable` / `Timeout` | Network unreachable, control plane not running, blocked port | Confirm the control-plane endpoint (IP and port, default 7557) and reachability; confirm the platform is running; open the firewall |
+| `TransportError` / `Unavailable` / `Timeout` | Network unreachable, control plane not running, blocked port | Confirm the control-plane endpoint (IP and port, default 7557) and reachability; confirm the platform is running (`fabot status`); open the firewall |
 | `Unauthorized` | Authentication failure | Check `ClientConfig.auth_token` |
-| `ProtocolIncompatible` | SDK and platform versions do not match | Check version compatibility, see [Version Compatibility](./getting-started/install/compatibility.md) |
+| `ProtocolIncompatible` | SDK and robot-system versions do not match | Move both sides to the same version; for how to check versions see [Version Compatibility](./getting-started/install/compatibility.md) |
 
 Other checks:
 
 - Verify the installation: `import fabot` should work, see [Installing the Python SDK](./getting-started/install/python.md).
+- Confirm the robot system is installed and running: run `fabot status` / `fabot doctor` on the robot host; when it is missing or not started, see [Installing & Upgrading the Robot System](./getting-started/install/robot-system.md).
 - When the SDK and the control plane share a host, first try `Robot.connect()` without an address (discovered from the default configuration) to rule out a wrong address.
 - To rule out the robot side, run the flow offline with `Robot.mock()`, see [Mock Testing](./usage/testing/mock.md).
 

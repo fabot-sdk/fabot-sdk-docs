@@ -1,8 +1,9 @@
 # fabot_sdk_docs
 
-fabot SDK（`fabot-sdk` Python wheel）的独立用户文档仓库，使用 [Rspress](https://rspress.rs/) 构建中英双语静态站点。当前站点只发布 Python 文档。
+fabot SDK（`fabot-sdk` Python wheel）与机器人系统的用户文档仓库，使用 [Rspress](https://rspress.rs/) 构建中英双语静态站点。当前站点只发布 Python 文档。
 
-- 范围：**只覆盖 SDK 本身**（应用侧如何连接、控制、监控机器人）。
+- 范围：SDK 用户面（应用侧如何连接、控制、监控机器人），以及机器人主机上那套软件（**机器人系统**）的安装、配置与现场运维。
+- 不覆盖：机器人系统内部设计、发行流程与 CI 细节。
 
 ## 目录结构
 
@@ -10,10 +11,17 @@ fabot SDK（`fabot-sdk` Python wheel）的独立用户文档仓库，使用 [Rsp
 docs/
 ├── zh/                     # 中文（默认语言，URL 无前缀）
 │   ├── index.md            # 首页
-│   ├── overview.md         # 概览（SDK 位置、术语、两层 API）
-│   ├── install/            # 安装与配置
-│   ├── usage/              # 常规操作
-│   ├── tutorials/          # 入门教程（python.md）
+│   ├── getting-started/    # 入门
+│   │   ├── overview.md     # 概览（SDK 位置、术语、两层 API）
+│   │   ├── install/        # 安装与配置
+│   │   │   ├── index.md            # 安装总览（SDK + 机器人系统两条线）
+│   │   │   ├── requirements.md     # 环境要求
+│   │   │   ├── python.md           # 安装 Python SDK
+│   │   │   ├── robot-system.md     # 机器人系统安装与升级
+│   │   │   ├── robot-system-config.md  # 机器人系统配置
+│   │   │   └── compatibility.md    # 版本配套
+│   │   └── quickstart.md   # 第一个程序
+│   ├── usage/              # 常规操作（基础机制、数据与状态、错误与诊断、配置技能与服务、测试迁移）
 │   ├── examples/python/    # 使用示例（index + 按能力的完整示例）
 │   ├── reference/python/   # 接口参考（Robot 入口 + 16 个能力模块 + 技能 + 平台服务）
 │   ├── troubleshooting.md  # 故障排除
@@ -21,7 +29,7 @@ docs/
 └── en/                     # 英文（URL 前缀 /en/），页面路径与 zh 一一对应
 ```
 
-示例与 API 在 `examples/python/`、`reference/python/`。概念页（`overview` / `install` / `usage` / `troubleshooting`）只写 Python。
+示例与 API 在 `examples/python/`、`reference/python/`。概念页（`overview` / `usage` / `troubleshooting` / `changelog`）只写 Python；`install/` 同时覆盖 SDK 与机器人系统。
 
 ## 多语言约定
 
@@ -55,15 +63,19 @@ npm run serve     # 构建 + 预览一步到位（要验证下载用这个）
 
 ## 导出与下载
 
-构建会为每个页面额外生成 Markdown，并输出全站汇总文件；顶栏「下载」下拉提供三个入口：
+顶栏「下载」下拉有两类入口。
+
+**软件发行物**：第一项「机器人系统与 SDK 安装包」链到[软件交付平台](https://app.five-ages.ai/downloads#p=0eec0050-0430-4e36-acb4-627be7bdd6ed)，按版本与通道列出整机发行 zip、SDK wheel 与运控交付包。这是给现场装机用的，开发与预览环境也会显示；换产品或改产品页只改 `theme/DownloadMenu.tsx` 顶部的 `RELEASE_PORTAL_URL`。
+
+**文档导出**：构建会为每个页面额外生成 Markdown，并输出全站汇总文件，共三个入口：
 
 - 本页 Markdown：当前页面的 `.md`，随当前路由变化。
 - 全站 Markdown：`llms-full.txt`，全站内容合并为单个文件（英文为 `en/llms-full.txt`）。
 - 全站索引：`llms.txt`，按导航与侧栏顺序列出页面（英文为 `en/llms.txt`）。
 
-这些文件由 `rspress.config.ts` 中的 `llms: true` 生成，下拉入口在 `theme/DownloadMenu.tsx`，样式在 `theme/download-menu.css`。
+这些文件由 `rspress.config.ts` 中的 `llms: true` 生成，下拉入口在 `theme/DownloadMenu.tsx`，样式在 `theme/download-menu.css`。下拉项的文案 key 在 `i18n.json`（`downloadRelease` / `downloadPage` / `downloadFull` / `downloadIndex`）。
 
-下载文件**只在构建阶段生成**：`npm run dev` 无法下载（开发服务器会把 `.md`、`llms*.txt` 等未知路径回退成 HTML 页面，浏览器随即报「无法从网站上读取文件」），此时下拉里会显示提示文案。要本地验证下载，请用 `npm run serve`（等价于 `npm run build` + `npm run preview`）。
+文档导出的 Markdown 文件**只在构建阶段生成**：`npm run dev` 无法下载（开发服务器会把 `.md`、`llms*.txt` 等未知路径回退成 HTML 页面，浏览器随即报「无法从网站上读取文件」），此时下拉里对这三项显示提示文案。要本地验证下载，请用 `npm run serve`（等价于 `npm run build` + `npm run preview`）。
 
 推送到 GitHub `main` 或 `v*` 后由 Actions 发布到 [GitHub Pages](https://fabot-sdk.github.io/fabot-sdk-docs/)。仓库 Settings → Pages → Source 选 **GitHub Actions**。
 

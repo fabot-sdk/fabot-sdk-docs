@@ -1,16 +1,16 @@
 ---
-title: fabot SDK Documentation
+title: Fabot SDK Documentation
 status: draft
 owner: fabot-core
-updated: 2026-11-18
+updated: 2026-11-20
 ---
 
-# fabot SDK Documentation
+# Fabot SDK Documentation
 
-The fabot SDK is a client development kit for integrators: it connects to, controls and monitors a fabot robot from your application. This documentation covers the client SDK (the `fabot-sdk` Python wheel) only, not the robot internals; the system software preinstalled on the robot host is covered as background in [Robot System & Local Console](./usage/testing/robot-system.md).
+The Fabot SDK is a client development kit for integrators: it connects to, controls and monitors a Fabot robot from your application. This documentation covers the client SDK (the `fabot-sdk` Python wheel) together with installing, configuring and operating the software on the robot host (the **robot system** below); it does not cover robot internals. The robot system usually ships with the robot — to install or reconfigure it yourself, see [Installing & Upgrading the Robot System](./getting-started/install/robot-system.md).
 
 - **Python**: `fabot-sdk` (import name `fabot`), requires Python ≥ 3.12
-- This site documents **fabot-sdk 1.1.0-beta.2**; when it disagrees with your installation, `fabot.__version__` wins — see [Version Compatibility](./getting-started/install/compatibility.md)
+- This site documents **fabot-sdk 1.1.0**; when it disagrees with your installation, `fabot.__version__` wins — see [Version Compatibility](./getting-started/install/compatibility.md)
 
 ## One-minute quick start
 
@@ -42,7 +42,7 @@ with Robot.connect() as robot:      # local use, no IP needed
 Expected output (values follow the live state; anything that prints proves connectivity — `RobotMode` / `HealthState` are `IntEnum`s, so print `.name` to get names instead of numbers):
 
 ```console
-1.1.0-beta.2 1.1.0-beta.2
+1.1.0 1.1.0
 Idle Normal
 ```
 
@@ -61,7 +61,7 @@ The docs are organized into three chapters: **Getting Started** gets you running
 | Page | Content |
 |------|---------|
 | [Overview & Architecture](./getting-started/overview.md) | Where the SDK sits, terminology, the two API layers |
-| [Installation & Configuration](./getting-started/install/index.md) | Requirements, Python install, version compatibility |
+| [Installation & Configuration](./getting-started/install/index.md) | Requirements, Python install, robot-system install and configuration, version compatibility |
 | [Quick Start](./getting-started/quickstart.md) | Three stages: connect, probe slots, call capabilities |
 
 **Sections**
@@ -70,7 +70,7 @@ The docs are organized into three chapters: **Getting Started** gets you running
 |------|---------|----------|
 | [Usage](./usage/index.md) | Five themed chapters: basics, data & status, errors & diagnostics, configuration / skills / services, testing / migration / background | Everyone |
 | [Python Examples](./examples/python/index.md) | Complete examples per capability | Application developers |
-| [Robot System & Local Console](./usage/testing/robot-system.md) | How the robot system relates to the SDK, the `fabot` command, the `fabot console` UI | On-site operations |
+| [Robot System Operations & Local Console](./usage/testing/robot-system.md) | The `fabot` command, the `fabot console` UI, service start and stop | On-site operations |
 | [Troubleshooting](./troubleshooting.md) | Connection failures, `wait_ready`, Operation failures, e-stop recovery, frames, camera capture and lift motion | Everyone |
 
 **Reference**
@@ -82,4 +82,4 @@ The docs are organized into three chapters: **Getting Started** gets you running
 
 ## Version compatibility
 
-See [Version Compatibility](./getting-started/install/compatibility.md) for the SDK and robot-side version baseline.
+See [Version Compatibility](./getting-started/install/compatibility.md) for how to check both versions and the one-version-number release convention.

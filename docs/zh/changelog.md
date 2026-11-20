@@ -2,38 +2,23 @@
 title: 更新日志
 status: draft
 owner: fabot-core
-updated: 2026-11-19
+updated: 2026-11-20
 ---
 
 # 更新日志
 
-按 SDK 版本倒序列出对外可见的变更。每个版本与同版本号的机器人平台配套；当前最新为预发布版 `1.1.0-beta.2`。版本号语义与升级步骤见 [版本配套](./getting-started/install/compatibility.md)。
+按 SDK 版本倒序列出对外可见的变更。每个版本与同版本号的机器人系统配套；当前最新为 `1.1.0`。产品仍在快速迭代，暂不提供跨版本的兼容性承诺，版本号读法与升级步骤见 [版本配套](./getting-started/install/compatibility.md)。
 
 顶栏版本下拉可切换各版本对应的文档；某个历史版本的更新日志只包含到该版本为止的条目。
 
-## 1.1.0-beta.2
+## 1.1.0
 
-2026-11-19 · 预发布版
+2026-11-20 · 正式版
 
 ### 新增
 
-- 运动接口支持时长 / 速度双模式：`arm` / `arms` / `body` / `head` / `motion` / `gripper` / `hand` / `lift` 的 `move_*` 新增 `mode`（`TimingMode.DEFAULT` / `DURATION` / `VELOCITY`）与 `velocity` / `acceleration` / `jerk` 参数。`DEFAULT` 沿用槽位缺省；`DURATION` 显式指定总时长；`VELOCITY` 由速度约束求解时间最优时长（求解值是下界），夹爪 / 灵巧手 / 升降柱在该模式下临时改写控制器速度、结束后还原。
+- 运动：`move_*` 接口支持时长 / 速度双模式，新增 `mode`（`TimingMode.DEFAULT` / `DURATION` / `VELOCITY`）与 `velocity` / `acceleration` / `jerk` 参数。`DEFAULT` 沿用槽位缺省；`DURATION` 显式指定总时长；`VELOCITY` 由速度约束求解时间最优时长（求解值是下界）。覆盖 `arm` / `arms` / `body` / `head` / `motion` / `gripper` / `hand` / `lift`。
 - 安装：机器人系统包内置同版本 SDK wheel，新增 `fabot sdk` 命令（`show` / `export` / `install` / `upgrade` / `init`），见 [安装 Python SDK](./getting-started/install/python.md)。
-
-### 变更
-
-- 等待参数统一改名：`gripper` / `hand` / `chassis` 请求里的 `duration` 与到达阈值的 `max_timeout_s` 统一改为 `wait_timeout`；`lift` 与 `head.move_pose` 没有控制器时长参数，原来的 `duration` 与 `wait_timeout` 合并为一个总等待预算。
-
-### 兼容性
-
-- **破坏性变更**：显式指定运动时长必须带 `mode=TimingMode.DURATION`——只写 `duration=2.0` 不再生效。夹爪 / 灵巧手 / 升降柱 / 底盘的旧 `duration` 参数改名为 `wait_timeout`。
-
-## 1.1.0-alpha.1
-
-2026-11-02 · 预发布版
-
-### 新增
-
 - 日志：`robot.logs.history()` 查询历史日志（`limit` / `slot` / `unit` 过滤），`robot.logs.emit()` / `debug` / `info` / `warn` / `error` 上报自定义日志，`robot.logs.freeze()` 冻结飞行记录器，见 [日志、指标与可观测性](./usage/diagnostics/observability.md)。
 - 指标：`robot.metrics` 全新入口——`subscribe()` 订阅、`snapshot()` 读 SDK 自身计数、`records()` 导出为 `MetricRecord`，`gauge` / `counter` / `histogram` 上报自定义指标。
 - 坐标系：`robot.frames`（`FrameSystem`）提供 `lookup` / `transform` / `transform_points` / `lookup_full` / `scoped_frame`，配套 `Transform3d` 代数与像素几何函数，不依赖 ROS，见 [坐标系与变换](./usage/data/frames.md)。
@@ -51,11 +36,12 @@ updated: 2026-11-19
 
 ### 变更
 
+- 等待参数统一改名：`gripper` / `hand` / `chassis` 请求里的 `duration` 与到达阈值的 `max_timeout_s` 统一改为 `wait_timeout`；`lift` 与 `head.move_pose` 没有控制器时长参数，原来的 `duration` 与 `wait_timeout` 合并为一个总等待预算。
 - 状态模型：`RobotState` 拆分为 `mode`（`RobotMode`）与 `health`（`HealthState`）两条独立的轴，新增 `root_causes`（`DiagnosticReason`）与 `domains`（`DomainHealth`），并提供 `is_normal` / `is_fatal` 等便捷属性。原 `.state` / `.reasons` 写法不再适用。
 - 故障：故障袋统一为 `Faults(revision, records: list[FaultState])`，`FaultState` 由 `code`（诊断码）/ `source` / `state` / `severity` / `timestamp_us` 组成，替代按名称展开的字段。
 - 错误：`FabotError` 以 32 位诊断码为主标识，`category` 只在本地构造期用于选择子类、不随协议传递；`retryable` 由子类推导（`Timeout` / `ResourceConflict` / `TransportError` / `Unavailable`）。
 - 文本目录：`Catalogs` 改为按诊断码 `0xXXXXXXXX` 查表，新增 `format_metric`；`format_fault` 不再需要 `capability_id`。
-- 相机：`capture()` 返回完整的 `FrameSet`（彩色 / 深度 / 配准深度 / 红外 / 置信度），新增 `get_calibration()`（含内外参、基线与深度换算）、`get_imaging()` / `set_imaging()`、`perf_frame_shm()`，通道从 5 条扩到 12 条。能力激活后默认自动开流。
+- 相机：`capture()` 返回完整的 `FrameSet`（彩色 / 深度 / 配准深度 / 红外 / 置信度），新增 `get_calibration()`（含内外参、基线与深度换算）、`get_imaging()` / `set_imaging()`，通道从 5 条扩到 12 条。能力激活后默认自动开流。
 - 底盘：`servo_twist` / `move_pose` / `move_pose_relative` / `move_station` 取代原 `move` / `move_relative` / `navigate_to_station` / `pause` / `resume`（`stop` 保留）；`get_station()` 取代 `list_stations()`；新增 `set_pose`（重定位）、`get_twist` / `get_stage` / `get_odometer`、驻停 / 锁止 / 暂停读写与速度加速度上限。
 - 机械臂 / 双臂 / 躯干 / 头部：运动接口统一为 `move_joint` / `move_joint_path` / `move_pose` / `move_pose_relative` / `move_pose_path` / `move_pose_arc_by_points` / `move_pose_arc_by_center`；`servo_pose` / `servo_twist` 为短周期伺服；新增到达阈值与速度 / 加速度上限读写。
 - 运动：以 `get_mode` / `set_mode`（`MotionMode`）取代 FSM 接口，新增 `get_wbc_state` / `get_center_of_mass` / `move_home` / `move_preset` 与全身关节 / 位姿目标。
@@ -66,8 +52,13 @@ updated: 2026-11-19
 
 ### 兼容性
 
-- **破坏性变更**：状态模型、故障结构、参数名（`positions` → `get_joint().positions`、`wait` → `duration` / `wait_timeout` 等）与多数运动方法名都与 1.0.x 不同。1.0.x 的应用代码需要按参考页逐项迁移。
-- 线协议仍为 `fabot/v1`，SDK 与平台仍按同版本号配套；建议升级两端后再改代码。
+- **破坏性变更**：状态模型、故障结构、参数名与多数运动方法名都与 1.0.x 不同，详见 [从 1.0.x 迁移到 1.1.0](./usage/testing/migration-1.0-to-1.1.md)。
+
+  - 显式指定运动时长必须带 `mode=TimingMode.DURATION`——只写 `duration=2.0` 不再生效。
+  - 夹爪 / 灵巧手 / 升降柱 / 底盘的旧 `duration` 参数改名为 `wait_timeout`。
+  - `positions` 改为 `get_joint().positions`；状态读 `.mode` / `.health`，不再读 `.state` / `.reasons`。
+
+- 线协议仍为 `fabot/v1`，SDK 与机器人系统按同一产品版本号配套发布。
 
 ## 1.0.2
 

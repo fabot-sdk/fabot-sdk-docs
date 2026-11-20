@@ -1,16 +1,16 @@
 ---
-title: fabot SDK 文档
+title: Fabot SDK 文档
 status: draft
 owner: fabot-core
-updated: 2026-11-18
+updated: 2026-11-20
 ---
 
-# fabot SDK 文档
+# Fabot SDK 文档
 
-fabot SDK 是面向集成开发者的客户端开发包，用于在应用侧连接、控制并监控一台 fabot 机器人。本文档只覆盖客户端 SDK（`fabot-sdk` Python wheel），不含机器人内部实现；机器人主机上随机器预装的系统软件只做背景介绍，见 [机器人系统与本地控制台](./usage/testing/robot-system.md)。
+Fabot SDK 是面向集成开发者的客户端开发包，用于在应用侧连接、控制并监控一台 Fabot 机器人。本文档覆盖客户端 SDK（`fabot-sdk` Python wheel），以及机器人主机上那套软件（下称**机器人系统**）的安装、配置与现场运维；不含机器人内部实现。机器人系统通常随机器人预装，需要自行安装或重配时见 [机器人系统安装与升级](./getting-started/install/robot-system.md)。
 
 - **Python**：`fabot-sdk`（import 名 `fabot`），要求 Python ≥ 3.12
-- 本站对应 SDK **1.1.0-beta.2**；与已安装版本不一致时以 `fabot.__version__` 为准，见 [版本配套](./getting-started/install/compatibility.md)
+- 本站对应 SDK **1.1.0**；与已安装版本不一致时以 `fabot.__version__` 为准，见 [版本配套](./getting-started/install/compatibility.md)
 
 ## 一分钟上手
 
@@ -42,7 +42,7 @@ with Robot.connect() as robot:      # 本机使用，不传 IP
 预期输出（值随现场变化，能打印即说明连通；`RobotMode` / `HealthState` 是 `IntEnum`，直接打印是数字，所以用 `.name` 取名称）：
 
 ```console
-1.1.0-beta.2 1.1.0-beta.2
+1.1.0 1.1.0
 Idle Normal
 ```
 
@@ -61,7 +61,7 @@ Idle Normal
 | 页面 | 内容 |
 |------|------|
 | [概述与架构](./getting-started/overview.md) | SDK 在系统中的位置、术语、两层 API |
-| [安装与配置](./getting-started/install/index.md) | 环境要求、Python 安装、版本配套 |
+| [安装与配置](./getting-started/install/index.md) | 环境要求、Python 安装、机器人系统安装与配置、版本配套 |
 | [快速开始](./getting-started/quickstart.md) | 三段式上手：连通、探测槽位、调用能力 |
 
 **章节（Sections）**
@@ -70,7 +70,7 @@ Idle Normal
 |------|------|----------|
 | [常规操作](./usage/index.md) | 五个主题章：基础机制、数据与状态、错误与诊断、配置技能与服务、测试迁移与背景 | 所有读者 |
 | [Python 示例](./examples/python/index.md) | 按能力的完整 Python 示例 | 应用开发 |
-| [机器人系统与本地控制台](./usage/testing/robot-system.md) | 机器人系统与 SDK 的关系、`fabot` 命令、`fabot console` 界面 | 现场运维 |
+| [机器人系统运维与本地控制台](./usage/testing/robot-system.md) | `fabot` 命令、`fabot console` 界面、服务启停 | 现场运维 |
 | [故障排除](./troubleshooting.md) | 连不上、`wait_ready`、Operation 失败、急停恢复、坐标系、抓帧与升降柱问题 | 所有读者 |
 
 **参考（Reference）**
@@ -82,4 +82,4 @@ Idle Normal
 
 ## 版本配套
 
-SDK 与机器人端的版本基线见 [版本配套](./getting-started/install/compatibility.md)。
+两端版本的查看方式与同版本发布的约定见 [版本配套](./getting-started/install/compatibility.md)。

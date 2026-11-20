@@ -55,5 +55,5 @@ No network is needed when no real robot is available: `Robot.mock()` provides a 
 ## Next steps
 
 - [Install the Python SDK](./python.md): install the wheel and verify `import fabot`
-- [Compatibility](./compatibility.md): how SDK versions map to robot platform versions
+- [Compatibility](./compatibility.md): how to check both versions, read a version number, and where compatibility stands today
 - [Python tutorial](../quickstart.md): run your first program from scratch

@@ -2,7 +2,7 @@
 title: 概述与架构
 status: draft
 owner: fabot-core
-updated: 2026-11-18
+updated: 2026-11-20
 ---
 
 # 概述与架构
@@ -24,7 +24,7 @@ flowchart LR
 
 能力（Capability）是机器人上的领域功能单元（底盘、机械臂、相机等），以可插拔的方式安装在槽位（Slot）上；SDK 侧为每个槽位提供强类型 Proxy。平台服务（Service）是机器人侧的常驻进程，SDK 可经 `robot.services` 做有限的生命周期与配置操作，见 [服务管理](../usage/configuration/services.md)。技能（Skill）是在多个能力之上组合出的高层语义单元，经 `robot.skills` 访问，见 [技能与扩展](../usage/configuration/skills.md)。
 
-上图的「机器人端控制面」由机器人主机上的一套软件提供，它一般**随机器人一起预装**，应用侧不需要自行部署。日常开发只需要 SDK；现场确认版本、启停服务或打开浏览器看状态时，用机器人主机上的 `fabot` 命令与 `fabot console` 本地控制台，见 [机器人系统与本地控制台](../usage/testing/robot-system.md)。
+上图的「机器人端控制面」由机器人主机上的一套软件（**机器人系统**）提供，它一般**随机器人一起预装**，应用侧通常不需要自行部署。日常开发只需要 SDK；现场确认版本、启停服务或打开浏览器看状态时，用机器人主机上的 `fabot` 命令与 `fabot console` 本地控制台，见 [机器人系统运维与本地控制台](../usage/testing/robot-system.md)。需要自行安装、升级或重配机器人系统时，见 [机器人系统安装与升级](./install/robot-system.md) 与 [机器人系统配置](./install/robot-system-config.md)。
 
 ## 快速一瞥
 
@@ -126,8 +126,8 @@ SDK 抛出的协议错误统一是 `FabotError` 的子类，携带 `code`（诊�
 
 ## 下一步
 
-- [安装与配置](./install/index.md)：环境要求、安装 Python SDK、版本配套
+- [安装与配置](./install/index.md)：环境要求、安装 Python SDK、机器人系统安装与配置、版本配套
 - [入门教程](./quickstart.md)：跑通第一个 Python 程序
 - [常规操作](../usage/index.md)：连接、命令与长时操作、事件与通道、状态与故障、日志与指标、坐标系、配置、错误、文本目录、Mock
-- [机器人系统与本地控制台](../usage/testing/robot-system.md)：机器人与 SDK 的关系、`fabot` 命令、`fabot console` 界面
+- [机器人系统运维与本地控制台](../usage/testing/robot-system.md)：`fabot` 命令、`fabot console` 界面、服务启停
 - [Python API 参考](../reference/python/index.md)：Robot 入口、文本目录、通用类型、16 个能力模块，以及技能与平台服务的完整接口

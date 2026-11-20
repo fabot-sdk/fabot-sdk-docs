@@ -2,7 +2,7 @@
 title: 故障排除
 status: draft
 owner: fabot-core
-updated: 2026-11-19
+updated: 2026-11-20
 ---
 
 # 故障排除
@@ -15,13 +15,14 @@ updated: 2026-11-19
 
 | 现象 | 可能原因 | 排查 |
 |------|----------|------|
-| `TransportError` / `Unavailable` / `Timeout` | 网络不通、控制面未运行、端口被拦 | 确认控制面端点（IP 与端口，默认 7557）正确且网络可达；确认机器人平台已启动；放行防火墙 |
+| `TransportError` / `Unavailable` / `Timeout` | 网络不通、控制面未运行、端口被拦 | 确认控制面端点（IP 与端口，默认 7557）正确且网络可达；确认机器人平台已启动（`fabot status`）；放行防火墙 |
 | `Unauthorized` | 鉴权失败 | 核对 `ClientConfig.auth_token` |
-| `ProtocolIncompatible` | SDK 与机器人平台版本不配套 | 核对版本配套关系，见 [版本配套](./getting-started/install/compatibility.md) |
+| `ProtocolIncompatible` | SDK 与机器人系统版本不配套 | 把两端换成同一版本；版本查看方式见 [版本配套](./getting-started/install/compatibility.md) |
 
 其他检查项：
 
 - 确认 SDK 安装无误：`import fabot` 应正常导入，见 [安装 Python SDK](./getting-started/install/python.md)。
+- 确认机器人系统在运行且已启动：在机器人主机上执行 `fabot status` / `fabot doctor`；没装或没启动时见 [机器人系统安装与升级](./getting-started/install/robot-system.md)。
 - SDK 与控制面在同一台主机时，可先试不带地址的 `Robot.connect()`（按默认配置自动发现），排除地址填错的因素。
 - 想先排除机器人侧因素，可用 `Robot.mock()` 离线跑通流程，见 [Mock 测试](./usage/testing/mock.md)。
 

@@ -2,7 +2,7 @@
 title: Usage Overview
 status: draft
 owner: fabot-core
-updated: 2026-11-18
+updated: 2026-11-20
 ---
 
 # Usage Overview
@@ -51,7 +51,7 @@ Classify, locate and observe failures:
 
 15. [Mock Testing](./testing/mock.md) — offline development and its limits.
 16. [Migrating from 1.0.x to 1.1.0](./testing/migration-1.0-to-1.1.md) — symbol mapping and a checklist for upgrades.
-17. [Robot System & Local Console](./testing/robot-system.md) — how the robot system relates to the SDK, the `fabot` command, the `fabot console` UI and its lifecycle (background).
+17. [Robot System Operations & Local Console](./testing/robot-system.md) — the `fabot` command, the `fabot console` UI and service start/stop; installation, upgrades and configuration live in Getting Started.
 
 ## Cheat sheet
 
@@ -65,4 +65,4 @@ Classify, locate and observe failures:
 - **Catch and classify failures**: catch the `FabotError` hierarchy, check `retryable` and follow `trace_id`, see [Error Handling](./diagnostics/errors.md).
 - **Show localized text**: `Catalogs.load()` then `format_error` / `format_log` / `format_fault` / `format_metric`, see [Catalogs](./diagnostics/catalogs.md).
 - **Develop without hardware**: `Robot.mock()`, see [Mock Testing](./testing/mock.md).
-- **Start, stop or inspect the robot system on site**: `fabot start` / `stop` / `status` / `enable` / `disable` and `fabot console`, see [Robot System & Local Console](./testing/robot-system.md).
+- **Start, stop or inspect the robot system on site**: `fabot start` / `stop` / `status` / `enable` / `disable` and `fabot console`, see [Robot System Operations & Local Console](./testing/robot-system.md); for installation, upgrades and configuration see [Installing & Upgrading the Robot System](../getting-started/install/robot-system.md) and [Configuring the Robot System](../getting-started/install/robot-system-config.md).

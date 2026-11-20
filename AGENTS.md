@@ -4,7 +4,9 @@
 
 ## 地图
 
-本仓库是 fabot SDK（`fabot-sdk` Python wheel）的**用户文档**站点，Rspress 构建。当前站点只发布 Python 文档。**只写 SDK 本身**，不写 fabot_system 平台内部设计。SDK 源码与契约在 `../fabot_system`（本仓库只读引用，不改）。
+本仓库是 fabot SDK（`fabot-sdk` Python wheel）与机器人系统的**用户文档**站点，Rspress 构建。当前站点只发布 Python 文档。**只写用户面**：SDK 本身，以及机器人主机上那套软件（公开称谓**机器人系统**）的安装、配置与现场运维；不写 fabot_system 平台内部设计。SDK 源码与契约在 `../fabot_system`（本仓库只读引用，不改）。
+
+机器人系统部分的事实来源（同样只读引用）：`../fabot_system/docs/deployment.md`（安装、槽位、回滚、卸载）、`docs/tools/fabot.md` / `fabot-admin.md` / `console.md`（命令与控制台）、`docs/zenoh-topology.md`（端口）、`docs/observability-security.md`（日志与观测）、`docs/troubleshooting.md`，以及 `packaging/boot/fabot-install.sh` / `fabot-uninstall.sh` / `fabot-bootstrap-install.sh` 的 `--help` 文本。写这些页面时以脚本 `-h` 与单元文件为准，不要照抄构建、打包、CI、契约与内部实现。
 
 **Python API 事实来源按优先级取第一个存在的路径**（不同检出 / 构建状态下可用路径不同）：
 
@@ -19,8 +21,8 @@
 | 路径 | 用途 |
 |------|------|
 | `docs/zh/`、`docs/en/` | 中英内容（路径一一对应） |
-| `docs/*/getting-started/` | 入门：`overview.md` 概览、`install/` 安装与配置、`quickstart.md` 第一个程序 |
-| `docs/*/usage/` | 常规操作，五个主题章：`basics/`（连接、约定、Command/Operation、并发安全）、`data/`（事件通道、状态故障、坐标系）、`diagnostics/`（错误、文本目录、自检、可观测性）、`configuration/`（配置、技能、服务）、`testing/`（Mock、迁移、机器人系统与本地控制台） |
+| `docs/*/getting-started/` | 入门：`overview.md` 概览、`install/` 安装与配置（SDK 安装 + 机器人系统安装/升级与配置）、`quickstart.md` 第一个程序 |
+| `docs/*/usage/` | 常规操作，五个主题章：`basics/`（连接、约定、Command/Operation、并发安全）、`data/`（事件通道、状态故障、坐标系）、`diagnostics/`（错误、文本目录、自检、可观测性）、`configuration/`（配置、技能、服务）、`testing/`（Mock、迁移）；`testing/robot-system.md` 是现场运维与本地控制台页（安装与配置在入门章节） |
 | `docs/*/examples/python/` | Python 示例（按能力分页） |
 | `docs/*/reference/python/` | Python API 参考（Robot 入口 + 诊断码 + 16 个能力模块 + 技能 `skills/` + 平台服务 `services/`，八段式：模块概述 → API 总览 → 方法 → 通道 → 事件 → 异常 → 状态 → 资源） |
 | `docs/*/troubleshooting.md` | 故障排除 |
@@ -34,7 +36,7 @@
 | `git-commit.md` | Git 提交规范（不进站点） |
 | `git-branch.md` | Git 分支管理规范（不进站点） |
 
-示例与 API 在 `examples/python/`、`reference/python/`。概念页（`overview` / `install` / `usage` / `troubleshooting` / `changelog`）只写 Python。
+示例与 API 在 `examples/python/`、`reference/python/`。概念页（`overview` / `usage` / `troubleshooting` / `changelog`）只写 Python；`getting-started/install/` 同时覆盖 SDK 与机器人系统。
 
 ## 必须遵守
 
@@ -42,8 +44,9 @@
 - **frontmatter**：每页必填 `title` / `status` / `owner` / `updated`，`title` 与首个 `#` 标题一致；书写规范遵循 `fabot_system/docs/sdk/00-doc-guideline.md`。
 - **以真实 API 为准**：类名、方法签名、槽位属性以生效的 `fabot` 包 `.pyi`（路径见上节优先级）为准；禁止凭记忆杜撰接口。
 - **版本基线**：站点对应 SDK 1.1.0 开发线。改签名或补接口后，用一段 `Robot.mock()` 冒烟验证：把文档里的调用名逐个 `hasattr` 一遍；新增能力模块要同步 `overview.md`、`reference/python/index.md`、`_meta.json`、槽位表与状态/故障/事件/通道清单。
-- **发布文档用语**：`docs/` 与 `README.md` 的正文、TODO、注释不得出现契约 / Contract YAML、`schemas/` / `src/schemas/`、fabot_system、docgen、adapter 配置模板等内部概念。公开 API 名称（`adapter` / `has_adapter` / `as_adapter`、Slot、Command、Operation、Channel、Event）可以保留。本文件是仓库维护说明，继续写 fabot_system 作为事实来源。
-- **多版本**：`main` 为默认版（URL `/`），顶栏显示 `v<package.json 的 version>(最新)`（当前为 `v1.1.0-beta.2(最新)`）；推进版本时先改 `package.json` 的 `version`。历史版用 `v1.0.0` 这类分支，发布到 `/v1.0.0/`。从已有切换器的 `main` 切分支并 `git push github v1.0.0` 后，CI 才会收录该版本。`versions.json` 列出 `main` 与全部 `v*` 分支，顶栏为 `v<version>(最新)` 与各历史版。本地 `npm run build` 没有历史版目录，点选时提示尚未发布；要本地打开历史版用 `npm run build:versions` + `npm run preview:versions`（汇总产物在 `dist/`）。rspack 持久缓存必须把 `RSPRESS_BASE` 算进 `cacheDigest`，否则下一次构建会沿用上一次的 base，下拉退回「最新」。改 `theme/VersionSelect.tsx` 后注意历史版仍用各自分支里的旧组件，向前兼容的改动需另行下放到版本分支。
+- **发布文档用语**：`docs/` 与 `README.md` 的正文、TODO、注释不得出现契约 / Contract YAML、`schemas/` / `src/schemas/`、fabot_system、docgen、adapter 配置模板等内部概念。机器人端软件一律写「机器人系统」或「机器人平台」。公开 API 名称（`adapter` / `has_adapter` / `as_adapter`、Slot、Command、Operation、Channel、Event）可以保留。本文件是仓库维护说明，继续写 fabot_system 作为事实来源。
+- **机器人系统页面的事实来源**：命令、参数、默认值与路径以 `fabot-install.sh` / `fabot-uninstall.sh` / `fabot-bootstrap-install.sh` 的 `-h`、`fabot` 各子命令的 `-h`、systemd 单元与 `packaging/boot/include/fabot_layout.hpp` 为准。不写发行流程、签名密钥配置、CI、Docker 镜像与遗留 Deb 细节；不复制内部实现说明。
+- **多版本**：`main` 为默认版（URL `/`），顶栏显示 `v<package.json 的 version>(最新)`（当前为 `v1.1.0(最新)`）；推进版本时先改 `package.json` 的 `version`。历史版用 `v1.0.0` 这类分支，发布到 `/v1.0.0/`。从已有切换器的 `main` 切分支并 `git push github v1.0.0` 后，CI 才会收录该版本。`versions.json` 列出 `main` 与全部 `v*` 分支，顶栏为 `v<version>(最新)` 与各历史版。本地 `npm run build` 没有历史版目录，点选时提示尚未发布；要本地打开历史版用 `npm run build:versions` + `npm run preview:versions`（汇总产物在 `dist/`）。rspack 持久缓存必须把 `RSPRESS_BASE` 算进 `cacheDigest`，否则下一次构建会沿用上一次的 base，下拉退回「最新」。改 `theme/VersionSelect.tsx` 后注意历史版仍用各自分支里的旧组件，向前兼容的改动需另行下放到版本分支。
 - **部署**：Pages 只允许从 `main` 部署（`github-pages` 环境的部署分支规则），所以 `build` / `deploy` 都带 `if: github.ref == 'refs/heads/main'`；推送 `v*` 时由 `refresh-from-main` 作业调度一次 `main` 的运行来重建全部版本。改 workflow 后要把它同步到各个 `v*` 分支（每个分支用的都是自己那份 workflow），否则推该分支仍会按旧逻辑部署并被环境规则拒绝。
 - **更新日志**：发版时在 `docs/*/changelog.md` 顶部追加一节，格式为新版本号 + 发布日期 + `新增` / `变更` / `修复` / `兼容性`；只写 SDK 对外可见的变化，破坏性变更必须显式标注。历史版本分支上的更新日志只追加到该版本为止，不回填 `main` 的新版本内容。
 - **验证**：改动后运行 `npm run build` 确认无 ERROR 再提交。

@@ -40,8 +40,8 @@
     "en": "Usage"
   },
   "robotSystem": {
-    "zh": "机器人系统与本地控制台",
-    "en": "Robot System & Local Console"
+    "zh": "机器人系统运维与本地控制台",
+    "en": "Robot System Operations & Local Console"
   },
   "sections": {
     "zh": "章节",
@@ -90,6 +90,10 @@
   "download": {
     "zh": "下载",
     "en": "Download"
+  },
+  "downloadRelease": {
+    "zh": "机器人系统与 SDK 安装包",
+    "en": "Robot system & SDK packages"
   },
   "downloadPage": {
     "zh": "本页 Markdown",

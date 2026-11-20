@@ -10,20 +10,20 @@ export default defineConfig({
   outDir: process.env.RSPRESS_OUT_DIR ?? 'doc_build',
   // 顶层 title 只能用语言中立的文案：Rspress 用它作为每页 <title> 后缀与 llms.txt 标题，
   // 写成中文会让英文站也带中文后缀。各语言的完整名称放在 locales 里。
-  title: 'fabot SDK',
+  title: 'Fabot SDK',
   lang: 'zh',
   locales: [
     {
       lang: 'zh',
       label: '简体中文',
-      title: 'fabot SDK 文档',
-      description: 'fabot 机器人软件平台 SDK 使用文档（Python）',
+      title: 'Fabot SDK 文档',
+      description: 'Fabot 机器人软件平台 SDK 使用文档（Python）',
     },
     {
       lang: 'en',
       label: 'English',
-      title: 'fabot SDK Docs',
-      description: 'fabot robot software platform SDK documentation (Python)',
+      title: 'Fabot SDK Docs',
+      description: 'Fabot robot software platform SDK documentation (Python)',
     },
   ],
   // 构建时额外输出每页 Markdown、llms.txt 与 llms-full.txt（下载入口见 theme/DownloadMenu.tsx）

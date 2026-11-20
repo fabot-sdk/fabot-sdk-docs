@@ -9,6 +9,10 @@ import {
 import { useMemo } from 'react';
 import './download-menu.css';
 
+// 软件交付平台上的产品页；换产品只改这一处
+const RELEASE_PORTAL_URL =
+  'https://app.five-ages.ai/downloads#p=0eec0050-0430-4e36-acb4-627be7bdd6ed';
+
 function llmsPath(lang: string, defaultLang: string, file: string): string {
   const prefix = lang && lang !== defaultLang ? `/${lang}` : '';
   return withBase(`${prefix}/${file}`);
@@ -69,6 +73,16 @@ export function DownloadMenu() {
       <details className="doc-download">
         <summary className="doc-download__trigger">{t('download')}</summary>
         <ul className="doc-download__menu">
+          <li>
+            <a
+              className="doc-download__item"
+              href={RELEASE_PORTAL_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t('downloadRelease')}
+            </a>
+          </li>
           <li className="doc-download__note">{t('downloadDevHint')}</li>
         </ul>
       </details>
@@ -79,6 +93,16 @@ export function DownloadMenu() {
     <details className="doc-download">
       <summary className="doc-download__trigger">{t('download')}</summary>
       <ul className="doc-download__menu">
+        <li>
+          <a
+            className="doc-download__item"
+            href={RELEASE_PORTAL_URL}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {t('downloadRelease')}
+          </a>
+        </li>
         {links.map((link) => (
           <li key={link.key}>
             <a

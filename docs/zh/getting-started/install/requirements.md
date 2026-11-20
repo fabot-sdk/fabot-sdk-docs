@@ -55,5 +55,5 @@ robot = Robot.connect()      # 本机使用，不传地址
 ## 下一步
 
 - [安装 Python SDK](./python.md)：安装 wheel 并验证 `import fabot`
-- [版本配套](./compatibility.md)：SDK 与机器人平台的版本对应原则
+- [版本配套](./compatibility.md)：两端版本的查看方式、版本号读法与现阶段的兼容性说明
 - [Python 入门教程](../quickstart.md)：从零跑通第一个程序

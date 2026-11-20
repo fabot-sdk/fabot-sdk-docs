@@ -2,7 +2,7 @@
 title: Overview & Architecture
 status: draft
 owner: fabot-core
-updated: 2026-11-18
+updated: 2026-11-20
 ---
 
 # Overview & Architecture
@@ -24,7 +24,7 @@ flowchart LR
 
 A capability is a domain feature unit on the robot (chassis, arm, camera, …) installed into a slot; the SDK provides a strongly typed proxy per slot. A platform service is a resident process on the robot that the SDK can start, stop, configure and inspect, see [Platform Services](../usage/configuration/services.md). A skill combines several capabilities into a higher-level semantic unit reached through `robot.skills`, see [Skills & Extensions](../usage/configuration/skills.md).
 
-The "robot control plane" above is provided by the software running on the robot host, and it is normally **preinstalled with the robot** — integrators do not deploy it. Day-to-day application work only needs the SDK; for checking versions, starting or stopping services, or opening the browser page on site, use the `fabot` command and the `fabot console` local console on the robot host, see [Robot System & Local Console](../usage/testing/robot-system.md).
+The "robot control plane" above is provided by the software running on the robot host (the **robot system**), and it is normally **preinstalled with the robot** — integrators usually do not deploy it. Day-to-day application work only needs the SDK; for checking versions, starting or stopping services, or opening the browser page on site, use the `fabot` command and the `fabot console` local console on the robot host, see [Robot System Operations & Local Console](../usage/testing/robot-system.md). To install, upgrade or reconfigure the robot system yourself, see [Installing & Upgrading the Robot System](./install/robot-system.md) and [Configuring the Robot System](./install/robot-system-config.md).
 
 ## At a glance
 
@@ -124,8 +124,8 @@ Protocol failures raise subclasses of `FabotError` carrying `code` (a diagnostic
 
 ## Next steps
 
-- [Installation & Configuration](./install/index.md): requirements, installing the Python SDK, version compatibility
+- [Installation & Configuration](./install/index.md): requirements, installing the Python SDK, robot-system install and configuration, version compatibility
 - [Tutorial](./quickstart.md): run your first Python program
 - [Usage](../usage/index.md): connection, commands and operations, events and channels, status and faults, logs and metrics, frames, configuration, errors, catalogs, mock
-- [Robot System & Local Console](../usage/testing/robot-system.md): how the robot and the SDK relate, the `fabot` command, the `fabot console` UI
+- [Robot System Operations & Local Console](../usage/testing/robot-system.md): the `fabot` command, the `fabot console` UI, service start and stop
 - [Python API Reference](../reference/python/index.md): Robot entry, catalogs, shared types, the 16 capability modules, plus skills and platform services

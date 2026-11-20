@@ -2,38 +2,23 @@
 title: Changelog
 status: draft
 owner: fabot-core
-updated: 2026-11-19
+updated: 2026-11-20
 ---
 
 # Changelog
 
-User-visible changes listed in reverse version order. Each release pairs with the robot platform of the same version number; the newest is the pre-release `1.1.0-beta.2`. Version semantics and upgrade steps are in [Version Compatibility](./getting-started/install/compatibility.md).
+User-visible changes listed in reverse version order. Each release pairs with the robot system of the same version number; the newest is `1.1.0`. The product is still moving quickly, so we do not currently commit to compatibility across versions — for how to read a version number and the upgrade steps, see [Version Compatibility](./getting-started/install/compatibility.md).
 
 The version dropdown in the top bar switches the documentation for each version; the changelog of a historical version only lists entries up to that version.
 
-## 1.1.0-beta.2
+## 1.1.0
 
-2026-11-19 · Pre-release
-
-### Added
-
-- Motion interfaces gained a duration / velocity timing mode: the `move_*` calls of `arm` / `arms` / `body` / `head` / `motion` / `gripper` / `hand` / `lift` take `mode` (`TimingMode.DEFAULT` / `DURATION` / `VELOCITY`) plus `velocity` / `acceleration` / `jerk`. `DEFAULT` keeps the slot defaults; `DURATION` sets the total time explicitly; `VELOCITY` solves a time-optimal duration from the constraints (the solved value is a lower bound) — the gripper / hand / lift write the controller speed for that move only and restore it afterwards.
-- Install: the robot system package now bundles the matching SDK wheel, with a new `fabot sdk` command (`show` / `export` / `install` / `upgrade` / `init`), see [Installing the Python SDK](./getting-started/install/python.md).
-
-### Changed
-
-- Wait parameters were renamed uniformly: the `duration` request field of `gripper` / `hand` / `chassis` and the arrival-threshold `max_timeout_s` are now `wait_timeout`; `lift` and `head.move_pose` have no controller duration, so their former `duration` and `wait_timeout` merged into a single total wait budget.
-
-### Compatibility
-
-- **Breaking**: explicitly setting a motion duration now requires `mode=TimingMode.DURATION` — a bare `duration=2.0` no longer takes effect. The old `duration` parameter of the gripper / hand / lift / chassis is renamed to `wait_timeout`.
-
-## 1.1.0-alpha.1
-
-2026-11-02 · Pre-release
+2026-11-20 · General release
 
 ### Added
 
+- Motion: the `move_*` calls accept a duration / velocity timing mode via `mode` (`TimingMode.DEFAULT` / `DURATION` / `VELOCITY`) plus `velocity` / `acceleration` / `jerk`. `DEFAULT` keeps the slot defaults; `DURATION` sets the total time explicitly; `VELOCITY` solves a time-optimal duration from the constraints (the solved value is a lower bound). Covers `arm` / `arms` / `body` / `head` / `motion` / `gripper` / `hand` / `lift`.
+- Install: the robot system package bundles the matching SDK wheel, with a new `fabot sdk` command (`show` / `export` / `install` / `upgrade` / `init`), see [Installing the Python SDK](./getting-started/install/python.md).
 - Logs: `robot.logs.history()` for persisted history (`limit` / `slot` / `unit` filters), `robot.logs.emit()` / `debug` / `info` / `warn` / `error` for custom records, and `robot.logs.freeze()` to freeze the flight recorder — see [Logs, Metrics & Observability](./usage/diagnostics/observability.md).
 - Metrics: the new `robot.metrics` entry — `subscribe()`, `snapshot()` for the SDK's own counters, `records()` to project them into `MetricRecord`s, and `gauge` / `counter` / `histogram` for custom metrics.
 - Frames: `robot.frames` (a `FrameSystem`) with `lookup` / `transform` / `transform_points` / `lookup_full` / `scoped_frame`, plus `Transform3d` algebra and pixel geometry helpers, with no ROS dependency — see [Frames & Transforms](./usage/data/frames.md).
@@ -51,12 +36,13 @@ The version dropdown in the top bar switches the documentation for each version;
 
 ### Changed
 
+- Wait parameters were renamed uniformly: the `duration` request field of `gripper` / `hand` / `chassis` and the arrival-threshold `max_timeout_s` are now `wait_timeout`; `lift` and `head.move_pose` have no controller duration, so their former `duration` and `wait_timeout` merged into a single total wait budget.
 - State model: `RobotState` splits into two independent axes, `mode` (`RobotMode`) and `health` (`HealthState`), adds `root_causes` (`DiagnosticReason`) and `domains` (`DomainHealth`), and provides `is_normal` / `is_fatal` and friends. The old `.state` / `.reasons` fields no longer apply.
 - Faults: every fault bag is now `Faults(revision, records: list[FaultState])`, where a `FaultState` is `code` (diagnostic code) / `source` / `state` / `severity` / `timestamp_us`, replacing the per-name fields.
 - Errors: `FabotError` is identified by a 32-bit diagnostic code; `category` is only a local construction tag used to pick a subclass and is not transmitted. `retryable` is derived from the subclass (`Timeout` / `ResourceConflict` / `TransportError` / `Unavailable`).
 - Catalogs: lookups are keyed by diagnostic code `0xXXXXXXXX`, `format_metric` is new, and `format_fault` no longer takes `capability_id`.
-- Camera: `capture()` returns a full `FrameSet` (color / depth / registered depth / infrared / confidence); `get_calibration()` (intrinsics, extrinsics, baseline, depth scale), `get_imaging()` / `set_imaging()` and `perf_frame_shm()` are new; channels grow from 5 to 12. Cameras now start streaming automatically once active.
-- Chassis: `servo_twist` / `move_pose` / `move_pose_relative` / `move_station` replace `move` / `move_relative` / `navigate_to_station` / `stop` / `pause` / `resume`; `get_station()` replaces `list_stations()`; `set_pose` (relocalization), `get_twist`, `get_stage`, parking / lock / pause accessors and velocity / acceleration limits are new.
+- Camera: `capture()` returns a full `FrameSet` (color / depth / registered depth / infrared / confidence); `get_calibration()` (intrinsics, extrinsics, baseline, depth scale), `get_imaging()` / `set_imaging()` are new; channels grow from 5 to 12. Cameras now start streaming automatically once active.
+- Chassis: `servo_twist` / `move_pose` / `move_pose_relative` / `move_station` replace `move` / `move_relative` / `navigate_to_station` / `pause` / `resume` (`stop` is kept); `get_station()` replaces `list_stations()`; `set_pose` (relocalization), `get_twist`, `get_stage`, `get_odometer`, parking / lock / pause accessors and velocity / acceleration limits are new.
 - Arm / arms / body / head: motion is unified as `move_joint` / `move_joint_path` / `move_pose` / `move_pose_relative` / `move_pose_path` / `move_pose_arc_by_points` / `move_pose_arc_by_center`, with `servo_pose` / `servo_twist` for short-cycle servoing, plus arrival thresholds and velocity / acceleration limits.
 - Motion: `get_mode` / `set_mode` (`MotionMode`) replace the FSM interface; `get_wbc_state`, `get_center_of_mass`, `move_home`, `move_preset` and whole-body joint / pose goals are new.
 - Gripper / hand: opening is normalized to [0, 1]; velocity and force limits are persistent settings; the hand gains five-finger tactile arrays and a `tactile()` channel.
@@ -66,8 +52,13 @@ The version dropdown in the top bar switches the documentation for each version;
 
 ### Compatibility
 
-- **Breaking changes**: the state model, fault shape, parameter names (`positions` → `get_joint().positions`, `wait` → `duration` / `wait_timeout`, …) and most motion method names differ from 1.0.x. Application code written for 1.0.x needs to migrate method by method against the reference pages.
-- The wire protocol is still `fabot/v1`, and SDK and platform still pair on identical version numbers; upgrade both ends before adapting code.
+- **Breaking changes**: the state model, fault shape, parameter names and most motion method names differ from 1.0.x — see [Migrating from 1.0.x to 1.1.0](./usage/testing/migration-1.0-to-1.1.md).
+
+  - Explicitly setting a motion duration now requires `mode=TimingMode.DURATION` — a bare `duration=2.0` no longer takes effect.
+  - The old `duration` parameter of the gripper / hand / lift / chassis is renamed to `wait_timeout`.
+  - `positions` becomes `get_joint().positions`; read `.mode` / `.health` instead of `.state` / `.reasons`.
+
+- The wire protocol is still `fabot/v1`, and the SDK and the robot system ship under one product version number.
 
 ## 1.0.2
 

@@ -1,13 +1,13 @@
 ---
-title: 机器人系统与本地控制台
+title: 机器人系统运维与本地控制台
 status: draft
 owner: fabot-core
-updated: 2026-11-18
+updated: 2026-11-20
 ---
 
-# 机器人系统与本地控制台
+# 机器人系统运维与本地控制台
 
-本页是背景补充：机器人主机上运行的那套软件（下称**机器人系统**）提供控制面，SDK 只是连到它的客户端。做应用开发通常碰不到机器人系统；但现场确认版本、启停服务、打开控制台看状态时，需要知道下面几个命令。
+本页是现场运维入口：机器人主机上运行的那套软件（下称**机器人系统**）提供控制面，SDK 只是连到它的客户端。日常启停、查版本、看日志、打开浏览器控制台都在这里；安装、升级与卸载见 [机器人系统安装与升级](../../getting-started/install/robot-system.md)，参数配置与首次开机配置见 [机器人系统配置](../../getting-started/install/robot-system-config.md)。
 
 ## 与 SDK 的关系
 
@@ -26,7 +26,7 @@ flowchart LR
 机器人系统一般随机器人一起交付：出厂或交付时已安装，并已按机型配好。因此：
 
 - 应用侧一般**不需要自己安装**机器人系统，拿到机器人后直接连接即可。
-- 自行部署、重装或升级整机软件属于机器人端运维，用发行物自带的安装脚本与交付说明，本文档不展开。
+- 需要重装、升级或换机时，按 [机器人系统安装与升级](../../getting-started/install/robot-system.md) 操作；装完或换机后的参数配置见 [机器人系统配置](../../getting-started/install/robot-system-config.md)。
 - 系统由 systemd 单元 `fabot.service` 托管。安装脚本本身不会开启开机自启，出厂是否已 `enable` 取决于交付配置，用 `fabot status` 可以看到当前的 enabled 状态。
 
 ## `fabot` 命令
@@ -85,6 +85,8 @@ $ fabot logs -f         # 跟随 journal 看启动过程
 
 ## 相关页面
 
-- [版本配套](../../getting-started/install/compatibility.md)：SDK 与机器人系统为什么必须同版本
+- [机器人系统安装与升级](../../getting-started/install/robot-system.md)：安装、升级、回滚与卸载
+- [机器人系统配置](../../getting-started/install/robot-system-config.md)：用户配置、端口与环境变量、首次开机配置
+- [版本配套](../../getting-started/install/compatibility.md)：两端版本的查看方式与同版本发布的约定
 - [连接与 Robot 入口](../basics/connection.md)：`Robot.connect` 与端点选择
 - [故障排除](../../troubleshooting.md)：连不上、`wait_ready` 超时

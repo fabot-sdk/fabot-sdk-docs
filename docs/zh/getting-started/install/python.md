@@ -2,7 +2,7 @@
 title: 安装 Python SDK
 status: draft
 owner: fabot-core
-updated: 2026-11-19
+updated: 2026-11-20
 ---
 
 # 安装 Python SDK
@@ -13,7 +13,7 @@ fabot 机器人的产品级 Python SDK 以 `fabot-sdk` 包发布，安装后的�
 
 SDK 以 wheel 形式随发行物分发，有两条安装路径。
 
-**方式一：随机器人系统携带（推荐）**。fabot 系统包内置了同版本的 SDK wheel，直接在机器人本机用 `fabot sdk` 命令把它装进自己的环境：
+**方式一：随机器人系统携带（推荐）**。机器人系统的发行包内置了同版本的 SDK wheel，直接在机器人本机用 `fabot sdk` 命令把它装进自己的环境（这条路径需要机器人上已装好机器人系统，见 [机器人系统安装与升级](./robot-system.md)）：
 
 ```console
 $ fabot sdk show                    # 查看随系统携带的 SDK 名称与版本
@@ -24,7 +24,7 @@ $ .venv/bin/python -c "import fabot; print(fabot.__version__)"
 
 uv 与 Miniforge / Mamba 环境同样支持（先 `uv venv .venv` 或 `mamba create -p .venv python=3.12`，再 `fabot sdk install .venv`）；普通 conda 前缀会被拒绝。机器人系统升级后，用 `fabot sdk upgrade .venv` 把环境对齐到新版本；`fabot sdk export <目标路径>` 可把 wheel 拷贝到离线机器；`fabot sdk init <空目录>` 生成一个可运行的最小示例（`main.py --mock` 无机器人可跑）。
 
-**方式二：从 wheel 文件安装**。拿到 wheel 文件后本地安装：
+**方式二：从 wheel 文件安装**。拿到 wheel 文件后本地安装（wheel 在软件交付平台的发布列表里，与机器人系统发行 zip 放在一起，见 [机器人系统安装与升级](./robot-system.md) 的「获取发行物」）：
 
 ```console
 $ pip install /path/to/fabot_sdk-<版本>.whl

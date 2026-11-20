@@ -1,13 +1,13 @@
 ---
-title: Robot System & Local Console
+title: Robot System Operations & Local Console
 status: draft
 owner: fabot-core
-updated: 2026-11-18
+updated: 2026-11-20
 ---
 
-# Robot System & Local Console
+# Robot System Operations & Local Console
 
-This page is background: the software that runs on the robot host (the **robot system** below) provides the control plane, and the SDK is only a client of it. Application work rarely touches the robot system, but checking versions on site, starting or stopping services, or opening the console to look at state all need the handful of commands below.
+This page is the on-site operations entry point: the software running on the robot host (the **robot system** below) provides the control plane, and the SDK is only a client of it. Day-to-day start/stop, version checks, log reading and the browser console are here; installation, upgrades and uninstall are in [Installing & Upgrading the Robot System](../../getting-started/install/robot-system.md), and parameters plus first-boot setup are in [Configuring the Robot System](../../getting-started/install/robot-system-config.md).
 
 ## How it relates to the SDK
 
@@ -26,7 +26,7 @@ flowchart LR
 The robot system usually arrives with the robot: installed at the factory or during delivery, already configured for the machine model. So:
 
 - You generally **do not install** the robot system yourself — connect to the robot as delivered.
-- Deploying, reinstalling or upgrading the whole-robot software is robot-side maintenance, done with the installer and delivery notes shipped with the release; this documentation does not cover it.
+- To reinstall, upgrade or replace a machine, follow [Installing & Upgrading the Robot System](../../getting-started/install/robot-system.md); configure parameters after a fresh install or swap with [Configuring the Robot System](../../getting-started/install/robot-system-config.md).
 - It is managed by the systemd unit `fabot.service`. The installer alone does not enable boot-time start; whether it is enabled at delivery depends on the deployment, and `fabot status` shows the current enabled state.
 
 ## The `fabot` command
@@ -85,6 +85,8 @@ A few easy confusions:
 
 ## Related pages
 
-- [Version Compatibility](../../getting-started/install/compatibility.md): why the SDK and the robot system must match
+- [Installing & Upgrading the Robot System](../../getting-started/install/robot-system.md): install, upgrade, rollback and uninstall
+- [Configuring the Robot System](../../getting-started/install/robot-system-config.md): user configuration, ports and environment variables, first-boot setup
+- [Version Compatibility](../../getting-started/install/compatibility.md): how to check both versions and the one-version-number release convention
 - [Connection & Robot Entry](../basics/connection.md): `Robot.connect` and endpoint selection
 - [Troubleshooting](../../troubleshooting.md): cannot connect, `wait_ready` timeouts

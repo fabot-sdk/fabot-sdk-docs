@@ -140,6 +140,6 @@ Field names are always snake_case (`frame_id`, `group_id`); the generated types 
 
 ## Documented SDK baseline
 
-This site documents **fabot-sdk 1.1.0-beta.2**. When a page and your installed wheel disagree, the installed package wins: check `fabot.__version__` and `robot.sdk_version`, then consult [Version Compatibility](../../getting-started/install/compatibility.md).
+This site documents **fabot-sdk 1.1.0**. When a page and your installed wheel disagree, the installed package wins: check `fabot.__version__` and `robot.sdk_version`, then consult [Version Compatibility](../../getting-started/install/compatibility.md).
 
 After adding or changing an interface, run `npm run check:api` to verify that every `robot.*` call name in the docs really exists on `Robot.mock()`.

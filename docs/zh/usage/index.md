@@ -2,7 +2,7 @@
 title: 常规操作总览
 status: draft
 owner: fabot-core
-updated: 2026-11-18
+updated: 2026-11-20
 ---
 
 # 常规操作总览
@@ -51,7 +51,7 @@ updated: 2026-11-18
 
 15. [Mock 测试](./testing/mock.md) — `Robot.mock()` 的离线开发与测试能力及限制。
 16. [从 1.0.x 迁移到 1.1.0](./testing/migration-1.0-to-1.1.md) — 从旧版本升级时的符号对照与检查清单。
-17. [机器人系统与本地控制台](./testing/robot-system.md) — 机器人系统与 SDK 的关系、`fabot` 命令、`fabot console` 界面与启停（背景补充）。
+17. [机器人系统运维与本地控制台](./testing/robot-system.md) — `fabot` 命令、`fabot console` 界面与服务启停；安装、升级与配置见入门章节。
 
 ## 常见操作速查
 
@@ -65,4 +65,4 @@ updated: 2026-11-18
 - **捕获并分类错误**：按 `FabotError` 层次捕获，判断 `retryable` 后用 `trace_id` 排查，见[错误处理](./diagnostics/errors.md)。
 - **展示本地化文本**：`Catalogs.load()` 后 `format_error` / `format_log` / `format_fault` / `format_metric`，见[文本目录 Catalogs](./diagnostics/catalogs.md)。
 - **无真机开发联调**：`Robot.mock()`，见[Mock 测试](./testing/mock.md)。
-- **在现场启停机器人系统或看浏览器界面**：`fabot start` / `stop` / `status` / `enable` / `disable` 与 `fabot console`，见[机器人系统与本地控制台](./testing/robot-system.md)。
+- **在现场启停机器人系统或看浏览器界面**：`fabot start` / `stop` / `status` / `enable` / `disable` 与 `fabot console`，见[机器人系统运维与本地控制台](./testing/robot-system.md)；安装、升级与配置见[机器人系统安装与升级](../getting-started/install/robot-system.md)与[机器人系统配置](../getting-started/install/robot-system-config.md)。
